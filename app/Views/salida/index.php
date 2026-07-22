@@ -93,7 +93,9 @@
 
         <div class="form-actions">
             <button id="guardarSalida" class="button-link button-link--submit" type="submit" disabled>Guardar entrega</button>
-            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
+            <?php if (Auth::check()) : ?>
+                <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
+            <?php endif; ?>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
         </div>
     </form>

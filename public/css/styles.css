@@ -2304,27 +2304,47 @@ body.modal-is-open {
 }
 
 .dashboard-home .menu-section {
+    --section-color: #4a1530;
     align-content: start;
     gap: 10px;
     padding: clamp(12px, 1.4vw, 16px);
-    border: 1px solid rgba(74, 21, 48, 0.12);
+    border: 1px solid color-mix(in srgb, var(--section-color) 24%, #ffffff);
+    border-top: 5px solid var(--section-color);
     border-radius: 14px;
-    background: rgba(255, 255, 255, 0.78);
-    box-shadow: 0 18px 44px rgba(74, 21, 48, 0.08);
+    background:
+        linear-gradient(145deg, color-mix(in srgb, var(--section-color) 10%, #ffffff), rgba(255, 255, 255, 0.88) 48%),
+        #ffffff;
+    box-shadow: 0 18px 44px color-mix(in srgb, var(--section-color) 14%, transparent);
+}
+
+.dashboard-home .menu-section--movimientos {
+    --section-color: #18705f;
+}
+
+.dashboard-home .menu-section--correcciones {
+    --section-color: #c9861a;
+}
+
+.dashboard-home .menu-section--reportes {
+    --section-color: #2d6fa3;
+}
+
+.dashboard-home .menu-section--admin {
+    --section-color: #7a1c2e;
 }
 
 .dashboard-home .menu-section > span {
     width: fit-content;
     padding: 5px 9px;
     border-radius: 999px;
-    background: #f4e9e9;
-    color: #4a1530;
+    background: color-mix(in srgb, var(--section-color) 12%, #ffffff);
+    color: color-mix(in srgb, var(--section-color) 78%, #2f1621);
     font-size: 0.68rem;
     letter-spacing: 0;
 }
 
 .dashboard-home .menu-section h2 {
-    color: #2f1621;
+    color: color-mix(in srgb, var(--section-color) 54%, #2f1621);
     font-size: clamp(1.02rem, 1.7vw, 1.28rem);
     line-height: 1.1;
 }
@@ -2790,6 +2810,49 @@ body:has(.auth-topbar) {
 .login-submit {
     width: 100%;
     margin-top: 10px;
+}
+
+.public-access-link {
+    display: grid;
+    grid-template-columns: 42px 1fr;
+    gap: 4px 12px;
+    align-items: center;
+    margin-top: 18px;
+    padding: 14px;
+    border: 1px solid rgba(24, 112, 95, 0.22);
+    border-radius: 8px;
+    background: linear-gradient(135deg, rgba(24, 112, 95, 0.09), #ffffff 62%);
+    color: var(--accent-strong);
+    font-family: Verdana, sans-serif;
+    text-decoration: none;
+}
+
+.public-access-link:hover {
+    border-color: #18705f;
+    box-shadow: 0 12px 28px rgba(24, 112, 95, 0.12);
+}
+
+.public-access-link span {
+    grid-row: 1 / 3;
+    display: inline-grid;
+    place-items: center;
+    width: 42px;
+    height: 42px;
+    border-radius: 8px;
+    background: #e8f5ee;
+    color: #18705f;
+    font-size: 1.4rem;
+    font-weight: 800;
+}
+
+.public-access-link strong {
+    color: var(--accent-strong);
+    font-size: 0.98rem;
+}
+
+.public-access-link small {
+    color: var(--muted);
+    line-height: 1.35;
 }
 
 .forbidden-panel {

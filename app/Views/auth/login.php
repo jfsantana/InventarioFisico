@@ -8,14 +8,14 @@
 </head>
 <body class="login-body">
     <main class="login-shell">
-        <div class="login-brand">
-            <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
-            <strong><?= APP_NAME ?></strong>
-        </div>
+       
 
         <section class="login-card" aria-labelledby="login-title">
-            <p class="eyebrow">Acceso seguro</p>
-            <h1 id="login-title">Iniciar sesion</h1>
+             <div class="login-brand">
+            <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
+        </div>
+
+            <h1 id="login-title" style="text-align: center;">Iniciar sesion</h1>
 
             <?php if (!empty($error)) : ?>
                 <div class="message message--error" role="alert"><?= htmlspecialchars($error, ENT_QUOTES, 'UTF-8') ?></div>
@@ -47,6 +47,12 @@
 
                 <button class="button-link button-link--submit login-submit" type="submit">Ingresar</button>
             </form>
+
+            <a class="public-access-link" href="<?= APP_URL ?>/salida" aria-label="Ir a registrar entrega sin iniciar sesion">
+                <span aria-hidden="true">↗</span>
+                <strong>Registrar entrega sin iniciar sesión</strong>
+                <small>Acceso para usuarios que solo reportan salidas</small>
+            </a>
         </section>
     </main>
     <script src="<?= APP_URL ?>/public/js/login.js"></script>

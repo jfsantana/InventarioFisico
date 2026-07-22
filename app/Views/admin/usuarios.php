@@ -97,8 +97,9 @@
             <label>Usuario<input name="username" type="text" pattern="[A-Za-z0-9_]{3,60}" required></label>
             <label>Rol<select name="id_rol" required><?php foreach ($roles as $role) : ?><option value="<?= (int) $role['id_rol'] ?>"><?= $text($role['nombre']) ?></option><?php endforeach; ?></select></label>
             <label class="switch-line"><input name="activo" type="checkbox" value="1" checked><span>Activo</span></label>
-            <label data-create-password>Nueva contraseña<input name="password" type="password" autocomplete="new-password"></label>
-            <label data-create-password>Confirmar contraseña<input name="password_confirm" type="password" autocomplete="new-password"></label>
+            <label data-create-password>Nueva contraseña<input name="password" type="password" minlength="6" autocomplete="new-password"></label>
+            <label data-create-password>Confirmar contraseña<input name="password_confirm" type="password" minlength="6" autocomplete="new-password"></label>
+                <small data-create-password data-create-password-help>Minimo 6 caracteres.</small>
         </div>
         <footer class="modal-actions"><button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button><button type="submit" class="button-link button-link--submit">Guardar</button></footer>
     </form>
@@ -109,10 +110,9 @@
         <?= Auth::csrfField() ?>
         <header><div><h2 id="password-modal-title">Cambiar contraseña</h2><p data-password-target></p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar modal">×</button></header>
         <input type="hidden" name="id_usuario">
-        <label>Nueva contraseña<input name="password" type="password" required autocomplete="new-password"></label>
-        <div class="strength-meter"><span data-strength-bar></span></div>
-        <small data-strength-label>Minimo 8 caracteres, mayuscula, numero y caracter especial.</small>
-        <label>Confirmar nueva contraseña<input name="password_confirm" type="password" required autocomplete="new-password"></label>
+        <label>Nueva contraseña<input name="password" type="password" required minlength="6" autocomplete="new-password"></label>
+        <small data-password-help>Minimo 6 caracteres.</small>
+        <label>Confirmar nueva contraseña<input name="password_confirm" type="password" required minlength="6" autocomplete="new-password"></label>
         <footer class="modal-actions"><button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button><button type="submit" class="button-link button-link--submit">Guardar</button></footer>
     </form>
 </div>

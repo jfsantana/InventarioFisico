@@ -4,9 +4,6 @@ class SalidaController extends Controller
 {
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
-        Auth::requireRecentLogin();
-        $this->requierePermiso('salida');
-
         $model = $this->model('SalidaInventario');
         $productos = [];
         $lotes = [];
@@ -35,9 +32,6 @@ class SalidaController extends Controller
 
     public function guardar(): void
     {
-        Auth::requireRecentLogin();
-        $this->requierePermiso('salida', 'editar');
-
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/salida');
             return;
@@ -97,9 +91,6 @@ class SalidaController extends Controller
 
     public function lotes(): void
     {
-        Auth::requireRecentLogin();
-        $this->requierePermiso('salida');
-
         header('Content-Type: application/json; charset=utf-8');
 
         $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);

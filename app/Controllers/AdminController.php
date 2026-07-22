@@ -37,7 +37,7 @@ class AdminController extends Controller
                 $password = (string) ($_POST['password'] ?? '');
                 $confirm = (string) ($_POST['password_confirm'] ?? '');
                 if (!$this->passwordValida($password) || $password !== $confirm) {
-                    $this->redirect('/admin/usuarios?msg=La contraseña no cumple los requisitos o no coincide.');
+                    $this->redirect('/admin/usuarios?msg=La contraseña debe tener al menos 6 caracteres y coincidir.');
                 }
                 $model->crear($data, $password);
                 Auth::log((int) $_SESSION['id_usuario'], $_SESSION['username'], 'administracion', 'crear_usuario', 'exitoso', $data['username']);
@@ -58,7 +58,7 @@ class AdminController extends Controller
         $confirm = (string) ($_POST['password_confirm'] ?? '');
 
         if (!$idUsuario || !$this->passwordValida($password) || $password !== $confirm) {
-            $this->redirect('/admin/usuarios?msg=La contraseña no cumple los requisitos o no coincide.');
+            $this->redirect('/admin/usuarios?msg=La contraseña debe tener al menos 6 caracteres y coincidir.');
         }
 
         if ($idUsuario === (int) ($_SESSION['id_usuario'] ?? 0)) {
@@ -172,9 +172,6 @@ class AdminController extends Controller
 
     private function passwordValida(string $password): bool
     {
-        return strlen($password) >= 8
-            && preg_match('/[A-Z]/', $password)
-            && preg_match('/[0-9]/', $password)
-            && preg_match('/[^A-Za-z0-9]/', $password);
+        return strlen($password) > 5;
     }
 }

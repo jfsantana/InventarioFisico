@@ -13,7 +13,7 @@ $authUser = Auth::user();
     </div>
 
     <nav class="main-menu main-menu--operational" aria-label="Menu principal">
-        <section class="menu-section menu-section--primary">
+        <section class="menu-section menu-section--primary menu-section--movimientos">
             <span>Operacion diaria</span>
             <h2>Movimientos</h2>
             <div class="menu-section-grid">
@@ -40,7 +40,7 @@ $authUser = Auth::user();
             </div>
         </section>
 
-        <section class="menu-section">
+        <section class="menu-section menu-section--correcciones">
             <span>Correcciones</span>
             <h2>Auditar y ajustar</h2>
             <div class="menu-section-grid">
@@ -63,7 +63,7 @@ $authUser = Auth::user();
             </div>
         </section>
 
-        <section class="menu-section menu-section--wide">
+        <section class="menu-section menu-section--wide menu-section--reportes">
             <span>Consulta y direccion</span>
             <h2>Reportes</h2>
             <div class="menu-section-grid menu-section-grid--three">
@@ -95,7 +95,7 @@ $authUser = Auth::user();
         </section>
 
         <?php if ($canAdmin) : ?>
-            <section class="menu-section menu-section--wide">
+            <section class="menu-section menu-section--wide menu-section--admin">
                 <span>Administración y seguridad</span>
                 <h2>Gestión del sistema</h2>
                 <div class="menu-section-grid menu-section-grid--three">
