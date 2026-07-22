@@ -4,6 +4,8 @@ class ConexionController extends Controller
 {
     public function index(): void
     {
+        $this->requierePermiso('administracion');
+
         $status = 'No se pudo conectar';
         $error = null;
         $serverInfo = null;

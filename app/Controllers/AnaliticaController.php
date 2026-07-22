@@ -4,6 +4,8 @@ class AnaliticaController extends Controller
 {
     public function index(): void
     {
+        $this->requierePermiso('inteligencia');
+
         $model = $this->model('AnaliticaInventario');
         $productos = [];
         $movimientos = [];

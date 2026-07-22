@@ -17,5 +17,15 @@ spl_autoload_register(function (string $className): void {
     }
 });
 
+header('X-Frame-Options: DENY');
+header('X-Content-Type-Options: nosniff');
+
+try {
+    AuthSchema::ensure();
+} catch (Throwable $exception) {
+}
+
+Auth::boot();
+
 $app = new App();
 $app->run();

@@ -22,6 +22,7 @@ function initCorrectionPage(page) {
     const toastHost = page.querySelector('[data-toast-host]');
     const pageType = page.dataset.pageType;
     const deleteEndpoint = page.dataset.deleteEndpoint;
+    const csrfToken = page.dataset.csrfToken;
 
     document.body.appendChild(editModal);
     document.body.appendChild(deleteModal);
@@ -424,6 +425,14 @@ function initCorrectionPage(page) {
         input.name = pageType === 'entrada' ? 'idInventarioEntrante' : 'idInventarioSaliente';
         input.value = id;
         form.appendChild(input);
+
+        if (csrfToken) {
+            const csrf = document.createElement('input');
+            csrf.type = 'hidden';
+            csrf.name = 'csrf_token';
+            csrf.value = csrfToken;
+            form.appendChild(csrf);
+        }
 
         document.body.appendChild(form);
         form.submit();

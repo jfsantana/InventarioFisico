@@ -4,6 +4,8 @@ class EntradaController extends Controller
 {
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
+        $this->requierePermiso('entrada');
+
         $model = $this->model('EntradaInventario');
         $productos = [];
         $presentaciones = [];
@@ -32,10 +34,14 @@ class EntradaController extends Controller
 
     public function guardar(): void
     {
+        $this->requierePermiso('entrada', 'editar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/entrada');
             return;
         }
+
+        $this->validarCsrf();
 
         $formData = [
             'NumLote' => trim($_POST['NumLote'] ?? ''),
@@ -70,6 +76,8 @@ class EntradaController extends Controller
 
     public function detalle(?string $message = null, ?string $messageType = 'success'): void
     {
+        $this->requierePermiso('corregir_entradas');
+
         $model = $this->model('EntradaInventario');
         $entradas = [];
         $productos = [];
@@ -100,10 +108,14 @@ class EntradaController extends Controller
 
     public function actualizar(): void
     {
+        $this->requierePermiso('corregir_entradas', 'editar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/entrada/detalle');
             return;
         }
+
+        $this->validarCsrf();
 
         $idInventarioEntrante = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
         $formData = [
@@ -151,10 +163,14 @@ class EntradaController extends Controller
 
     public function eliminar(): void
     {
+        $this->requierePermiso('corregir_entradas', 'borrar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/entrada/detalle');
             return;
         }
+
+        $this->validarCsrf();
 
         $idInventarioEntrante = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
 

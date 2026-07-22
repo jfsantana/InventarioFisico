@@ -5,10 +5,26 @@ class App
     private $controller = 'HomeController';
     private string $method = 'index';
     private array $params = [];
+    private array $aliases = [
+        'login' => ['AuthController', 'login'],
+        'logout' => ['AuthController', 'logout'],
+        'corregir-entradas' => ['EntradaController', 'detalle'],
+        'corregir-salidas' => ['SalidaController', 'detalle'],
+        'reporte-lote' => ['ReporteController', 'index'],
+        'inteligencia' => ['AnaliticaController', 'index'],
+    ];
 
     public function __construct()
     {
         $url = $this->parseUrl();
+
+        if (isset($url[0], $this->aliases[$url[0]])) {
+            [$this->controller, $this->method] = $this->aliases[$url[0]];
+            unset($url[0]);
+            $this->controller = new $this->controller();
+            $this->params = array_values($url);
+            return;
+        }
 
         if (isset($url[0])) {
             $controllerName = ucfirst($url[0]) . 'Controller';

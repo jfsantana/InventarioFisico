@@ -20,7 +20,7 @@ foreach ($lotes as $lote) {
 }
 ?>
 
-<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="salida" data-delete-endpoint="<?= APP_URL ?>/salida/eliminar">
+<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="salida" data-delete-endpoint="<?= APP_URL ?>/salida/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Salidas registradas</h1>
     <p class="intro">Revise las entregas registradas y corrija el lote asociado, la Nota de Entrega o la cantidad saliente.</p>
@@ -146,6 +146,7 @@ foreach ($lotes as $lote) {
 
     <div class="correction-modal" data-edit-modal hidden role="dialog" aria-modal="true" aria-labelledby="salida-modal-title">
         <form class="correction-modal-card" method="post" action="<?= APP_URL ?>/salida/actualizar" data-correction-modal-form novalidate>
+            <?= Auth::csrfField() ?>
             <header>
                 <div>
                     <h2 id="salida-modal-title" data-modal-title>Editar Salida</h2>

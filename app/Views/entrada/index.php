@@ -32,6 +32,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
     <?php endif; ?>
 
     <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" data-entrada-form>
+        <?= Auth::csrfField() ?>
         <div class="form-field">
             <label for="idProducto">1. Producto</label>
             <select id="idProducto" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">

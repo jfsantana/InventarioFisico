@@ -4,6 +4,8 @@ class ReporteController extends Controller
 {
     public function index(): void
     {
+        $this->requierePermiso('reporte_lote');
+
         $model = $this->model('ReporteInventario');
         $productos = [];
         $lotes = [];

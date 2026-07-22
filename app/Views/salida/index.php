@@ -26,8 +26,24 @@
     <?php $hasSelectedLot = !empty($formData['idInventarioEntrante']); ?>
 
     <form class="entry-form" method="post" action="<?= APP_URL ?>/salida/guardar" data-lotes-url="<?= APP_URL ?>/salida/lotes">
+        <?= Auth::csrfField() ?>
         <div class="form-field">
-            <label for="idProducto">1. Producto</label>
+            <label for="sector">1. Sector</label>
+            <select id="sector" name="sector" required>
+                <option value="">Seleccione un sector</option>
+                <?php foreach (['Sector1', 'Sector 2', 'Sector 3'] as $sector) : ?>
+                    <option value="<?= htmlspecialchars($sector, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($formData['sector'] ?? '') === $sector ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($sector, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <?php if (!empty($errors['sector'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['sector'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="idProducto">2. Producto</label>
             <select id="idProducto" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
                 <option value="">Seleccione un producto</option>
                 <?php foreach ($productos as $producto) : ?>
@@ -42,7 +58,7 @@
         </div>
 
         <div class="form-field">
-            <label for="idInventarioEntrante">2. Lote</label>
+            <label for="idInventarioEntrante">3. Lote</label>
             <select id="idInventarioEntrante" name="idInventarioEntrante" required <?= empty($lotes) ? 'disabled' : '' ?>>
                 <option value="">Seleccione primero un producto</option>
                 <?php foreach ($lotes as $lote) : ?>
@@ -59,7 +75,7 @@
         </div>
 
         <div class="form-field">
-            <label for="NE">3. Nota de Entrega (NE)</label>
+            <label for="NE">4. Nota de Entrega (NE)</label>
             <input id="NE" name="NE" type="text" value="<?= htmlspecialchars($formData['NE'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required autocomplete="off" placeholder="Ejemplo: NE-001245" <?= $hasSelectedLot ? '' : 'disabled' ?>>
             <?php if (!empty($errors['NE'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['NE'], ENT_QUOTES, 'UTF-8') ?></small>
@@ -67,7 +83,7 @@
         </div>
 
         <div class="form-field">
-            <label for="cantidadSaliente">4. Cantidad entregada</label>
+            <label for="cantidadSaliente">5. Cantidad entregada</label>
             <input id="cantidadSaliente" name="cantidadSaliente" type="number" min="0.01" step="0.01" value="<?= htmlspecialchars($formData['cantidadSaliente'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required placeholder="0" <?= $hasSelectedLot ? '' : 'disabled' ?>>
             <small id="quantityMessage" class="field-warning" aria-live="polite"></small>
             <?php if (!empty($errors['cantidadSaliente'])) : ?>

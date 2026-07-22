@@ -1,4 +1,5 @@
 const form = document.querySelector('.entry-form');
+const sectorSelect = document.querySelector('#sector');
 const productSelect = document.querySelector('#idProducto');
 const lotSelect = document.querySelector('#idInventarioEntrante');
 const neInput = document.querySelector('#NE');
@@ -34,7 +35,7 @@ function updateSaveButton() {
         quantityMessage.textContent = '';
     }
 
-    saveButton.disabled = !(lotSelect.value && neInput.value.trim() && hasValidQuantity());
+    saveButton.disabled = !(sectorSelect.value && lotSelect.value && neInput.value.trim() && hasValidQuantity());
 }
 
 function lockDeliveryFields(clearValues = false) {
@@ -115,13 +116,14 @@ async function loadLots(productId) {
     }
 }
 
-if (form && productSelect && lotSelect && neInput && quantityInput && saveButton && lotMessage && quantityMessage) {
+if (form && sectorSelect && productSelect && lotSelect && neInput && quantityInput && saveButton && lotMessage && quantityMessage) {
     if (!lotSelect.value) {
         lockDeliveryFields();
     } else {
         unlockDeliveryFields();
     }
 
+    sectorSelect.addEventListener('change', updateSaveButton);
     productSelect.addEventListener('change', () => loadLots(productSelect.value));
     lotSelect.addEventListener('change', () => {
         setLotMessage();

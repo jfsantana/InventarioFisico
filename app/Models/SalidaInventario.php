@@ -58,17 +58,18 @@ class SalidaInventario extends BaseModel
         return $lote ?: null;
     }
 
-    public function registrarSalida(int $idInventarioEntrante, string $ne, float $cantidadSaliente): bool
+    public function registrarSalida(int $idInventarioEntrante, string $sector, string $ne, float $cantidadSaliente): bool
     {
         $this->asegurarTablaInventarioSaliente();
 
         $statement = $this->db->prepare(
-            'INSERT INTO inventariosaliente (idInventarioEntrante, NE, cantidadSaliente, fecha)
-             VALUES (:idInventarioEntrante, :ne, :cantidadSaliente, NOW())'
+            'INSERT INTO inventariosaliente (idInventarioEntrante, sector, NE, cantidadSaliente, fecha)
+             VALUES (:idInventarioEntrante, :sector, :ne, :cantidadSaliente, NOW())'
         );
 
         return $statement->execute([
             'idInventarioEntrante' => $idInventarioEntrante,
+            'sector' => $sector,
             'ne' => $ne,
             'cantidadSaliente' => $cantidadSaliente,
         ]);
@@ -81,6 +82,7 @@ class SalidaInventario extends BaseModel
         $statement = $this->db->query(
             'SELECT ins.idInventarioSaliente,
                     ins.idInventarioEntrante,
+                    ins.sector,
                     ins.NE,
                     ins.cantidadSaliente,
                     ins.fecha,
@@ -101,7 +103,7 @@ class SalidaInventario extends BaseModel
              LEFT JOIN inventariosaliente otras
                     ON otras.idInventarioEntrante = ins.idInventarioEntrante
                    AND otras.idInventarioSaliente <> ins.idInventarioSaliente
-                      GROUP BY ins.idInventarioSaliente, ins.idInventarioEntrante, ins.NE, ins.cantidadSaliente, ins.fecha, ie.NumLote, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, p.idProducto, p.nombre, ie.CantidadEntrante
+                      GROUP BY ins.idInventarioSaliente, ins.idInventarioEntrante, ins.sector, ins.NE, ins.cantidadSaliente, ins.fecha, ie.NumLote, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, p.idProducto, p.nombre, ie.CantidadEntrante
              ORDER BY ins.fecha DESC, ins.idInventarioSaliente DESC'
         );
 
@@ -140,7 +142,7 @@ class SalidaInventario extends BaseModel
         $this->asegurarTablaInventarioSaliente();
 
         $statement = $this->db->prepare(
-            'SELECT idInventarioSaliente, idInventarioEntrante, NE, cantidadSaliente
+            'SELECT idInventarioSaliente, idInventarioEntrante, sector, NE, cantidadSaliente
              FROM inventariosaliente
              WHERE idInventarioSaliente = :idInventarioSaliente'
         );
@@ -212,11 +214,33 @@ class SalidaInventario extends BaseModel
             'CREATE TABLE IF NOT EXISTS inventariosaliente (
                 idInventarioSaliente INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
                 idInventarioEntrante INT UNSIGNED NOT NULL,
+                sector VARCHAR(30) NULL,
                 NE VARCHAR(80) NOT NULL,
                 cantidadSaliente DECIMAL(12, 2) NOT NULL,
                 fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 INDEX idx_inventariosaliente_entrante (idInventarioEntrante)
             )'
         );
+
+        if (!$this->existeColumna('inventariosaliente', 'sector')) {
+            $this->db->exec('ALTER TABLE inventariosaliente ADD COLUMN sector VARCHAR(30) NULL AFTER idInventarioEntrante');
+        }
+    }
+
+    private function existeColumna(string $tabla, string $columna): bool
+    {
+        $statement = $this->db->prepare(
+            'SELECT COUNT(*)
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = :tabla
+               AND COLUMN_NAME = :columna'
+        );
+        $statement->execute([
+            'tabla' => $tabla,
+            'columna' => $columna,
+        ]);
+
+        return (int) $statement->fetchColumn() > 0;
     }
 }

@@ -1,19 +1,14 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
+<?php
+$canSalida = Auth::can('salida');
+$canAdmin = Auth::can('administracion');
+$authUser = Auth::user();
+?>
 
 <section class="panel dashboard-home">
-    <header class="dashboard-topbar">
-        <div class="dashboard-brand">
-            <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
-            <strong><?= APP_NAME ?></strong>
-        </div>
-        <div class="dashboard-user" aria-label="Usuario activo">
-            <span>Usuario activo</span>
-            <strong>Operador</strong>
-        </div>
-    </header>
+
 
     <div class="dashboard-hero">
-        <p class="eyebrow">  </p>
         <h1><?= APP_NAME ?></h1>
     </div>
 
@@ -30,9 +25,13 @@
                     <strong>Entrada de mercancia</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <a class="menu-card menu-card--salida" href="<?= APP_URL ?>/salida">
+                <a class="menu-card menu-card--salida <?= $canSalida ? '' : 'menu-card--disabled' ?>" href="<?= $canSalida ? APP_URL . '/salida' : '#' ?>" <?= $canSalida ? '' : 'aria-disabled="true" title="Sin acceso"' ?>>
                     <span class="menu-card-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M12 21V9m0 0 5 5m-5-5-5 5M4 5h16" /></svg>
+                        <?php if ($canSalida) : ?>
+                            <svg viewBox="0 0 24 24"><path d="M12 21V9m0 0 5 5m-5-5-5 5M4 5h16" /></svg>
+                        <?php else : ?>
+                            🔒
+                        <?php endif; ?>
                     </span>
                     <span>Registrar entrega</span>
                     <strong>Salida de inventario</strong>
@@ -94,6 +93,33 @@
                 </a>
             </div>
         </section>
+
+        <?php if ($canAdmin) : ?>
+            <section class="menu-section menu-section--wide">
+                <span>Administración y seguridad</span>
+                <h2>Gestión del sistema</h2>
+                <div class="menu-section-grid menu-section-grid--three">
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/usuarios">
+                        <span class="menu-card-icon" aria-hidden="true">👥</span>
+                        <span>Gestión de accesos</span>
+                        <strong>Usuarios</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/roles">
+                        <span class="menu-card-icon" aria-hidden="true">🛡️</span>
+                        <span>Control de roles</span>
+                        <strong>Roles y permisos</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/log">
+                        <span class="menu-card-icon" aria-hidden="true">📋</span>
+                        <span>Auditoría</span>
+                        <strong>Log de accesos</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
+                </div>
+            </section>
+        <?php endif; ?>
     </nav>
 </section>
 

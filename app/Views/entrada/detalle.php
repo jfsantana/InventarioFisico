@@ -6,7 +6,7 @@ $money = static fn ($value) => htmlspecialchars(number_format((float) $value, 2)
 $text = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 ?>
 
-<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar">
+<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
     <p class="intro">Revise cada entrada de inventario y corrija producto, lote, presentacion, ubicacion o cantidad cuando sea necesario.</p>
@@ -137,6 +137,7 @@ $text = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF
 
     <div class="correction-modal" data-edit-modal hidden role="dialog" aria-modal="true" aria-labelledby="entrada-modal-title">
         <form class="correction-modal-card" method="post" action="<?= APP_URL ?>/entrada/actualizar" data-correction-modal-form novalidate>
+            <?= Auth::csrfField() ?>
             <header>
                 <div>
                     <h2 id="entrada-modal-title" data-modal-title>Editar Entrada</h2>

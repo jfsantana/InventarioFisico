@@ -4,6 +4,9 @@ class SalidaController extends Controller
 {
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('salida');
+
         $model = $this->model('SalidaInventario');
         $productos = [];
         $lotes = [];
@@ -32,12 +35,18 @@ class SalidaController extends Controller
 
     public function guardar(): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('salida', 'editar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/salida');
             return;
         }
 
+        $this->validarCsrf();
+
         $formData = [
+            'sector' => trim($_POST['sector'] ?? ''),
             'idProducto' => $_POST['idProducto'] ?? '',
             'idInventarioEntrante' => $_POST['idInventarioEntrante'] ?? '',
             'NE' => trim($_POST['NE'] ?? ''),
@@ -75,6 +84,7 @@ class SalidaController extends Controller
 
             $model->registrarSalida(
                 $idInventarioEntrante,
+                $formData['sector'],
                 $formData['NE'],
                 $cantidadSaliente
             );
@@ -87,6 +97,9 @@ class SalidaController extends Controller
 
     public function lotes(): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('salida');
+
         header('Content-Type: application/json; charset=utf-8');
 
         $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);
@@ -107,6 +120,9 @@ class SalidaController extends Controller
 
     public function detalle(?string $message = null, ?string $messageType = 'success'): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('corregir_salidas');
+
         $model = $this->model('SalidaInventario');
         $salidas = [];
         $lotes = [];
@@ -131,10 +147,15 @@ class SalidaController extends Controller
 
     public function actualizar(): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('corregir_salidas', 'editar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/salida/detalle');
             return;
         }
+
+        $this->validarCsrf();
 
         $idInventarioSaliente = filter_input(INPUT_POST, 'idInventarioSaliente', FILTER_VALIDATE_INT);
         $formData = [
@@ -200,10 +221,15 @@ class SalidaController extends Controller
 
     public function eliminar(): void
     {
+        Auth::requireRecentLogin();
+        $this->requierePermiso('corregir_salidas', 'borrar');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             header('Location: ' . APP_URL . '/salida/detalle');
             return;
         }
+
+        $this->validarCsrf();
 
         $idInventarioSaliente = filter_input(INPUT_POST, 'idInventarioSaliente', FILTER_VALIDATE_INT);
 
@@ -235,6 +261,11 @@ class SalidaController extends Controller
     private function validarFormulario(array $formData): array
     {
         $errors = [];
+        $sectoresPermitidos = ['Sector1', 'Sector 2', 'Sector 3'];
+
+        if (!in_array($formData['sector'] ?? '', $sectoresPermitidos, true)) {
+            $errors['sector'] = 'Seleccione un sector valido.';
+        }
 
         if (filter_var($formData['idProducto'], FILTER_VALIDATE_INT) === false) {
             $errors['idProducto'] = 'Seleccione un producto.';
