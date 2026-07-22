@@ -1,35 +1,99 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-<section class="panel">
-    <p class="eyebrow">MVC en PHP</p>
-    <h1><?= APP_NAME ?></h1>
-    <p class="intro">Aplicacion base lista para conectar tus controladores, modelos y vistas.</p>
+<section class="panel dashboard-home">
+    <header class="dashboard-topbar">
+        <div class="dashboard-brand">
+            <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
+            <strong><?= APP_NAME ?></strong>
+        </div>
+        <div class="dashboard-user" aria-label="Usuario activo">
+            <span>Usuario activo</span>
+            <strong>Operador</strong>
+        </div>
+    </header>
 
-    <div class="status-card">
-        <span>Estado de base de datos</span>
-        <strong><?= htmlspecialchars($connectionStatus, ENT_QUOTES, 'UTF-8') ?></strong>
-        <?php if (!empty($connectionError)) : ?>
-            <small><?= htmlspecialchars($connectionError, ENT_QUOTES, 'UTF-8') ?></small>
-        <?php endif; ?>
+    <div class="dashboard-hero">
+        <p class="eyebrow">  </p>
+        <h1><?= APP_NAME ?></h1>
     </div>
 
-    <nav class="main-menu" aria-label="Menu principal">
-        <a class="menu-card" href="<?= APP_URL ?>/entrada">
-            <span>Registrar recepcion</span>
-            <strong>Entrada de inventario</strong>
-        </a>
-        <a class="menu-card" href="<?= APP_URL ?>/salida">
-            <span>Registrar entrega</span>
-            <strong>Salida de inventario</strong>
-        </a>
-        <a class="menu-card" href="<?= APP_URL ?>/reporte">
-            <span>Consultar movimientos</span>
-            <strong>Reporte por lote</strong>
-        </a>
-        <a class="menu-card" href="<?= APP_URL ?>/conexion">
-            <span>Base de datos</span>
-            <strong>Probar conexion</strong>
-        </a>
+    <nav class="main-menu main-menu--operational" aria-label="Menu principal">
+        <section class="menu-section menu-section--primary">
+            <span>Operacion diaria</span>
+            <h2>Movimientos</h2>
+            <div class="menu-section-grid">
+                <a class="menu-card menu-card--entrada" href="<?= APP_URL ?>/entrada">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M4 19h16" /></svg>
+                    </span>
+                    <span>Registrar recepcion</span>
+                    <strong>Entrada de mercancia</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+                <a class="menu-card menu-card--salida" href="<?= APP_URL ?>/salida">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 21V9m0 0 5 5m-5-5-5 5M4 5h16" /></svg>
+                    </span>
+                    <span>Registrar entrega</span>
+                    <strong>Salida de inventario</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+            </div>
+        </section>
+
+        <section class="menu-section">
+            <span>Correcciones</span>
+            <h2>Auditar y ajustar</h2>
+            <div class="menu-section-grid">
+                <a class="menu-card menu-card--correccion" href="<?= APP_URL ?>/entrada/detalle">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+                    </span>
+                    <span>Detalle creado</span>
+                    <strong>Corregir entradas</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+                <a class="menu-card menu-card--correccion" href="<?= APP_URL ?>/salida/detalle">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>
+                    </span>
+                    <span>Detalle creado</span>
+                    <strong>Corregir salidas</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+            </div>
+        </section>
+
+        <section class="menu-section menu-section--wide">
+            <span>Consulta y direccion</span>
+            <h2>Reportes</h2>
+            <div class="menu-section-grid menu-section-grid--three">
+                <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/reporte">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M5 3h14v18H5z" /><path d="M8 8h8M8 12h8M8 16h5" /></svg>
+                    </span>
+                    <span>Consultar movimientos</span>
+                    <strong>Reporte por lote</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+                <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/analitica">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5M12 16V8M16 16v-8" /></svg>
+                    </span>
+                    <span>Junta directiva</span>
+                    <strong>Inteligencia de inventario</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+                <a class="menu-card menu-card--conexion" href="<?= APP_URL ?>/conexion">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Z" /><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7" /><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></svg>
+                    </span>
+                    <span>Base de datos</span>
+                    <strong>Probar conexion</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+            </div>
+        </section>
     </nav>
 </section>
 

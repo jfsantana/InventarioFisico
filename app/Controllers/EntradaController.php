@@ -68,6 +68,121 @@ class EntradaController extends Controller
         }
     }
 
+    public function detalle(?string $message = null, ?string $messageType = 'success'): void
+    {
+        $model = $this->model('EntradaInventario');
+        $entradas = [];
+        $productos = [];
+        $presentaciones = [];
+        $ubicaciones = [];
+        $loadError = null;
+
+        try {
+            $entradas = $model->obtenerEntradas();
+            $productos = $model->obtenerProductos();
+            $presentaciones = $model->obtenerPresentaciones();
+            $ubicaciones = $model->obtenerUbicaciones();
+        } catch (PDOException $exception) {
+            $loadError = $exception->getMessage();
+        }
+
+        $this->view('entrada/detalle', [
+            'title' => 'Corregir entradas',
+            'entradas' => $entradas,
+            'productos' => $productos,
+            'presentaciones' => $presentaciones,
+            'ubicaciones' => $ubicaciones,
+            'message' => $message,
+            'messageType' => $messageType,
+            'loadError' => $loadError,
+        ]);
+    }
+
+    public function actualizar(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/entrada/detalle');
+            return;
+        }
+
+        $idInventarioEntrante = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
+        $formData = [
+            'NumLote' => trim($_POST['NumLote'] ?? ''),
+            'idProducto' => $_POST['idProducto'] ?? '',
+            'idPresentacion' => $_POST['idPresentacion'] ?? '',
+            'idUbicacion' => $_POST['idUbicacion'] ?? '',
+            'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
+        ];
+
+        if (!$idInventarioEntrante) {
+            $this->detalle('No se pudo identificar la entrada a corregir.', 'error');
+            return;
+        }
+
+        $errors = $this->validarFormulario($formData);
+
+        if (!empty($errors)) {
+            $this->detalle(implode(' ', $errors), 'error');
+            return;
+        }
+
+        try {
+            $model = $this->model('EntradaInventario');
+            $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
+
+            if ((int) $formData['CantidadEntrante'] < $salidaTotal) {
+                $this->detalle('La cantidad entrante no puede ser menor que las salidas ya registradas: ' . number_format($salidaTotal, 2), 'error');
+                return;
+            }
+
+            $model->actualizarEntrada($idInventarioEntrante, [
+                'NumLote' => $formData['NumLote'],
+                'idProducto' => (int) $formData['idProducto'],
+                'idPresentacion' => (int) $formData['idPresentacion'],
+                'idUbicacion' => (int) $formData['idUbicacion'],
+                'CantidadEntrante' => (int) $formData['CantidadEntrante'],
+            ]);
+
+            $this->detalle('La entrada fue corregida correctamente.');
+        } catch (PDOException $exception) {
+            $this->detalle($exception->getMessage(), 'error');
+        }
+    }
+
+    public function eliminar(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/entrada/detalle');
+            return;
+        }
+
+        $idInventarioEntrante = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
+
+        if (!$idInventarioEntrante) {
+            $this->detalle('No se pudo identificar la entrada a eliminar.', 'error');
+            return;
+        }
+
+        try {
+            $model = $this->model('EntradaInventario');
+            $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
+
+            if ($salidaTotal > 0) {
+                $this->detalle('No se puede eliminar una entrada con salidas registradas.', 'error');
+                return;
+            }
+
+            if (!$model->eliminarEntrada($idInventarioEntrante)) {
+                $this->detalle('La entrada seleccionada no existe.', 'error');
+                return;
+            }
+
+            $this->detalle('La entrada fue eliminada correctamente.');
+        } catch (PDOException $exception) {
+            $this->detalle($exception->getMessage(), 'error');
+        }
+    }
+
     private function validarFormulario(array $formData): array
     {
         $errors = [];

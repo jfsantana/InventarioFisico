@@ -1,9 +1,17 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
+<?php
+$isEntradaCompleta = !empty($formData['idProducto'])
+    && !empty($formData['NumLote'])
+    && !empty($formData['idPresentacion'])
+    && !empty($formData['idUbicacion'])
+    && ctype_digit((string) ($formData['CantidadEntrante'] ?? ''))
+    && (int) ($formData['CantidadEntrante'] ?? 0) > 0;
+?>
+
 <section class="panel form-panel">
-    <p class="eyebrow">Inventario entrante</p>
-    <h1>Registrar entrada</h1>
-    <p class="intro">Complete los datos del inventario recibido. La fecha se guarda automaticamente con la fecha actual.</p>
+    <p class="eyebrow">Inventario fisico entrante</p>
+    <h1>Registrar entrada de mercancia </h1>
 
     <?php if (!empty($successMessage)) : ?>
         <div class="message message--success" role="status">
@@ -23,10 +31,10 @@
         </div>
     <?php endif; ?>
 
-    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar">
+    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" data-entrada-form>
         <div class="form-field">
             <label for="idProducto">1. Producto</label>
-            <select id="idProducto" name="idProducto" required>
+            <select id="idProducto" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
                 <option value="">Seleccione un producto</option>
                 <?php foreach ($productos as $producto) : ?>
                     <option value="<?= (int) $producto['idProducto'] ?>" <?= (string) ($formData['idProducto'] ?? '') === (string) $producto['idProducto'] ? 'selected' : '' ?>>
@@ -86,10 +94,15 @@
         </div>
 
         <div class="form-actions form-actions--full">
-            <button class="button-link button-link--submit" type="submit">Guardar entrada</button>
+            <button id="guardarEntrada" class="button-link button-link--submit" type="submit" <?= $isEntradaCompleta ? '' : 'disabled' ?>>Guardar entrada</button>
+            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/entrada/detalle">Corregir entradas</a>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
+            <small id="entradaFormMessage" class="field-warning" aria-live="polite"></small>
         </div>
     </form>
 </section>
+
+<script src="<?= APP_URL ?>/public/js/entrada.js"></script>
+<script src="<?= APP_URL ?>/public/js/searchable-select.js"></script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

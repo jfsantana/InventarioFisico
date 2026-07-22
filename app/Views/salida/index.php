@@ -1,9 +1,9 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-<section class="panel form-panel">
+<section class="panel form-panel salida-panel">
     <p class="eyebrow">Inventario saliente</p>
     <h1>Registrar entrega</h1>
-    <p class="intro">Complete los datos de la entrega. La fecha se guarda automaticamente con la fecha actual.</p>
+    
 
     <?php if (!empty($successMessage)) : ?>
         <div class="message message--success" role="status">
@@ -28,7 +28,7 @@
     <form class="entry-form" method="post" action="<?= APP_URL ?>/salida/guardar" data-lotes-url="<?= APP_URL ?>/salida/lotes">
         <div class="form-field">
             <label for="idProducto">1. Producto</label>
-            <select id="idProducto" name="idProducto" required>
+            <select id="idProducto" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
                 <option value="">Seleccione un producto</option>
                 <?php foreach ($productos as $producto) : ?>
                     <option value="<?= (int) $producto['idProducto'] ?>" <?= (string) ($formData['idProducto'] ?? '') === (string) $producto['idProducto'] ? 'selected' : '' ?>>
@@ -77,11 +77,13 @@
 
         <div class="form-actions">
             <button id="guardarSalida" class="button-link button-link--submit" type="submit" disabled>Guardar entrega</button>
+            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
         </div>
     </form>
 </section>
 
 <script src="<?= APP_URL ?>/public/js/salida.js"></script>
+<script src="<?= APP_URL ?>/public/js/searchable-select.js"></script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

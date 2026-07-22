@@ -74,6 +74,138 @@ class SalidaInventario extends BaseModel
         ]);
     }
 
+    public function obtenerSalidas(): array
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->query(
+            'SELECT ins.idInventarioSaliente,
+                    ins.idInventarioEntrante,
+                    ins.NE,
+                    ins.cantidadSaliente,
+                    ins.fecha,
+                    ie.NumLote,
+                          ie.idPresentacion,
+                          pr.nombre AS presentacion,
+                          ie.`idUbicación` AS idUbicacion,
+                          u.nombre AS ubicacion,
+                    p.idProducto,
+                    p.nombre AS producto,
+                    ie.CantidadEntrante,
+                    ie.CantidadEntrante - COALESCE(SUM(otras.cantidadSaliente), 0) AS disponibleSinEstaSalida
+             FROM inventariosaliente ins
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ins.idInventarioEntrante
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
+                      INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
+                      INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
+             LEFT JOIN inventariosaliente otras
+                    ON otras.idInventarioEntrante = ins.idInventarioEntrante
+                   AND otras.idInventarioSaliente <> ins.idInventarioSaliente
+                      GROUP BY ins.idInventarioSaliente, ins.idInventarioEntrante, ins.NE, ins.cantidadSaliente, ins.fecha, ie.NumLote, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, p.idProducto, p.nombre, ie.CantidadEntrante
+             ORDER BY ins.fecha DESC, ins.idInventarioSaliente DESC'
+        );
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerLotesParaCorreccion(): array
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->query(
+            'SELECT ie.idInventarioEntrante,
+                    ie.NumLote,
+                      p.idProducto,
+                    p.nombre AS producto,
+                      ie.idPresentacion,
+                      pr.nombre AS presentacion,
+                      ie.`idUbicación` AS idUbicacion,
+                      u.nombre AS ubicacion,
+                    ie.CantidadEntrante,
+                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+             FROM inventarioentrante ie
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
+                  INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
+                  INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
+             LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
+                  GROUP BY ie.idInventarioEntrante, ie.NumLote, p.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.CantidadEntrante
+             ORDER BY p.nombre ASC, ie.fecha DESC, ie.idInventarioEntrante DESC'
+        );
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerSalidaPorId(int $idInventarioSaliente): ?array
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->prepare(
+            'SELECT idInventarioSaliente, idInventarioEntrante, NE, cantidadSaliente
+             FROM inventariosaliente
+             WHERE idInventarioSaliente = :idInventarioSaliente'
+        );
+        $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
+        $salida = $statement->fetch();
+
+        return $salida ?: null;
+    }
+
+    public function obtenerDisponibleParaCorreccion(int $idInventarioEntrante, int $idInventarioSaliente): float
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->prepare(
+            'SELECT ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+             FROM inventarioentrante ie
+             LEFT JOIN inventariosaliente ins
+                    ON ins.idInventarioEntrante = ie.idInventarioEntrante
+                   AND ins.idInventarioSaliente <> :idInventarioSaliente
+             WHERE ie.idInventarioEntrante = :idInventarioEntrante
+             GROUP BY ie.idInventarioEntrante, ie.CantidadEntrante'
+        );
+        $statement->execute([
+            'idInventarioEntrante' => $idInventarioEntrante,
+            'idInventarioSaliente' => $idInventarioSaliente,
+        ]);
+        $resultado = $statement->fetch();
+
+        return $resultado ? (float) $resultado['disponible'] : 0;
+    }
+
+    public function actualizarSalida(int $idInventarioSaliente, int $idInventarioEntrante, string $ne, float $cantidadSaliente): bool
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->prepare(
+            'UPDATE inventariosaliente
+             SET idInventarioEntrante = :idInventarioEntrante,
+                 NE = :ne,
+                 cantidadSaliente = :cantidadSaliente
+             WHERE idInventarioSaliente = :idInventarioSaliente'
+        );
+
+        return $statement->execute([
+            'idInventarioEntrante' => $idInventarioEntrante,
+            'ne' => $ne,
+            'cantidadSaliente' => $cantidadSaliente,
+            'idInventarioSaliente' => $idInventarioSaliente,
+        ]);
+    }
+
+    public function eliminarSalida(int $idInventarioSaliente): bool
+    {
+        $this->asegurarTablaInventarioSaliente();
+
+        $statement = $this->db->prepare(
+            'DELETE FROM inventariosaliente
+             WHERE idInventarioSaliente = :idInventarioSaliente'
+        );
+
+        $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
+
+        return $statement->rowCount() > 0;
+    }
+
     private function asegurarTablaInventarioSaliente(): void
     {
         $this->db->exec(

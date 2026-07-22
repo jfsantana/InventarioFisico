@@ -7,4 +7,7 @@
     <link rel="stylesheet" href="<?= APP_URL ?>/public/css/styles.css">
 </head>
 <body>
-    <main class="page-shell">
+    <a class="brand-logo <?= ($title ?? '') === 'Inicio' ? 'brand-logo--dashboard-hidden' : '' ?>" href="<?= APP_URL ?>/" aria-label="Ir al inicio">
+        <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
+    </a>
+    <main class="page-shell <?= ($title ?? '') === 'Inicio' ? 'page-shell--dashboard' : '' ?>">

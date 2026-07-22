@@ -14,7 +14,7 @@
     <form class="entry-form entry-form--two-columns report-filter" method="get" action="<?= APP_URL ?>/reporte">
         <div class="form-field">
             <label for="idProducto">Producto</label>
-            <select id="idProducto" name="idProducto" required onchange="this.form.submit()">
+            <select id="idProducto" name="idProducto" required onchange="this.form.submit()" data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
                 <option value="">Seleccione un producto</option>
                 <?php foreach ($productos as $producto) : ?>
                     <option value="<?= (int) $producto['idProducto'] ?>" <?= (string) $idProducto === (string) $producto['idProducto'] ? 'selected' : '' ?>>
@@ -38,6 +38,9 @@
 
         <div class="form-actions form-actions--full">
             <button class="button-link button-link--submit" type="submit">Ver reporte</button>
+            <?php if (!empty($encabezado)) : ?>
+                <button class="button-link button-link--submit report-export-button" type="button" onclick="window.print()">Generar PDF</button>
+            <?php endif; ?>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
         </div>
     </form>
@@ -87,4 +90,5 @@
     <?php endif; ?>
 </section>
 
+<script src="<?= APP_URL ?>/public/js/searchable-select.js"></script>
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>
