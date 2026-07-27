@@ -151,6 +151,7 @@ class AnaliticaInventario extends BaseModel
 
             $resumen[$idInventarioEntrante] = [
                 'idInventarioEntrante' => $idInventarioEntrante,
+                'idProducto' => (int) $lote['idProducto'],
                 'producto' => $lote['producto'],
                 'NumLote' => $lote['NumLote'],
                 'presentacion' => $lote['presentacion'],

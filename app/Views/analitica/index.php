@@ -77,11 +77,21 @@ foreach ($resumenLotes as $loteResumen) {
         <section class="product-lot-groups">
             <?php foreach ($lotesAgrupadosPorProducto as $productoNombre => $lotesProducto) : ?>
                 <?php $lotesAlerta = count(array_filter($lotesProducto, fn ($lote) => $lote['enRiesgo'])); ?>
+                <?php $productoDetalleUrl = APP_URL . '/analitica?' . http_build_query([
+                    'idProducto' => (int) ($lotesProducto[0]['idProducto'] ?? 0),
+                    'desde' => $desdeDisplay,
+                    'hasta' => $hastaDisplay,
+                ]); ?>
                 <article class="product-lot-group">
                     <header class="product-lot-header">
                         <div>
                             <span>Producto</span>
-                            <h2><?= htmlspecialchars($productoNombre, ENT_QUOTES, 'UTF-8') ?></h2>
+                            <h2>
+                                <a class="product-detail-link" href="<?= htmlspecialchars($productoDetalleUrl, ENT_QUOTES, 'UTF-8') ?>" aria-label="Ver detalles de <?= htmlspecialchars($productoNombre, ENT_QUOTES, 'UTF-8') ?>">
+                                    <?= htmlspecialchars($productoNombre, ENT_QUOTES, 'UTF-8') ?>
+                                    <i aria-hidden="true">⌕</i>
+                                </a>
+                            </h2>
                         </div>
                         <strong><?= count($lotesProducto) ?> lote<?= count($lotesProducto) === 1 ? '' : 's' ?> · <?= $lotesAlerta ?> alerta<?= $lotesAlerta === 1 ? '' : 's' ?></strong>
                     </header>
