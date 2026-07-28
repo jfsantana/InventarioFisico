@@ -121,13 +121,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         rowsBody.innerHTML = filtered.map((item) => `
             <tr data-predespacho-id="${escapeHtml(item.idCabeceraPredespacho)}">
-                <td><strong>${formatValue(item.codigoInterno)}</strong></td>
-                <td>${formatValue(item.nombreCliente)}</td>
-                <td>${formatValue(item.fechaRetiro)}</td>
-                <td>${formatValue(item.codigoNotaEntregaSAP)}</td>
-                <td><span class="status-pill ${statusClass(item.statusGeneralPredespacho)}">${formatValue(item.statusGeneralPredespacho)}</span></td>
-                <td>${formatValue(item.fechaCreacion)}</td>
-                <td class="table-actions">
+                <td data-label="Codigo Interno"><strong>${formatValue(item.codigoInterno)}</strong></td>
+                <td data-label="Cliente">${formatValue(item.nombreCliente)}</td>
+                <td data-label="Fecha Retiro">${formatValue(item.fechaRetiro)}</td>
+                <td data-label="Codigo SAP">${formatValue(item.codigoNotaEntregaSAP)}</td>
+                <td data-label="Status"><span class="status-pill ${statusClass(item.statusGeneralPredespacho)}">${formatValue(item.statusGeneralPredespacho)}</span></td>
+                <td data-label="Fecha Creacion">${formatValue(item.fechaCreacion)}</td>
+                <td class="table-actions" data-label="Acciones">
                     <button type="button" data-ver-detalle>Ver Detalle</button>
                     <button type="button" data-editar-sap>Editar SAP</button>
                     <button type="button" data-cerrar-predespacho ${item.statusGeneralPredespacho === 'cerrado' ? 'disabled' : ''}>Cerrar</button>
@@ -196,13 +196,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 detalleItems.innerHTML = items.map((item) => `
                     <tr>
-                        <td>${formatValue(item.NumLote)}</td>
-                        <td>${formatValue(item.idProducto)}</td>
-                        <td>${formatValue(item.idPresentacion)}</td>
-                        <td>${formatValue(item.sector)}</td>
-                        <td>${formatDecimal(item.cantidadSolicitada)}</td>
-                        <td>${formatDecimal(item.cantidadDespachada)}</td>
-                        <td><span class="status-pill ${statusClass(item.estatusItemPredespacho)}">${formatValue(item.estatusItemPredespacho)}</span></td>
+                        <td data-label="Lote">${formatValue(item.NumLote)}</td>
+                        <td data-label="Producto">${formatValue(item.idProducto)}</td>
+                        <td data-label="Presentacion">${formatValue(item.idPresentacion)}</td>
+                        <td data-label="Sector">${formatValue(item.sector)}</td>
+                        <td data-label="Solicitada">${formatDecimal(item.cantidadSolicitada)}</td>
+                        <td data-label="Despachada">${formatDecimal(item.cantidadDespachada)}</td>
+                        <td data-label="Status"><span class="status-pill ${statusClass(item.estatusItemPredespacho)}">${formatValue(item.estatusItemPredespacho)}</span></td>
                     </tr>
                 `).join('');
             })

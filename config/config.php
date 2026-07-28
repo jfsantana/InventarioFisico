@@ -2,11 +2,21 @@
 
 define('APP_NAME', 'Inventario Fisico');
 
-// Determinar la URL base dinámicamente
-$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
-$host = $_SERVER['HTTP_HOST'];
-$scriptName = str_replace('/public/index.php', '', $_SERVER['SCRIPT_NAME']);
-define('APP_URL', $protocol . '://' . $host . $scriptName);
+$appUrl = getenv('APP_URL');
+
+if (!$appUrl) {
+	$isHttps = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+		|| (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO'] === 'https');
+	$protocol = $isHttps ? 'https' : 'http';
+	$host = $_SERVER['HTTP_HOST'] ?? 'localhost';
+	$scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '/public/index.php');
+	$basePath = str_replace('\\', '/', dirname($scriptName));
+	$basePath = rtrim(str_replace('/public', '', $basePath), '/');
+	$basePath = $basePath === '.' || $basePath === '/' ? '' : $basePath;
+	$appUrl = $protocol . '://' . $host . ($basePath === '' ? '' : $basePath);
+}
+
+define('APP_URL', rtrim($appUrl, '/'));
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'inventariofisico');

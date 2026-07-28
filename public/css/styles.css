@@ -3348,3 +3348,297 @@ body:has(.auth-topbar) {
         grid-template-columns: 1fr;
     }
 }
+
+@media (max-width: 720px) {
+    body:has(.auth-topbar) {
+        padding-top: 94px;
+    }
+
+    .auth-topbar {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 6px 10px;
+        align-items: center;
+        min-height: 0;
+        padding: 7px 10px 8px;
+        box-shadow: 0 8px 20px rgba(76, 40, 38, 0.10);
+    }
+
+    .auth-brand {
+        min-width: 0;
+        gap: 8px;
+    }
+
+    .auth-brand img {
+        width: 48px;
+        height: 34px;
+    }
+
+    .auth-brand strong {
+        overflow: hidden;
+        color: var(--accent-strong);
+        font-size: 1.04rem;
+        line-height: 1.1;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .auth-session {
+        display: contents;
+    }
+
+    .auth-greeting {
+        grid-column: 1 / 2;
+        min-width: 0;
+        overflow: hidden;
+        font-size: 0.88rem;
+        line-height: 1.15;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .role-badge {
+        grid-column: 2 / 3;
+        min-height: 28px;
+        max-width: 132px;
+        padding: 0 9px;
+        border-radius: 8px;
+        font-size: 0.74rem;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+    }
+
+    .auth-session form {
+        grid-column: 2 / 3;
+        grid-row: 1 / 2;
+        margin: 0;
+    }
+
+    .logout-button {
+        min-height: 36px;
+        padding: 0 12px;
+        border-radius: 8px;
+        font-size: 0.78rem;
+        white-space: nowrap;
+    }
+
+    .page-shell:has(.admin-page) {
+        width: min(100% - 18px, 100%);
+        padding-top: 6px;
+    }
+
+    .admin-page {
+        padding: 16px 10px;
+        border-radius: 6px;
+    }
+
+    .admin-page[data-predespacho-detalle] {
+        gap: 14px;
+    }
+
+    .admin-page[data-predespacho-detalle] .intro {
+        margin-bottom: 0;
+    }
+
+    .admin-heading h1 {
+        white-space: normal;
+        font-size: clamp(2rem, 12vw, 2.8rem);
+    }
+
+    .admin-heading .form-actions,
+    .admin-heading .button-link,
+    .admin-heading button {
+        width: 100%;
+    }
+
+    .predespacho-filters {
+        gap: 10px;
+    }
+
+    .predespacho-back-link {
+        position: static;
+        box-shadow: none;
+    }
+
+    .predespacho-summary-card {
+        gap: 12px;
+        padding: 14px;
+    }
+
+    .predespacho-summary-card > strong {
+        font-size: clamp(1.65rem, 10vw, 2.35rem);
+        overflow-wrap: anywhere;
+    }
+
+    .predespacho-summary-list {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+
+    .predespacho-summary-list div {
+        padding: 10px;
+    }
+
+    .predespacho-summary-list dd {
+        font-size: 1rem;
+        overflow-wrap: anywhere;
+    }
+
+    .predespacho-inline-form {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .predespacho-sap-input {
+        width: 100% !important;
+    }
+
+    .inventory-report {
+        padding: 12px;
+    }
+
+    .inventory-report .chart-title {
+        gap: 10px;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table-wrap,
+    .admin-page[data-predespacho-detalle] .admin-table-wrap,
+    .predespacho-detail-card .admin-table-wrap {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table,
+    .admin-page[data-predespacho-page] .admin-table tbody,
+    .admin-page[data-predespacho-detalle] .admin-table,
+    .admin-page[data-predespacho-detalle] .admin-table tbody,
+    .predespacho-detail-card .admin-table,
+    .predespacho-detail-card .admin-table tbody {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table thead,
+    .admin-page[data-predespacho-detalle] .admin-table thead,
+    .predespacho-detail-card .admin-table thead {
+        display: none;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table tr,
+    .admin-page[data-predespacho-detalle] .admin-table tr,
+    .predespacho-detail-card .admin-table tr {
+        display: grid;
+        gap: 0;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 10px 26px rgba(76, 40, 38, 0.08);
+    }
+
+    .admin-page[data-predespacho-page] .admin-table td,
+    .admin-page[data-predespacho-detalle] .admin-table td,
+    .predespacho-detail-card .admin-table td {
+        display: grid;
+        grid-template-columns: minmax(110px, 42%) minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0dfdf;
+        font-size: 0.92rem;
+        overflow-wrap: anywhere;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table td:last-child,
+    .admin-page[data-predespacho-detalle] .admin-table td:last-child,
+    .predespacho-detail-card .admin-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table td::before,
+    .admin-page[data-predespacho-detalle] .admin-table td::before,
+    .predespacho-detail-card .admin-table td::before {
+        content: attr(data-label);
+        color: var(--accent-strong);
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table td[colspan],
+    .admin-page[data-predespacho-detalle] .admin-table td[colspan],
+    .predespacho-detail-card .admin-table td[colspan] {
+        display: block;
+        text-align: center;
+    }
+
+    .admin-page[data-predespacho-page] .admin-table td[colspan]::before,
+    .admin-page[data-predespacho-detalle] .admin-table td[colspan]::before,
+    .predespacho-detail-card .admin-table td[colspan]::before {
+        content: none;
+    }
+
+    .admin-page[data-predespacho-page] .table-actions,
+    .admin-page[data-predespacho-detalle] .table-actions,
+    .predespacho-detail-card .table-actions {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .admin-page[data-predespacho-page] .table-actions button,
+    .admin-page[data-predespacho-detalle] .table-actions button,
+    .predespacho-detail-card .table-actions button {
+        width: 100%;
+        min-height: 42px;
+    }
+
+    .correction-modal {
+        place-items: start center;
+        padding: 10px;
+        overflow-y: auto;
+    }
+
+    .correction-modal-card,
+    .admin-modal-card,
+    .predespacho-detail-card {
+        width: 100%;
+        max-width: 100%;
+        max-height: none;
+        padding: 16px;
+        border-radius: 14px;
+    }
+
+    .correction-modal-card header {
+        gap: 10px;
+    }
+
+    .correction-modal-card h2 {
+        font-size: 1.35rem;
+    }
+
+    .correction-modal-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .predespacho-inline-control {
+        grid-template-columns: minmax(0, 1fr) 48px;
+    }
+
+    .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .modal-actions .button-link,
+    .modal-actions button {
+        width: 100%;
+        margin-top: 0;
+    }
+}

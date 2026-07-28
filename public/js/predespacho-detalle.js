@@ -153,14 +153,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const tieneDespacho = cantidadDespachada > 0;
             return `
                 <tr data-item-id="${escapeHtml(item.idItem)}">
-                    <td>${index + 1}</td>
-                    <td>${formatValue(item.NumLote)}</td>
-                    <td>${formatValue(item.idProducto)}</td>
-                    <td>${formatValue(item.sector)}</td>
-                    <td>${formatDecimal(item.cantidadSolicitada)}</td>
-                    <td>${formatDecimal(item.cantidadDespachada)}</td>
-                    <td><span class="status-pill ${statusClass(item.estatusItemPredespacho)}">${formatValue(item.estatusItemPredespacho)}</span></td>
-                    <td class="table-actions">
+                    <td data-label="#">${index + 1}</td>
+                    <td data-label="NumLote">${formatValue(item.NumLote)}</td>
+                    <td data-label="Producto">${formatValue(item.idProducto)}</td>
+                    <td data-label="Sector">${formatValue(item.sector)}</td>
+                    <td data-label="Cant. Solicitada">${formatDecimal(item.cantidadSolicitada)}</td>
+                    <td data-label="Cant. Despachada">${formatDecimal(item.cantidadDespachada)}</td>
+                    <td data-label="Status"><span class="status-pill ${statusClass(item.estatusItemPredespacho)}">${formatValue(item.estatusItemPredespacho)}</span></td>
+                    <td class="table-actions" data-label="Acciones">
                         <button type="button" data-refrescar-item>Refrescar</button>
                         ${tieneDespacho ? '' : `
                             <button type="button" data-cerrar-item ${item.estatusItemPredespacho === 'cerrado' ? 'disabled' : ''}>Cerrar item</button>
@@ -236,11 +236,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
         lotesRows.innerHTML = lotes.map((lote) => `
             <tr data-lote-id="${escapeHtml(lote.idInventarioEntrante)}" data-disponible="${escapeHtml(lote.cantidad_disponible)}" data-num-lote="${escapeHtml(lote.NumLote)}">
-                <td>${formatValue(lote.NumLote)}</td>
-                <td>${formatValue(lote.sector)}</td>
-                <td>${formatDecimal(lote.stock_total)}</td>
-                <td><span class="stock-pill">${formatDecimal(lote.cantidad_disponible)}</span></td>
-                <td class="table-actions"><button type="button" data-select-lote>Seleccionar</button></td>
+                <td data-label="NumLote">${formatValue(lote.NumLote)}</td>
+                <td data-label="Sector">${formatValue(lote.sector)}</td>
+                <td data-label="Stock Total">${formatDecimal(lote.stock_total)}</td>
+                <td data-label="Disponible"><span class="stock-pill">${formatDecimal(lote.cantidad_disponible)}</span></td>
+                <td class="table-actions" data-label="Accion"><button type="button" data-select-lote>Seleccionar</button></td>
             </tr>
         `).join('');
         lotesWrap.hidden = false;
