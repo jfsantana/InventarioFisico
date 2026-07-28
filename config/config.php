@@ -1,7 +1,12 @@
 <?php
 
 define('APP_NAME', 'Inventario Fisico');
-define('APP_URL', 'http://localhost/InventarioFisico');
+
+// Determinar la URL base dinámicamente
+$protocol = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+$host = $_SERVER['HTTP_HOST'];
+$scriptName = str_replace('/public/index.php', '', $_SERVER['SCRIPT_NAME']);
+define('APP_URL', $protocol . '://' . $host . $scriptName);
 
 define('DB_HOST', 'localhost');
 define('DB_NAME', 'inventariofisico');
