@@ -1,141 +1,138 @@
-const form = document.querySelector('.entry-form');
-const sectorSelect = document.querySelector('#sector');
-const productSelect = document.querySelector('#idProducto');
-const lotSelect = document.querySelector('#idInventarioEntrante');
-const neInput = document.querySelector('#NE');
-const quantityInput = document.querySelector('#cantidadSaliente');
-const saveButton = document.querySelector('#guardarSalida');
-const lotMessage = document.querySelector('#lotMessage');
-const quantityMessage = document.querySelector('#quantityMessage');
+function cargarProducto(id, nombre, lote, disponible) {
+    const producto = document.getElementById('txt_producto');
+    const loteInput = document.getElementById('txt_lote');
+    const disponibleInput = document.getElementById('txt_disponible');
+    const cantidadInput = document.getElementById('txt_cantidad');
+    const inventarioInput = document.getElementById('hid_inventarioId');
+    const submitButton = document.querySelector('#form-entrega button[type="submit"]');
+    const seleccionMensaje = document.getElementById('mensaje-seleccion');
 
-function getSelectedAvailable() {
-    const selectedOption = lotSelect.options[lotSelect.selectedIndex];
-
-    if (!selectedOption || !selectedOption.dataset.disponible) {
-        return 0;
-    }
-
-    return Number(selectedOption.dataset.disponible);
-}
-
-function hasValidQuantity() {
-    const quantity = Number(quantityInput.value);
-    const available = getSelectedAvailable();
-
-    return quantity > 0 && quantity <= available;
-}
-
-function updateSaveButton() {
-    const quantity = Number(quantityInput.value);
-    const available = getSelectedAvailable();
-
-    if (quantityInput.value && quantity > available) {
-        quantityMessage.textContent = `La cantidad no puede exceder el disponible del lote: ${available}.`;
-    } else {
-        quantityMessage.textContent = '';
-    }
-
-    saveButton.disabled = !(sectorSelect.value && lotSelect.value && neInput.value.trim() && hasValidQuantity());
-}
-
-function lockDeliveryFields(clearValues = false) {
-    if (clearValues) {
-        neInput.value = '';
-        quantityInput.value = '';
-        quantityMessage.textContent = '';
-        quantityInput.removeAttribute('max');
-    }
-
-    neInput.disabled = true;
-    quantityInput.disabled = true;
-    saveButton.disabled = true;
-}
-
-function unlockDeliveryFields() {
-    neInput.disabled = false;
-    quantityInput.disabled = false;
-    quantityInput.max = getSelectedAvailable();
-    updateSaveButton();
-}
-
-function setLotMessage(text = '') {
-    lotMessage.textContent = text;
-}
-
-function setLotPlaceholder(text, disabled = true) {
-    lotSelect.innerHTML = '';
-    const option = document.createElement('option');
-    option.value = '';
-    option.textContent = text;
-    lotSelect.appendChild(option);
-    lotSelect.disabled = disabled;
-    lockDeliveryFields(true);
-}
-
-function formatLotOption(lote) {
-    return `Lote ${lote.NumLote} - Disponible: ${lote.Disponible}`;
-}
-
-async function loadLots(productId) {
-    setLotMessage();
-
-    if (!productId) {
-        setLotPlaceholder('Seleccione primero un producto');
+    if (!producto || !loteInput || !disponibleInput || !cantidadInput || !inventarioInput || !submitButton) {
         return;
     }
 
-    setLotPlaceholder('Cargando lotes...', true);
+    producto.value = nombre;
+    loteInput.value = lote;
+    disponibleInput.value = Number(disponible || 0).toFixed(2);
+    cantidadInput.value = '';
+    cantidadInput.max = disponible;
+    cantidadInput.disabled = false;
+    inventarioInput.value = id;
+    submitButton.disabled = Number(disponible) <= 0;
 
-    try {
-        const response = await fetch(`${form.dataset.lotesUrl}?idProducto=${encodeURIComponent(productId)}`);
-        const lots = await response.json();
-
-        if (!response.ok || lots.error) {
-            setLotPlaceholder('No se pudieron cargar los lotes');
-            return;
-        }
-
-        if (lots.length === 0) {
-            setLotPlaceholder('Sin lotes disponibles');
-            setLotMessage('Este articulo no posee inventario fisico.');
-            return;
-        }
-
-        lotSelect.innerHTML = '<option value="">Seleccione un lote</option>';
-        lots.forEach((lote) => {
-            const option = document.createElement('option');
-            option.value = lote.idInventarioEntrante;
-            option.dataset.disponible = lote.Disponible;
-            option.textContent = formatLotOption(lote);
-            lotSelect.appendChild(option);
-        });
-        lotSelect.disabled = false;
-        updateSaveButton();
-    } catch (error) {
-        setLotPlaceholder('Error al cargar los lotes');
+    if (seleccionMensaje) {
+        seleccionMensaje.hidden = true;
     }
+
+    document.querySelectorAll('.fila-producto').forEach((fila) => fila.classList.remove('activa', 'is-selected-row'));
+    const activeRow = document.getElementById(`fila-${id}`);
+    if (activeRow) {
+        activeRow.classList.add('activa', 'is-selected-row');
+    }
+
+    cantidadInput.focus();
 }
 
-if (form && sectorSelect && productSelect && lotSelect && neInput && quantityInput && saveButton && lotMessage && quantityMessage) {
-    if (!lotSelect.value) {
-        lockDeliveryFields();
-    } else {
-        unlockDeliveryFields();
+window.cargarProducto = cargarProducto;
+
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('form-entrega');
+    if (!form) {
+        return;
     }
 
-    sectorSelect.addEventListener('change', updateSaveButton);
-    productSelect.addEventListener('change', () => loadLots(productSelect.value));
-    lotSelect.addEventListener('change', () => {
-        setLotMessage();
+    const messageBox = document.querySelector('[data-salida-message]');
+    const errorBox = document.querySelector('[data-salida-error]');
 
-        if (lotSelect.value) {
-            unlockDeliveryFields();
-            neInput.focus();
+    function showMessage(text, isError = false) {
+        const target = isError ? errorBox : messageBox;
+        const other = isError ? messageBox : errorBox;
+        if (!target || !other) {
+            if (isError) {
+                window.alert(text);
+            }
             return;
         }
 
-        lockDeliveryFields();
+        other.hidden = true;
+        target.textContent = text;
+        target.hidden = false;
+    }
+
+    function clearMessages() {
+        if (messageBox) {
+            messageBox.hidden = true;
+        }
+        if (errorBox) {
+            errorBox.hidden = true;
+        }
+    }
+
+    form.addEventListener('submit', (event) => {
+        event.preventDefault();
+        clearMessages();
+
+        const cantidadInput = document.getElementById('txt_cantidad');
+        const disponibleInput = document.getElementById('txt_disponible');
+        const inventarioInput = document.getElementById('hid_inventarioId');
+        const cantidad = Number(cantidadInput.value || 0);
+        const disponible = Number(disponibleInput.value || 0);
+
+        if (!inventarioInput.value) {
+            showMessage('Haz clic en un producto de la lista.', true);
+            return;
+        }
+
+        if (!cantidad || cantidad <= 0) {
+            showMessage('Ingresa una cantidad válida.', true);
+            cantidadInput.focus();
+            return;
+        }
+
+        if (cantidad > disponible) {
+            showMessage(`La cantidad supera lo disponible (${disponible.toFixed(2)}).`, true);
+            cantidadInput.focus();
+            return;
+        }
+
+        const button = form.querySelector('button[type="submit"]');
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Guardando...';
+
+        fetch(form.action, {
+            method: 'POST',
+            body: new FormData(form)
+        })
+            .then((response) => response.json().then((data) => {
+                if (!response.ok || data.success === false) {
+                    throw new Error(data.error || data.mensaje || 'No se pudo registrar la entrega.');
+                }
+                return data;
+            }))
+            .then((data) => {
+                if (data.predespacho_cerrado) {
+                    showMessage(data.mensaje || 'Predespacho completado y cerrado correctamente.');
+
+                    const deliverySection = document.querySelector('[data-delivery-section]');
+                    if (deliverySection) {
+                        deliverySection.remove();
+                    }
+
+                    const url = new URL(window.location.href);
+                    url.searchParams.delete('predespacho');
+                    url.searchParams.set('cerrado', '1');
+                    window.location.href = url.href;
+                    return;
+                }
+
+                const url = new URL(window.location.href);
+                window.location.href = url.href;
+            })
+            .catch((error) => {
+                showMessage(error.message, true);
+                button.disabled = false;
+                button.textContent = originalText;
+            });
     });
-    neInput.addEventListener('input', updateSaveButton);
-    quantityInput.addEventListener('input', updateSaveButton);
-}
+});

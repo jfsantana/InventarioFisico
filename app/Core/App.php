@@ -12,6 +12,9 @@ class App
         'corregir-salidas' => ['SalidaController', 'detalle'],
         'reporte-lote' => ['ReporteController', 'index'],
         'inteligencia' => ['AnaliticaController', 'index'],
+        'predespachos' => ['PredespachoController', 'index'],
+        'predespacho-detalle' => ['PredespachoController', 'detalle'],
+        'predespacho-salida' => ['PredespachoController', 'salida'],
     ];
 
     public function __construct()

@@ -25,6 +25,14 @@ $authUser = Auth::user();
                     <strong>Entrada de mercancia</strong>
                     <i aria-hidden="true">→</i>
                 </a>
+                <a class="menu-card menu-card--predespacho" href="<?= APP_URL ?>/predespacho">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M3 7h11v9H3z" /><path d="M14 10h3l3 3v3h-6z" /><path d="M7 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /><path d="M17 19a2 2 0 1 0 0-4 2 2 0 0 0 0 4Z" /><path d="M9 4v3" /><path d="M7 5h4" /></svg>
+                    </span>
+                    <span>Gestionar despacho</span>
+                    <strong>Pre Despacho</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
                 <a class="menu-card menu-card--salida <?= $canSalida ? '' : 'menu-card--disabled' ?>" href="<?= $canSalida ? APP_URL . '/salida' : '#' ?>" <?= $canSalida ? '' : 'aria-disabled="true" title="Sin acceso"' ?>>
                     <span class="menu-card-icon" aria-hidden="true">
                         <?php if ($canSalida) : ?>

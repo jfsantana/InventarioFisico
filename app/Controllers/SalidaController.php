@@ -4,16 +4,39 @@ class SalidaController extends Controller
 {
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
-        $model = $this->model('SalidaInventario');
-        $productos = [];
-        $lotes = [];
+        $model = $this->model('Predespacho');
+        $sectorSeleccionado = trim($_GET['sector'] ?? '');
+        $codigoPredespachoSeleccionado = trim($_GET['predespacho'] ?? '');
+        $sectores = [];
+        $predespachos = [];
+        $predespachoSeleccionado = null;
+        $items = [];
         $loadError = null;
 
-        try {
-            $productos = $model->obtenerProductos();
+        if (($_GET['cerrado'] ?? '') === '1') {
+            $successMessage = 'Predespacho completado y cerrado correctamente.';
+        }
 
-            if (!empty($formData['idProducto'])) {
-                $lotes = $model->obtenerLotesPorProducto((int) $formData['idProducto']);
+        try {
+            $sectores = $model->obtenerSectoresPendientesPredespacho();
+
+            if ($sectorSeleccionado !== '') {
+                $predespachos = $model->obtenerPredespachosPorSector($sectorSeleccionado);
+            }
+
+            if ($sectorSeleccionado !== '' && $codigoPredespachoSeleccionado !== '') {
+                $predespachoSeleccionado = $model->obtenerPredespachoPorCodigo($codigoPredespachoSeleccionado);
+
+                if ($predespachoSeleccionado && $predespachoSeleccionado['statusGeneralPredespacho'] === 'cerrado') {
+                    $predespachoSeleccionado = null;
+                }
+
+                if ($predespachoSeleccionado) {
+                    $items = $model->obtenerItemsPorPredespachoYSector(
+                        (int) $predespachoSeleccionado['idCabeceraPredespacho'],
+                        $sectorSeleccionado
+                    );
+                }
             }
         } catch (PDOException $exception) {
             $loadError = $exception->getMessage();
@@ -21,8 +44,12 @@ class SalidaController extends Controller
 
         $this->view('salida/index', [
             'title' => 'Registrar salida',
-            'productos' => $productos,
-            'lotes' => $lotes,
+            'sectores' => $sectores,
+            'sectorSeleccionado' => $sectorSeleccionado,
+            'predespachos' => $predespachos,
+            'codigoPredespachoSeleccionado' => $codigoPredespachoSeleccionado,
+            'predespachoSeleccionado' => $predespachoSeleccionado,
+            'items' => $items,
             'formData' => $formData,
             'errors' => $errors,
             'successMessage' => $successMessage,
@@ -32,60 +59,52 @@ class SalidaController extends Controller
 
     public function guardar(): void
     {
+        header('Content-Type: application/json; charset=utf-8');
+
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
-            header('Location: ' . APP_URL . '/salida');
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Metodo HTTP no permitido.'], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $this->validarCsrf();
-
-        $formData = [
-            'sector' => trim($_POST['sector'] ?? ''),
-            'idProducto' => $_POST['idProducto'] ?? '',
-            'idInventarioEntrante' => $_POST['idInventarioEntrante'] ?? '',
-            'NE' => trim($_POST['NE'] ?? ''),
-            'cantidadSaliente' => trim($_POST['cantidadSaliente'] ?? ''),
-        ];
-
-        $errors = $this->validarFormulario($formData);
-
-        if (!empty($errors)) {
-            $this->index($formData, $errors);
+        if (!Auth::validateCsrf()) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'error' => 'Token CSRF invalido.'], JSON_UNESCAPED_UNICODE);
             return;
         }
 
-        $model = $this->model('SalidaInventario');
-        $idProducto = (int) $formData['idProducto'];
-        $idInventarioEntrante = (int) $formData['idInventarioEntrante'];
+        $idItem = filter_input(INPUT_POST, 'idItem', FILTER_VALIDATE_INT);
+        $idCabeceraPredespacho = filter_input(INPUT_POST, 'idCabeceraPredespacho', FILTER_VALIDATE_INT);
+        $cantidadDespachada = $_POST['cantidadDespachada'] ?? null;
+
+        if (!$idItem || !$idCabeceraPredespacho || !is_numeric($cantidadDespachada) || (float) $cantidadDespachada <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Datos incompletos o cantidad invalida.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
 
         try {
-            $lote = $model->obtenerLoteParaProducto($idInventarioEntrante, $idProducto);
+            $model = $this->model('Predespacho');
+            $resultado = $model->registrarSalida($idItem, (float) $cantidadDespachada, $idCabeceraPredespacho);
 
-            if (!$lote) {
-                $this->index($formData, ['idInventarioEntrante' => 'Seleccione un lote valido para el producto elegido.']);
+            if (empty($resultado['success'])) {
+                http_response_code(400);
+                echo json_encode([
+                    'success' => false,
+                    'error' => $resultado['mensaje'] ?? 'No se pudo registrar la entrega.',
+                ], JSON_UNESCAPED_UNICODE);
                 return;
             }
 
-            $cantidadSaliente = (float) $formData['cantidadSaliente'];
-            $disponible = (float) $lote['Disponible'];
-
-            if ($cantidadSaliente > $disponible) {
-                $this->index($formData, [
-                    'cantidadSaliente' => 'La cantidad no puede exceder el disponible del lote: ' . number_format($disponible, 2, '.', ''),
-                ]);
-                return;
-            }
-
-            $model->registrarSalida(
-                $idInventarioEntrante,
-                $formData['sector'],
-                $formData['NE'],
-                $cantidadSaliente
-            );
-
-            $this->index([], [], 'La salida fue registrada correctamente.');
-        } catch (PDOException $exception) {
-            $this->index($formData, ['general' => $exception->getMessage()]);
+            echo json_encode([
+                'success' => true,
+                'mensaje' => $resultado['mensaje'] ?? 'Entrega registrada correctamente.',
+                'predespacho_cerrado' => !empty($resultado['predespacho_cerrado']) || !empty($resultado['predespachoCerrado']),
+                'producto_cerrado' => !empty($resultado['producto_cerrado']) || !empty($resultado['productoCerrado']),
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $exception) {
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => $exception->getMessage()], JSON_UNESCAPED_UNICODE);
         }
     }
 

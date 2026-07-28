@@ -2,50 +2,51 @@
 <?php
 $text = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $money = static fn ($value) => htmlspecialchars(number_format((float) $value, 2, '.', ''), ENT_QUOTES, 'UTF-8');
-$sectores = $sectores ?? [];
 $sectorSeleccionado = $sectorSeleccionado ?? '';
-$predespachos = $predespachos ?? [];
 $codigoPredespachoSeleccionado = $codigoPredespachoSeleccionado ?? '';
-$predespachoSeleccionado = $predespachoSeleccionado ?? null;
+$sectores = $sectores ?? [];
+$predespachos = $predespachos ?? [];
 $items = $items ?? [];
+$predespachoSeleccionado = $predespachoSeleccionado ?? null;
 $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho'] ?? 0);
 ?>
 
-<section class="panel report-panel admin-page salida-panel" data-salida-predespacho data-submit-url="<?= APP_URL ?>/salida/guardar" data-predespacho-codigo="<?= $text($codigoPredespachoSeleccionado) ?>">
+<section class="panel report-panel admin-page" data-salida-sector data-api-url="<?= APP_URL ?>/public/predespacho_api.php" data-sector="<?= $text($sectorSeleccionado) ?>" data-predespacho-id="<?= $idCabeceraSeleccionada ?>" data-predespacho-codigo="<?= $text($codigoPredespachoSeleccionado) ?>">
     <div class="admin-heading">
         <div>
-            <p class="eyebrow">Inventario saliente</p>
-            <h1>Registrar entrega</h1>
-            <p class="intro">Selecciona el sector, abre el predespacho y registra la cantidad entregada por producto/lote.</p>
+            <p class="eyebrow">Despacho fisico</p>
+            <h1>Salida por Sector</h1>
+            <p class="intro">Selecciona sector, elige un predespacho activo y registra entregas parciales o totales por producto.</p>
         </div>
-        <?php if (Auth::check()) : ?>
-            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
-        <?php endif; ?>
+        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/predespacho">Volver a predespachos</a>
     </div>
 
-    <div class="message message--success" role="status" data-salida-message <?= empty($successMessage) ? 'hidden' : '' ?>><?= $text($successMessage ?? '') ?></div>
-    <div class="message message--error" role="alert" data-salida-error hidden></div>
+    <div class="message message--success" role="status" data-sector-message hidden></div>
+    <div class="message message--error" role="alert" data-sector-error hidden></div>
 
     <?php if (!empty($loadError)) : ?>
-        <div class="message message--error" role="alert">No se pudieron cargar los datos: <?= $text($loadError) ?></div>
+        <div class="message message--error" role="alert">No se pudo cargar la salida por sector: <?= $text($loadError) ?></div>
     <?php endif; ?>
 
     <section class="inventory-report">
         <div class="chart-title">
             <div>
-                <h2>1. Seleccione el Sector</h2>
-                <p class="quiet-text">Solo aparecen sectores con productos pendientes en predespachos abiertos.</p>
+                <h2>1. Selector de Sector</h2>
+                <p class="quiet-text">Muestra solo sectores con productos pendientes en predespachos abiertos.</p>
             </div>
         </div>
-        <form class="entry-form predespacho-sector-filter" method="get" action="<?= APP_URL ?>/salida">
+        <form class="entry-form predespacho-sector-filter" method="get" action="<?= APP_URL ?>/predespacho/salida">
             <div class="form-field">
                 <label for="sector">Sector</label>
-                <select id="sector" name="sector" onchange="this.form.submit()">
-                    <option value="">-- Seleccione un sector --</option>
+                <select id="sector" name="sector" data-sector-select>
+                    <option value="">Seleccione un sector</option>
                     <?php foreach ($sectores as $sector) : ?>
                         <option value="<?= $text($sector) ?>" <?= (string) $sectorSeleccionado === (string) $sector ? 'selected' : '' ?>><?= $text($sector) ?></option>
                     <?php endforeach; ?>
                 </select>
+            </div>
+            <div class="form-actions">
+                <button class="button-link button-link--submit" type="submit">Consultar</button>
             </div>
         </form>
     </section>
@@ -54,15 +55,15 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
         <section class="inventory-report">
             <div class="chart-title">
                 <div>
-                    <h2>Predespachos en Sector: <?= $text($sectorSeleccionado) ?></h2>
-                    <p class="quiet-text">Cabeceras con al menos un producto pendiente ubicado en este sector.</p>
+                    <h2>2. Predespachos del sector</h2>
+                    <p class="quiet-text">Sector seleccionado: <?= $text($sectorSeleccionado) ?></p>
                 </div>
             </div>
             <div class="admin-table-wrap">
                 <table class="admin-table">
                     <thead>
                         <tr>
-                            <th>Código</th>
+                            <th>Código Interno</th>
                             <th>Cliente</th>
                             <th>Fecha</th>
                             <th>Estado</th>
@@ -71,7 +72,7 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
                     </thead>
                     <tbody>
                         <?php if (empty($predespachos)) : ?>
-                            <tr><td colspan="5">No hay predespachos pendientes para este sector.</td></tr>
+                            <tr><td colspan="5">No hay predespachos activos con productos pendientes en este sector.</td></tr>
                         <?php else : ?>
                             <?php foreach ($predespachos as $predespacho) : ?>
                                 <?php $activo = (string) $codigoPredespachoSeleccionado === (string) $predespacho['codigoInterno']; ?>
@@ -81,7 +82,7 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
                                     <td><?= $text($predespacho['fechaRetiro']) ?></td>
                                     <td><span class="status-pill <?= $predespacho['statusGeneralPredespacho'] === 'abierto' ? 'is-active' : 'is-pending' ?>"><?= $text($predespacho['statusGeneralPredespacho']) ?></span></td>
                                     <td class="table-actions">
-                                        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida?sector=<?= rawurlencode((string) $sectorSeleccionado) ?>&predespacho=<?= rawurlencode((string) $predespacho['codigoInterno']) ?>">Ver Productos</a>
+                                        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/predespacho/salida?sector=<?= rawurlencode((string) $sectorSeleccionado) ?>&predespacho=<?= rawurlencode((string) $predespacho['codigoInterno']) ?>">Ver productos</a>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
@@ -93,11 +94,11 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
     <?php endif; ?>
 
     <?php if ($sectorSeleccionado !== '' && $predespachoSeleccionado) : ?>
-        <section class="inventory-report predespacho-delivery-grid" data-delivery-section>
+        <section class="inventory-report predespacho-delivery-grid">
             <div class="predespacho-products-panel">
                 <div class="chart-title">
                     <div>
-                        <h2>Productos en este sector</h2>
+                        <h2>Lista de Productos</h2>
                         <p class="quiet-text"><?= $text($predespachoSeleccionado['codigoInterno']) ?> | <?= $text($predespachoSeleccionado['nombreCliente']) ?></p>
                     </div>
                 </div>
@@ -107,31 +108,32 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
                             <tr>
                                 <th>Producto</th>
                                 <th>Lote</th>
-                                <th>Inicial</th>
+                                <th>Cant. Inicial</th>
                                 <th>Entregado</th>
                                 <th>Pendiente</th>
                                 <th>Estado</th>
+                                <th>✓</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody data-products-body>
                             <?php if (empty($items)) : ?>
-                                <tr><td colspan="6">Este predespacho no tiene productos pendientes en este sector.</td></tr>
+                                <tr><td colspan="7">Este predespacho no tiene productos para el sector seleccionado.</td></tr>
                             <?php else : ?>
                                 <?php foreach ($items as $item) : ?>
                                     <?php
                                     $solicitada = (float) $item['cantidadSolicitada'];
-                                    $entregada = (float) $item['cantidadDespachada'];
+                                    $despachada = (float) $item['cantidadDespachada'];
                                     $pendiente = max(0, (float) $item['cantidadPendiente']);
-                                    $estadoClase = $entregada >= $solicitada ? 'is-complete' : ($entregada > 0 ? 'is-partial' : 'is-empty');
-                                    $estadoTexto = $estadoClase === 'is-complete' ? 'Completo' : ($estadoClase === 'is-partial' ? 'Parcial' : 'Pendiente');
+                                    $estadoClase = $despachada >= $solicitada ? 'is-complete' : ($despachada > 0 ? 'is-partial' : 'is-empty');
                                     ?>
-                                    <tr id="fila-<?= (int) $item['idItem'] ?>" class="fila-producto predespacho-product-row <?= $estadoClase ?>" onclick="cargarProducto(<?= (int) $item['idItem'] ?>, <?= htmlspecialchars(json_encode((string) $item['nombreProducto'], JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>, <?= htmlspecialchars(json_encode((string) $item['NumLote'], JSON_HEX_APOS | JSON_HEX_QUOT), ENT_QUOTES, 'UTF-8') ?>, <?= $money($pendiente) ?>)">
+                                    <tr class="predespacho-product-row <?= $estadoClase ?>" data-product-row data-item-id="<?= (int) $item['idItem'] ?>" data-inventario-id="<?= (int) $item['idInventarioEntrante'] ?>" data-producto="<?= $text($item['nombreProducto']) ?>" data-lote="<?= $text($item['NumLote']) ?>" data-disponible="<?= $money($pendiente) ?>">
                                         <td><strong><?= $text($item['nombreProducto']) ?></strong></td>
                                         <td><?= $text($item['NumLote']) ?></td>
                                         <td><?= $money($solicitada) ?></td>
-                                        <td><?= $money($entregada) ?></td>
+                                        <td><?= $money($despachada) ?></td>
                                         <td><span class="stock-pill <?= $pendiente <= 0 ? 'stock-pill--risk' : '' ?>"><?= $money($pendiente) ?></span></td>
-                                        <td><span class="delivery-dot <?= $estadoClase ?>" aria-hidden="true"></span><?= $text($estadoTexto) ?> <?= $item['estatusItemPredespacho'] === 'cerrado' ? '<span class="delivery-check">✓</span>' : '' ?></td>
+                                        <td><span class="delivery-dot <?= $estadoClase ?>" aria-hidden="true"></span><?= $estadoClase === 'is-complete' ? 'Completa' : ($estadoClase === 'is-partial' ? 'Parcial' : 'Sin movimiento') ?></td>
+                                        <td><?= $item['estatusItemPredespacho'] === 'cerrado' ? '<span class="delivery-check">✓</span>' : '' ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>
@@ -142,32 +144,29 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
 
             <aside class="predespacho-delivery-card">
                 <h2>Registrar Entrega</h2>
-                <p class="quiet-text" id="mensaje-seleccion">← Haz clic en un producto de la lista</p>
-                <form id="form-entrega" class="entry-form" method="post" action="<?= APP_URL ?>/salida/guardar">
-                    <?= Auth::csrfField() ?>
-                    <input type="hidden" id="hid_inventarioId" name="idItem">
+                <p class="quiet-text" data-empty-delivery-message>← Selecciona un producto de la lista para registrar la entrega</p>
+                <form class="entry-form" data-delivery-form novalidate>
+                    <input type="hidden" name="idItem">
                     <input type="hidden" name="idCabeceraPredespacho" value="<?= $idCabeceraSeleccionada ?>">
-                    <input type="hidden" name="predespachoId" value="<?= $text($codigoPredespachoSeleccionado) ?>">
                     <input type="hidden" name="sector" value="<?= $text($sectorSeleccionado) ?>">
-
                     <div class="form-field">
-                        <label for="txt_producto">Producto</label>
-                        <input readonly id="txt_producto" type="text">
+                        <label for="deliveryProducto">Producto</label>
+                        <input id="deliveryProducto" type="text" data-delivery-producto disabled>
                     </div>
                     <div class="form-field">
-                        <label for="txt_lote">Lote</label>
-                        <input readonly id="txt_lote" type="text">
+                        <label for="deliveryLote">Lote</label>
+                        <input id="deliveryLote" type="text" data-delivery-lote disabled>
                     </div>
                     <div class="form-field">
-                        <label for="txt_disponible">Disponible</label>
-                        <input readonly id="txt_disponible" type="number">
+                        <label for="deliveryDisponible">Disponible</label>
+                        <input id="deliveryDisponible" type="number" data-delivery-disponible disabled>
                     </div>
                     <div class="form-field">
-                        <label for="txt_cantidad">Cantidad</label>
-                        <input type="number" id="txt_cantidad" name="cantidadDespachada" min="0.01" step="0.01" disabled>
+                        <label for="cantidadEntregar">Cantidad a entregar</label>
+                        <input id="cantidadEntregar" name="cantidadDespachada" type="number" min="0.01" step="0.01" data-delivery-cantidad disabled required>
                     </div>
                     <div class="form-actions">
-                        <button class="button-link button-link--submit" type="submit" disabled>Guardar Entrega</button>
+                        <button class="button-link button-link--submit" type="submit" data-delivery-submit disabled>Guardar Entrega</button>
                     </div>
                 </form>
             </aside>
@@ -177,6 +176,5 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
     <?php endif; ?>
 </section>
 
-<script src="<?= APP_URL ?>/public/js/salida.js?v=<?= filemtime(__DIR__ . '/../../../public/js/salida.js') ?>"></script>
-
+<script src="<?= APP_URL ?>/public/js/predespacho-salida-sector.js"></script>
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

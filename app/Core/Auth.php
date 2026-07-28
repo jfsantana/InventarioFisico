@@ -75,6 +75,7 @@ class Auth
         $_SESSION['id_usuario'] = (int) $user['id_usuario'];
         $_SESSION['nombre_completo'] = $user['nombre_completo'];
         $_SESSION['username'] = $user['username'];
+        $_SESSION['usuario'] = $user['username'];
         $_SESSION['id_rol'] = (int) $user['id_rol'];
         $_SESSION['rol_nombre'] = $user['rol_nombre'];
         $_SESSION['permisos'] = self::loadPermissions((int) $user['id_rol']);
