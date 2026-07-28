@@ -4,6 +4,11 @@ $formatDate = static fn ($date) => htmlspecialchars(date('d/m/Y', strtotime((str
 $dateValue = static fn ($date) => htmlspecialchars(date('Y-m-d', strtotime((string) $date)), ENT_QUOTES, 'UTF-8');
 $money = static fn ($value) => htmlspecialchars(number_format((float) $value, 2), ENT_QUOTES, 'UTF-8');
 $text = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
+$messageType = $messageType ?? 'success';
+$entradas = $entradas ?? [];
+$presentaciones = $presentaciones ?? [];
+$ubicaciones = $ubicaciones ?? [];
+$productos = $productos ?? [];
 ?>
 
 <section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
