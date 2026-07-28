@@ -208,6 +208,91 @@ class SalidaInventario extends BaseModel
         return $statement->rowCount() > 0;
     }
 
+    public function sincronizarPredespachoPorCodigo(string $codigoInterno): bool
+    {
+        $codigoInterno = trim($codigoInterno);
+        if ($codigoInterno === '') {
+            return false;
+        }
+
+        $statement = $this->db->prepare(
+            'SELECT idCabeceraPredespacho
+             FROM tbl_cabecera_predespacho
+             WHERE codigoInterno = :codigoInterno
+             LIMIT 1'
+        );
+        $statement->execute(['codigoInterno' => $codigoInterno]);
+        $idCabeceraPredespacho = (int) $statement->fetchColumn();
+
+        if ($idCabeceraPredespacho <= 0) {
+            return false;
+        }
+
+        $itemsStatement = $this->db->prepare(
+            'SELECT ip.idItem,
+                    ip.idInventarioEntrante,
+                    ip.cantidadSolicitada,
+                    COALESCE(SUM(ins.cantidadSaliente), 0) AS cantidadDespachada
+             FROM tbl_items_predespacho ip
+             LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ip.idInventarioEntrante
+                AND ins.NE COLLATE utf8mb4_unicode_ci = :codigoInternoSalidas
+             WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho
+             GROUP BY ip.idItem, ip.idInventarioEntrante, ip.cantidadSolicitada'
+        );
+        $itemsStatement->execute([
+            'codigoInternoSalidas' => $codigoInterno,
+            'idCabeceraPredespacho' => $idCabeceraPredespacho,
+        ]);
+        $items = $itemsStatement->fetchAll();
+
+        if (empty($items)) {
+            return false;
+        }
+
+        $updateItem = $this->db->prepare(
+            'UPDATE tbl_items_predespacho
+             SET cantidadDespachada = :cantidadDespachada,
+                 estatusItemPredespacho = :estatusItemPredespacho
+             WHERE idItem = :idItem'
+        );
+
+        $todosCerrados = true;
+        $tieneMovimiento = false;
+
+        foreach ($items as $item) {
+            $cantidadSolicitada = (float) $item['cantidadSolicitada'];
+            $cantidadDespachada = (float) $item['cantidadDespachada'];
+            $estatusItem = 'abierto';
+
+            if ($cantidadDespachada > 0) {
+                $tieneMovimiento = true;
+                $estatusItem = $cantidadDespachada >= $cantidadSolicitada ? 'cerrado' : 'pendiente';
+            }
+
+            if ($estatusItem !== 'cerrado') {
+                $todosCerrados = false;
+            }
+
+            $updateItem->execute([
+                'cantidadDespachada' => $cantidadDespachada,
+                'estatusItemPredespacho' => $estatusItem,
+                'idItem' => (int) $item['idItem'],
+            ]);
+        }
+
+        $estatusCabecera = $todosCerrados ? 'cerrado' : ($tieneMovimiento ? 'pendiente' : 'abierto');
+        $statement = $this->db->prepare(
+            'UPDATE tbl_cabecera_predespacho
+             SET statusGeneralPredespacho = :statusGeneralPredespacho
+             WHERE idCabeceraPredespacho = :idCabeceraPredespacho'
+        );
+
+        return $statement->execute([
+            'statusGeneralPredespacho' => $estatusCabecera,
+            'idCabeceraPredespacho' => $idCabeceraPredespacho,
+        ]);
+    }
+
     private function asegurarTablaInventarioSaliente(): void
     {
         $this->db->exec(

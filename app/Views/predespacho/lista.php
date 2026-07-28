@@ -7,7 +7,10 @@
             <h1>Gestión de Predespachos</h1>
             <p class="intro">Clientes, retiros programados, estatus general y nota de entrega SAP.</p>
         </div>
-        <button class="button-link button-link--submit" type="button" data-open-predespacho-modal>Nuevo Predespacho</button>
+        <div class="form-actions">
+            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
+            <button class="button-link button-link--submit" type="button" data-open-predespacho-modal>Nuevo Predespacho</button>
+        </div>
     </div>
 
     <div class="message message--success" role="status" data-predespacho-message hidden></div>

@@ -223,6 +223,11 @@ class SalidaController extends Controller
                 $cantidadSaliente
             );
 
+            $model->sincronizarPredespachoPorCodigo((string) $salida['NE']);
+            if ((string) $salida['NE'] !== $formData['NE']) {
+                $model->sincronizarPredespachoPorCodigo($formData['NE']);
+            }
+
             $this->detalle('La salida fue corregida correctamente.');
         } catch (PDOException $exception) {
             $this->detalle($exception->getMessage(), 'error');
@@ -261,6 +266,8 @@ class SalidaController extends Controller
                 $this->detalle('La salida seleccionada no existe.', 'error');
                 return;
             }
+
+            $model->sincronizarPredespachoPorCodigo((string) $salida['NE']);
 
             $this->detalle('La salida fue eliminada correctamente.');
         } catch (PDOException $exception) {

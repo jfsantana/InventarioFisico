@@ -21,6 +21,7 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
         <?php if (Auth::check()) : ?>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
         <?php endif; ?>
+        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
     </div>
 
     <div class="message message--success" role="status" data-salida-message <?= empty($successMessage) ? 'hidden' : '' ?>><?= $text($successMessage ?? '') ?></div>
@@ -54,41 +55,28 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
         <section class="inventory-report">
             <div class="chart-title">
                 <div>
-                    <h2>Predespachos en Sector: <?= $text($sectorSeleccionado) ?></h2>
-                    <p class="quiet-text">Cabeceras con al menos un producto pendiente ubicado en este sector.</p>
+                    <h2>2. Seleccione el Predespacho</h2>
+                    <p class="quiet-text">Cabeceras con al menos un producto pendiente ubicado en <?= $text($sectorSeleccionado) ?>.</p>
                 </div>
             </div>
-            <div class="admin-table-wrap">
-                <table class="admin-table">
-                    <thead>
-                        <tr>
-                            <th>Código</th>
-                            <th>Cliente</th>
-                            <th>Fecha</th>
-                            <th>Estado</th>
-                            <th>Acción</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php if (empty($predespachos)) : ?>
-                            <tr><td colspan="5">No hay predespachos pendientes para este sector.</td></tr>
-                        <?php else : ?>
+            <?php if (empty($predespachos)) : ?>
+                <div class="message message--error" role="status">No hay predespachos pendientes para este sector.</div>
+            <?php else : ?>
+                <form class="entry-form predespacho-sector-filter" method="get" action="<?= APP_URL ?>/salida">
+                    <input type="hidden" name="sector" value="<?= $text($sectorSeleccionado) ?>">
+                    <div class="form-field">
+                        <label for="predespacho">Predespacho</label>
+                        <select id="predespacho" name="predespacho" onchange="this.form.submit()">
+                            <option value="">-- Seleccione un predespacho --</option>
                             <?php foreach ($predespachos as $predespacho) : ?>
-                                <?php $activo = (string) $codigoPredespachoSeleccionado === (string) $predespacho['codigoInterno']; ?>
-                                <tr class="<?= $activo ? 'is-selected-row' : '' ?>">
-                                    <td><strong><?= $text($predespacho['codigoInterno']) ?></strong></td>
-                                    <td><?= $text($predespacho['nombreCliente']) ?></td>
-                                    <td><?= $text($predespacho['fechaRetiro']) ?></td>
-                                    <td><span class="status-pill <?= $predespacho['statusGeneralPredespacho'] === 'abierto' ? 'is-active' : 'is-pending' ?>"><?= $text($predespacho['statusGeneralPredespacho']) ?></span></td>
-                                    <td class="table-actions">
-                                        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida?sector=<?= rawurlencode((string) $sectorSeleccionado) ?>&predespacho=<?= rawurlencode((string) $predespacho['codigoInterno']) ?>">Ver Productos</a>
-                                    </td>
-                                </tr>
+                                <option value="<?= $text($predespacho['codigoInterno']) ?>" <?= (string) $codigoPredespachoSeleccionado === (string) $predespacho['codigoInterno'] ? 'selected' : '' ?>>
+                                    <?= $text($predespacho['codigoInterno']) ?> | <?= $text($predespacho['nombreCliente']) ?> | <?= $text($predespacho['fechaRetiro']) ?> | <?= $text($predespacho['statusGeneralPredespacho']) ?>
+                                </option>
                             <?php endforeach; ?>
-                        <?php endif; ?>
-                    </tbody>
-                </table>
-            </div>
+                        </select>
+                    </div>
+                </form>
+            <?php endif; ?>
         </section>
     <?php endif; ?>
 
