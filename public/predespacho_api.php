@@ -167,7 +167,21 @@ try {
                 ]);
 
             case 'cerrarPredespacho':
-                $success = actualizarStatusCabecera(enteroRequerido($_POST, 'idCabeceraPredespacho'), 'cerrado');
+                $idCabeceraPredespacho = enteroRequerido($_POST, 'idCabeceraPredespacho');
+                $predespacho = obtenerPredespachoPorId($idCabeceraPredespacho);
+                $success = actualizarStatusCabecera($idCabeceraPredespacho, 'cerrado');
+
+                if ($success && $predespacho) {
+                    try {
+                        enviarAlertaTelegram(
+                            "*Predespacho cerrado*\n" .
+                            "Predespacho: " . (string) $predespacho['codigoInterno'] . "\n" .
+                            "Cliente: " . (string) $predespacho['nombreCliente'] . "\n" .
+                            "Fecha retiro: " . (string) $predespacho['fechaRetiro']
+                        );
+                    } catch (Throwable $exception) {
+                    }
+                }
 
                 responderJson([
                     'success' => $success,

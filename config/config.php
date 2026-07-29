@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../app/Core/helpers.php';
+
 define('APP_NAME', 'Inventario Fisico');
 
 $appUrl = getenv('APP_URL');

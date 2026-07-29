@@ -622,10 +622,12 @@ class Predespacho extends BaseModel
                                                 ip.cantidadSolicitada,
                                                 ip.cantidadDespachada,
                                                 ie.sector,
-                                                cp.codigoInterno
+                                                cp.codigoInterno,
+                                                c.nombre AS nombreCliente
                                  FROM tbl_items_predespacho ip
                                  INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
                                  INNER JOIN tbl_cabecera_predespacho cp ON cp.idCabeceraPredespacho = ip.idCabeceraPredespacho
+                                 INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
                                  WHERE ip.idItem = :idItem
                                      AND ip.idCabeceraPredespacho = :idCabeceraPredespacho
                  LIMIT 1
@@ -716,6 +718,19 @@ class Predespacho extends BaseModel
 
             $predespachoCerrado = $this->verificarYCerrarPredespacho($idCabeceraPredespacho);
             $this->db->commit();
+
+            if ($predespachoCerrado || $productoCerrado) {
+                try {
+                    enviarAlertaTelegram(
+                        ($predespachoCerrado ? "*Predespacho cerrado*" : "*Producto cerrado en predespacho*") . "\n" .
+                        "Predespacho: " . (string) $item['codigoInterno'] . "\n" .
+                        "Cliente: " . (string) $item['nombreCliente'] . "\n" .
+                        "Sector: " . (string) $item['sector'] . "\n" .
+                        "Cantidad despachada: " . number_format($cantidadDespachada, 2, '.', '')
+                    );
+                } catch (Throwable $exception) {
+                }
+            }
 
             return [
                 'success' => true,
