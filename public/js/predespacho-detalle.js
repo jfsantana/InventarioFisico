@@ -23,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let detalle = null;
     let selectedLote = null;
     let searchTimer = 0;
+    let prefilledCantidad = null;
 
     function openModal(modal) {
         modal.removeAttribute('hidden');
@@ -155,17 +156,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 <tr data-item-id="${escapeHtml(item.idItem)}">
                     <td data-label="#">${index + 1}</td>
                     <td data-label="NumLote">${formatValue(item.NumLote)}</td>
-                    <td data-label="Producto">${formatValue(item.idProducto)}</td>
+                    <td data-label="Producto">${formatValue(item.nombreProducto)}</td>
                     <td data-label="Sector">${formatValue(item.sector)}</td>
                     <td data-label="Cant. Solicitada">${formatDecimal(item.cantidadSolicitada)}</td>
                     <td data-label="Cant. Despachada">${formatDecimal(item.cantidadDespachada)}</td>
                     <td data-label="Status"><span class="status-pill ${statusClass(item.estatusItemPredespacho)}">${formatValue(item.estatusItemPredespacho)}</span></td>
                     <td class="table-actions" data-label="Acciones">
                         <button type="button" data-refrescar-item>Refrescar</button>
-                        ${tieneDespacho ? '' : `
+                        ${tieneDespacho && item.estatusItemPredespacho === 'pendiente' ? `
+                            <button type="button" data-cerrar-merma>Cerrar con merma</button>
+                        ` : ''}
+                        ${!tieneDespacho ? `
                             <button type="button" data-cerrar-item ${item.estatusItemPredespacho === 'cerrado' ? 'disabled' : ''}>Cerrar item</button>
                             <button type="button" data-eliminar-item>Eliminar</button>
-                        `}
+                        ` : ''}
                     </td>
                 </tr>
             `;
@@ -184,6 +188,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function clearAddPanel() {
+        prefilledCantidad = null;
         selectedLote = null;
         clearAddItemError();
         productSearchInput.value = '';
@@ -289,6 +294,10 @@ document.addEventListener('DOMContentLoaded', () => {
         cantidadInput.disabled = false;
         cantidadInput.max = String(selectedLote.cantidadDisponible);
         addItemButton.disabled = false;
+        if (prefilledCantidad !== null) {
+            cantidadInput.value = formatDecimal(Math.min(prefilledCantidad, selectedLote.cantidadDisponible));
+            cantidadInput.focus();
+        }
     });
 
     sapForm.addEventListener('submit', (event) => {
@@ -324,6 +333,47 @@ document.addEventListener('DOMContentLoaded', () => {
                     showMessage(response.mensaje || 'Item cerrado correctamente.');
                     loadItems();
                     loadDetalle();
+                })
+                .catch((error) => showMessage(error.message, true));
+        }
+
+        if (event.target.closest('[data-cerrar-merma]')) {
+            if (!window.confirm(
+                'Este item tiene una entrega parcial.\n\n' +
+                'Al cerrarlo con merma, la cantidad solicitada se ajustará a lo ya despachado ' +
+                'y el item quedará marcado como cerrado.\n\n' +
+                '¿Desea continuar?'
+            )) {
+                return;
+            }
+
+            const formData = new FormData();
+            formData.set('idItem', row.dataset.itemId);
+            formData.set('idCabeceraPredespacho', idCabeceraPredespacho);
+
+            apiPost('cerrarItemConMerma', formData)
+                .then((response) => {
+                    const diferencia = Number(response.diferencia || 0);
+                    const nombreProducto = response.nombreProducto || 'el producto';
+                    const agregarOtro = diferencia > 0 && window.confirm(
+                        `✓ Item cerrado correctamente.\n\n` +
+                        `Quedaron ${formatDecimal(diferencia)} unidades de "${nombreProducto}" sin entregar.\n\n` +
+                        `¿Desea registrar esas ${formatDecimal(diferencia)} unidades desde un lote diferente?`
+                    );
+
+                    if (agregarOtro) {
+                        clearAddPanel();
+                        prefilledCantidad = diferencia;
+                        productSearchInput.value = response.nombreProducto || '';
+                        openModal(addItemModal);
+                        searchProducts();
+                    } else {
+                        showMessage('Item cerrado. La diferencia fue registrada como merma.');
+                        const verifyData = new FormData();
+                        verifyData.set('idCabeceraPredespacho', idCabeceraPredespacho);
+                        apiPost('verificarCierrePredespacho', verifyData)
+                            .finally(() => { loadItems(); loadDetalle(); });
+                    }
                 })
                 .catch((error) => showMessage(error.message, true));
         }

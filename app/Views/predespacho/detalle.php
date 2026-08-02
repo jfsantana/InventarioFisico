@@ -5,7 +5,7 @@
     <div class="admin-heading">
         <div>
             <p class="eyebrow">Predespacho</p>
-            <h1>Detalle de Predespacho</h1>
+            <h1>Detalle de Predespacho11</h1>
             <p class="intro">Consulta de cabecera, items solicitados y disponibilidad para agregar nuevos lotes.</p>
         </div>
         <a class="button-link button-link--secondary predespacho-back-link" href="<?= APP_URL ?>/predespacho">Volver a la lista</a>

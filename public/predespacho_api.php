@@ -166,6 +166,21 @@ try {
                     'mensaje' => $success ? 'Item cerrado correctamente.' : 'No se pudo cerrar el item.',
                 ]);
 
+            case 'cerrarItemConMerma':
+                responderJson(cerrarItemConMerma(
+                    enteroRequerido($_POST, 'idItem'),
+                    enteroRequerido($_POST, 'idCabeceraPredespacho')
+                ));
+
+            case 'verificarCierrePredespacho':
+                $idCabeceraPredespacho = enteroRequerido($_POST, 'idCabeceraPredespacho');
+                $predespachoCerrado = verificarYCerrarPredespacho($idCabeceraPredespacho);
+                responderJson([
+                    'success' => true,
+                    'predespacho_cerrado' => $predespachoCerrado,
+                    'mensaje' => $predespachoCerrado ? 'Predespacho cerrado.' : 'Predespacho actualizado.',
+                ]);
+
             case 'cerrarPredespacho':
                 $idCabeceraPredespacho = enteroRequerido($_POST, 'idCabeceraPredespacho');
                 $predespacho = obtenerPredespachoPorId($idCabeceraPredespacho);

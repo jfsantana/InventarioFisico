@@ -150,3 +150,8 @@ function registrarSalida(int $idItem, float $cantidadDespachada, int $idCabecera
 {
     return predespachoModel()->registrarSalida($idItem, $cantidadDespachada, $idCabeceraPredespacho);
 }
+
+function cerrarItemConMerma(int $idItem, int $idCabeceraPredespacho): array
+{
+    return predespachoModel()->cerrarItemConMerma($idItem, $idCabeceraPredespacho);
+}

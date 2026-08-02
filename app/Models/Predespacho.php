@@ -283,6 +283,7 @@ class Predespacho extends BaseModel
             'SELECT ip.idItem,
                     ie.NumLote,
                     ie.idProducto,
+                    p.nombre AS nombreProducto,
                     ie.idPresentacion,
                     COALESCE(dl.sector, "Sin sector") AS sector,
                     ip.cantidadSolicitada,
@@ -291,6 +292,7 @@ class Predespacho extends BaseModel
              FROM tbl_items_predespacho ip
              INNER JOIN tbl_cabecera_predespacho cp ON cp.idCabeceraPredespacho = ip.idCabeceraPredespacho
              INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
              LEFT JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ip.idInventarioEntrante
              LEFT JOIN (
                  SELECT idInventarioEntrante, NE, SUM(cantidadSaliente) AS cantidadDespachada
@@ -682,6 +684,81 @@ class Predespacho extends BaseModel
         }
 
         return null;
+    }
+
+    public function cerrarItemConMerma(int $idItem, int $idCabeceraPredespacho): array
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $statement = $this->db->prepare(
+                'SELECT ip.idItem,
+                        ip.cantidadSolicitada,
+                        ip.cantidadDespachada,
+                        ip.estatusItemPredespacho,
+                        ie.idProducto,
+                        p.nombre AS nombreProducto,
+                        p.codigoInterno AS codigoProducto
+                 FROM tbl_items_predespacho ip
+                 INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+                 INNER JOIN Producto p ON p.idProducto = ie.idProducto
+                 WHERE ip.idItem = :idItem
+                   AND ip.idCabeceraPredespacho = :idCabeceraPredespacho
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $statement->execute([
+                'idItem' => $idItem,
+                'idCabeceraPredespacho' => $idCabeceraPredespacho,
+            ]);
+            $item = $statement->fetch();
+
+            if (!$item) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'Item no encontrado.'];
+            }
+
+            if ($item['estatusItemPredespacho'] === 'cerrado') {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'Este item ya está cerrado.'];
+            }
+
+            $cantidadDespachada = (float) $item['cantidadDespachada'];
+            if ($cantidadDespachada <= 0) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El item no tiene despacho registrado. Use Eliminar en su lugar.'];
+            }
+
+            $diferencia = round((float) $item['cantidadSolicitada'] - $cantidadDespachada, 4);
+
+            $statement = $this->db->prepare(
+                'UPDATE tbl_items_predespacho
+                 SET cantidadSolicitada = :cantidadSolicitada,
+                     estatusItemPredespacho = :estatusItemPredespacho
+                 WHERE idItem = :idItem'
+            );
+            $statement->execute([
+                'cantidadSolicitada' => $cantidadDespachada,
+                'estatusItemPredespacho' => 'cerrado',
+                'idItem' => $idItem,
+            ]);
+
+            $this->db->commit();
+
+            return [
+                'success' => true,
+                'mensaje' => 'Item cerrado con merma correctamente.',
+                'diferencia' => $diferencia,
+                'idProducto' => (int) $item['idProducto'],
+                'nombreProducto' => (string) $item['nombreProducto'],
+                'codigoProducto' => (string) $item['codigoProducto'],
+            ];
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            return ['success' => false, 'mensaje' => 'No se pudo cerrar el item con merma.'];
+        }
     }
 
     public function obtenerItemsPorPredespachoYSector(int $idCabeceraPredespacho, string $sector): array
