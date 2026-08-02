@@ -18,13 +18,9 @@ class SalidaController extends Controller
         }
 
         try {
-            $sectores = $model->obtenerSectoresPendientesPredespacho();
+            $predespachos = $model->obtenerPredespachosPendientesEntrega();
 
-            if ($sectorSeleccionado !== '') {
-                $predespachos = $model->obtenerPredespachosPorSector($sectorSeleccionado);
-            }
-
-            if ($sectorSeleccionado !== '' && $codigoPredespachoSeleccionado !== '') {
+            if ($codigoPredespachoSeleccionado !== '') {
                 $predespachoSeleccionado = $model->obtenerPredespachoPorCodigo($codigoPredespachoSeleccionado);
 
                 if ($predespachoSeleccionado && $predespachoSeleccionado['statusGeneralPredespacho'] === 'cerrado') {
@@ -32,9 +28,10 @@ class SalidaController extends Controller
                 }
 
                 if ($predespachoSeleccionado) {
-                    $items = $model->obtenerItemsPorPredespachoYSector(
+                    $sectores = $model->obtenerSectoresPorPredespacho((int) $predespachoSeleccionado['idCabeceraPredespacho']);
+                    $items = $model->obtenerItemsPorPredespachoParaEntrega(
                         (int) $predespachoSeleccionado['idCabeceraPredespacho'],
-                        $sectorSeleccionado
+                        $sectorSeleccionado !== '' ? $sectorSeleccionado : null
                     );
                 }
             }

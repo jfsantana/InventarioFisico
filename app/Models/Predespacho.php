@@ -532,6 +532,33 @@ class Predespacho extends BaseModel
         return $statement->fetchAll();
     }
 
+    public function obtenerPredespachosPendientesEntrega(): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT cp.idCabeceraPredespacho,
+                    cp.idCliente,
+                    c.nombre AS nombreCliente,
+                    c.rif AS rifCliente,
+                    cp.fechaRetiro,
+                    cp.codigoInterno,
+                    cp.codigoNotaEntregaSAP,
+                    cp.userCreador,
+                    cp.statusGeneralPredespacho,
+                    cp.observaciones,
+                    cp.fechaCreacion,
+                    cp.fechaActualizacion
+             FROM tbl_cabecera_predespacho cp
+             INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
+             WHERE cp.statusGeneralPredespacho <> :estatusCabeceraCerrado
+             ORDER BY cp.fechaCreacion DESC'
+        );
+        $statement->execute([
+            'estatusCabeceraCerrado' => 'cerrado',
+        ]);
+
+        return $statement->fetchAll();
+    }
+
         public function obtenerSectoresPendientesPredespacho(): array
         {
             $sectoresBase = ['Sector1', 'Sector2', 'Sector3'];
@@ -545,6 +572,25 @@ class Predespacho extends BaseModel
 
             return array_values(array_unique(array_merge($sectoresBase, array_column($statement->fetchAll(), 'sector'))));
         }
+
+    public function obtenerSectoresPorPredespacho(int $idCabeceraPredespacho): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT DISTINCT ie.sector
+             FROM tbl_items_predespacho ip
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+             WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho
+                 AND ie.sector IS NOT NULL
+                 AND ie.sector <> :sectorVacio
+             ORDER BY ie.sector ASC'
+        );
+        $statement->execute([
+            'idCabeceraPredespacho' => $idCabeceraPredespacho,
+            'sectorVacio' => '',
+        ]);
+
+        return array_column($statement->fetchAll(), 'sector');
+    }
 
         public function obtenerPredespachoPorCodigo(string $codigoInterno): ?array
         {
@@ -571,6 +617,72 @@ class Predespacho extends BaseModel
 
                 return $predespacho ?: null;
         }
+
+    public function obtenerItemsPorPredespachoParaEntrega(int $idCabeceraPredespacho, ?string $sector = null): array
+    {
+        $whereSector = $sector !== null && $sector !== '' ? ' AND ie.sector = :sector' : '';
+        $statement = $this->db->prepare(
+            'SELECT ip.idItem,
+                    ip.idInventarioEntrante,
+                    ie.NumLote,
+                    ie.idProducto,
+                    p.nombre AS nombreProducto,
+                    COALESCE(ie.sector, "Sin sector") AS sector,
+                    pr.nombre AS presentacion,
+                    ip.cantidadSolicitada,
+                    COALESCE(salidas.cantidadDespachada, 0) AS cantidadDespachada,
+                    GREATEST(ip.cantidadSolicitada - COALESCE(salidas.cantidadDespachada, 0), 0) AS cantidadPendiente,
+                    ip.estatusItemPredespacho,
+                    CASE WHEN COALESCE(salidas.cantidadDespachada, 0) >= ip.cantidadSolicitada THEN 1 ELSE 0 END AS coincide
+             FROM tbl_items_predespacho ip
+             INNER JOIN tbl_cabecera_predespacho cp ON cp.idCabeceraPredespacho = ip.idCabeceraPredespacho
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
+             LEFT JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
+             LEFT JOIN (
+                 SELECT idInventarioEntrante, NE, SUM(cantidadSaliente) AS cantidadDespachada
+                 FROM inventariosaliente
+                 GROUP BY idInventarioEntrante, NE
+             ) salidas ON salidas.idInventarioEntrante = ip.idInventarioEntrante
+                 AND salidas.NE COLLATE utf8mb4_unicode_ci = cp.codigoInterno
+             WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho' . $whereSector . '
+             ORDER BY ie.sector ASC, ip.fechaCreacion ASC, ip.idItem ASC'
+        );
+
+        $params = ['idCabeceraPredespacho' => $idCabeceraPredespacho];
+        if ($whereSector !== '') {
+            $params['sector'] = $sector;
+        }
+
+        $statement->execute($params);
+
+        $items = $statement->fetchAll();
+        foreach ($items as &$item) {
+            $item['coincide'] = (bool) $item['coincide'];
+            $item['unidad'] = $this->calcularUnidadDesdePresentacion(
+                (float) $item['cantidadSolicitada'],
+                (string) ($item['presentacion'] ?? '')
+            );
+        }
+
+        return $items;
+    }
+
+    private function calcularUnidadDesdePresentacion(float $cantidadSolicitada, string $presentacion): ?float
+    {
+        // Numeric weight inside parentheses, e.g. "TAMBOR (250 KG)" → divide by that number
+        if (preg_match('/\(([0-9]+(?:[\.,][0-9]+)?)\s*[^)]*\)/', $presentacion, $matches)) {
+            $valorPresentacion = (float) str_replace(',', '.', $matches[1]);
+            return $valorPresentacion > 0 ? $cantidadSolicitada / $valorPresentacion : null;
+        }
+
+        // Unit-only parentheses, e.g. "GRANEL (KG)" → divide by 1
+        if (preg_match('/\([^)]+\)/', $presentacion)) {
+            return $cantidadSolicitada;
+        }
+
+        return null;
+    }
 
     public function obtenerItemsPorPredespachoYSector(int $idCabeceraPredespacho, string $sector): array
     {

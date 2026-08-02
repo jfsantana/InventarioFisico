@@ -3213,8 +3213,8 @@ body:has(.auth-topbar) {
 
 .predespacho-delivery-grid {
     display: grid;
-    grid-template-columns: minmax(0, 3fr) minmax(320px, 2fr);
-    gap: 18px;
+    grid-template-columns: minmax(0, 1fr) 280px;
+    gap: 20px;
     align-items: start;
 }
 
@@ -3224,16 +3224,79 @@ body:has(.auth-topbar) {
 
 .predespacho-delivery-card {
     display: grid;
-    gap: 14px;
-    padding: 18px;
+    gap: 10px;
+    padding: 16px;
     border: 1px solid var(--line);
     border-radius: 8px;
     background: #fffafa;
 }
 
 .predespacho-delivery-card h2 {
-    margin: 0;
+    margin: 0 0 2px;
+    font-size: 1.05rem;
     color: #7a1c2e;
+}
+
+.predespacho-delivery-card .quiet-text {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.predespacho-delivery-card .form-field {
+    gap: 4px;
+}
+
+.predespacho-delivery-card .form-field label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--ink);
+}
+
+.predespacho-delivery-card .form-field input {
+    min-height: 36px;
+    padding: 0 10px;
+    font-size: 0.875rem;
+    border-radius: 6px;
+}
+
+/* Lote + Disponible side by side */
+.delivery-card-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.predespacho-delivery-card .form-actions {
+    margin-top: 4px;
+}
+
+.predespacho-delivery-card .button-link--submit {
+    width: 100%;
+    min-height: 40px;
+    font-size: 0.9rem;
+    padding: 0 12px;
+    justify-content: center;
+}
+
+/* delivery table: tighter cells so 9 columns fit without horizontal scroll */
+.predespacho-products-panel .admin-table th,
+.predespacho-products-panel .admin-table td {
+    padding: 7px 8px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+/* Producto column may wrap; give it the most room */
+.predespacho-products-panel .admin-table th:first-child,
+.predespacho-products-panel .admin-table td:first-child {
+    white-space: normal;
+    min-width: 130px;
+}
+
+/* numeric columns right-aligned */
+.predespacho-products-panel .admin-table th:nth-child(n+5):nth-child(-n+8),
+.predespacho-products-panel .admin-table td:nth-child(n+5):nth-child(-n+8) {
+    text-align: right;
 }
 
 .predespacho-product-row {
