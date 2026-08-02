@@ -229,6 +229,7 @@ class ReporteInventario extends BaseModel
             $idInventarioEntrante = (int) ($entrada['idInventarioEntrante'] ?? 0);
             $numLote = (string) ($entrada['NumLote'] ?? '');
             $presentacion = trim((string) ($entrada['presentacion'] ?? ''));
+            $saldoDelLote = (float) $entrada['CantidadEntrante'];
 
             $movimientos[] = [
                 'idInventarioEntrante' => $idInventarioEntrante,
@@ -271,6 +272,7 @@ class ReporteInventario extends BaseModel
                         continue;
                     }
 
+                    $saldoDelLote -= (float) $salida['cantidadSaliente'];
                     $movimientos[] = [
                         'idInventarioEntrante' => $idInventarioEntrante,
                         'fecha' => $salida['fecha'],
@@ -292,6 +294,7 @@ class ReporteInventario extends BaseModel
                 }
 
                 $neSalida = trim((string) ($salida['NE'] ?? ''));
+                $saldoDelLote -= (float) $salida['cantidadSaliente'];
                 $movimientos[] = [
                     'idInventarioEntrante' => $idInventarioEntrante,
                     'fecha' => $salida['fecha'],
@@ -306,6 +309,18 @@ class ReporteInventario extends BaseModel
                     'tipo' => 'salida',
                 ];
             }
+
+            $movimientos[] = [
+                'idInventarioEntrante' => $idInventarioEntrante,
+                'fecha' => '',
+                'codPredespacho' => '',
+                'montoPredespacho' => '',
+                'entrada' => '',
+                'salida' => '',
+                'saldo' => $saldoDelLote,
+                'observaciones' => '',
+                'tipo' => 'saldo',
+            ];
         }
 
         foreach ($salidasPorLote as $idInventarioEntrante => $salidasDelLote) {

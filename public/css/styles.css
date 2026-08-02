@@ -685,6 +685,11 @@ h1 {
     background: #fff0f0;
 }
 
+.report-table tbody .report-row--summary {
+    background: #e8f3ff;
+    font-weight: 700;
+}
+
 .report-pagination-toolbar {
     display: flex;
     align-items: center;
@@ -818,7 +823,12 @@ h1 {
         color: #000000;
     }
 
+    body:has(.auth-topbar) {
+        padding-top: 0 !important;
+    }
+
     .brand-logo,
+    .auth-topbar,
     .report-panel .eyebrow,
     .report-panel .intro,
     .report-filter,
@@ -903,6 +913,31 @@ h1 {
     .report-table tr {
         page-break-inside: avoid;
         page-break-after: auto;
+    }
+
+    .report-table tbody .report-row--entrada,
+    .report-table tbody .report-row--predespacho,
+    .report-table tbody .report-row--salida,
+    .report-table tbody .report-row--summary {
+        background: inherit !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+    }
+
+    .report-table tbody .report-row--entrada {
+        background: #edf8ef !important;
+    }
+
+    .report-table tbody .report-row--predespacho {
+        background: #fff9e6 !important;
+    }
+
+    .report-table tbody .report-row--salida {
+        background: #fff0f0 !important;
+    }
+
+    .report-table tbody .report-row--summary {
+        background: #e8f3ff !important;
     }
 
     .report-table th,

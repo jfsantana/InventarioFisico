@@ -162,10 +162,14 @@ $movimientosRender = $modoExport ? $movimientos : $movimientosPaginados;
                             $tipoMovimiento = (string) ($movimiento['tipo'] ?? '');
                             $rowClass = $tipoMovimiento === 'entrada'
                                 ? 'report-row report-row--entrada'
-                                : ($tipoMovimiento === 'predespacho' ? 'report-row report-row--predespacho' : 'report-row report-row--salida');
+                                : ($tipoMovimiento === 'predespacho'
+                                    ? 'report-row report-row--predespacho'
+                                    : ($tipoMovimiento === 'saldo'
+                                        ? 'report-row report-row--summary'
+                                        : 'report-row report-row--salida'));
                             ?>
                             <tr class="<?= htmlspecialchars($rowClass, ENT_QUOTES, 'UTF-8') ?>">
-                                <td><?= htmlspecialchars(date('d/m/Y', strtotime($movimiento['fecha'])), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= $tipoMovimiento === 'saldo' ? '' : htmlspecialchars(date('d/m/Y', strtotime($movimiento['fecha'])), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($movimiento['codPredespacho'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= $movimiento['montoPredespacho'] !== '' ? htmlspecialchars(number_format((float) $movimiento['montoPredespacho'], 2), ENT_QUOTES, 'UTF-8') : '' ?></td>
                                 <td><?= $movimiento['entrada'] !== '' ? htmlspecialchars(number_format((float) $movimiento['entrada'], 2), ENT_QUOTES, 'UTF-8') : '' ?></td>
