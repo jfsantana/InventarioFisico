@@ -735,6 +735,7 @@ class Predespacho extends BaseModel
                                                 ip.cantidadDespachada,
                                                 ie.sector,
                                                 cp.codigoInterno,
+                                                cp.codigoNotaEntregaSAP,
                                                 c.nombre AS nombreCliente
                                  FROM tbl_items_predespacho ip
                                  INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
@@ -831,15 +832,47 @@ class Predespacho extends BaseModel
             $predespachoCerrado = $this->verificarYCerrarPredespacho($idCabeceraPredespacho);
             $this->db->commit();
 
-            if ($predespachoCerrado || $productoCerrado) {
+            if ($predespachoCerrado) {
                 try {
-                    enviarAlertaTelegram(
-                        ($predespachoCerrado ? "*Predespacho cerrado*" : "*Producto cerrado en predespacho*") . "\n" .
-                        "Predespacho: " . (string) $item['codigoInterno'] . "\n" .
-                        "Cliente: " . (string) $item['nombreCliente'] . "\n" .
-                        "Sector: " . (string) $item['sector'] . "\n" .
-                        "Cantidad despachada: " . number_format($cantidadDespachada, 2, '.', '')
+                    $detalleStmt = $this->db->prepare(
+                        'SELECT p.nombre AS nombreProducto,
+                                ie.NumLote,
+                                ip.cantidadSolicitada,
+                                ip.cantidadDespachada
+                         FROM tbl_items_predespacho ip
+                         INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+                         INNER JOIN Producto p ON p.idProducto = ie.idProducto
+                         WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho
+                         ORDER BY ip.idItem ASC'
                     );
+                    $detalleStmt->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+                    $itemsDetalle = $detalleStmt->fetchAll();
+
+                    $codigoSAP = trim((string) ($item['codigoNotaEntregaSAP'] ?? ''));
+                    $sapLinea = $codigoSAP !== ''
+                        ? '*SAP:* ' . $codigoSAP
+                        : '⚠️ *Sin código SAP registrado*';
+
+                    $lineasProductos = [];
+                    foreach ($itemsDetalle as $i => $detalle) {
+                        $lineasProductos[] =
+                            ($i + 1) . '. *' . $detalle['nombreProducto'] . "*\n"
+                            . '   Lote: ' . $detalle['NumLote']
+                            . ' | Sol: ' . number_format((float) $detalle['cantidadSolicitada'], 2, '.', '')
+                            . ' | Ent: ' . number_format((float) $detalle['cantidadDespachada'], 2, '.', '');
+                    }
+
+                    $mensaje =
+                        "✅ *Predespacho Cerrado*\n"
+                        . "────────────────────\n"
+                        . '*Código:* ' . $item['codigoInterno'] . "\n"
+                        . '*Fecha cierre:* ' . date('d/m/Y H:i') . "\n"
+                        . '*Cliente:* ' . $item['nombreCliente'] . "\n"
+                        . $sapLinea . "\n\n"
+                        . '*Productos entregados (' . count($itemsDetalle) . '):*' . "\n"
+                        . implode("\n", $lineasProductos);
+
+                    enviarAlertaTelegram($mensaje);
                 } catch (Throwable $exception) {
                 }
             }
