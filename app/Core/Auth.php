@@ -21,6 +21,7 @@ class Auth
         }
 
         if (self::check()) {
+            $_SESSION['permisos'] = self::loadPermissions((int) $_SESSION['id_rol']);
             $_SESSION['last_activity'] = time();
         }
     }
@@ -46,7 +47,7 @@ class Auth
     {
         $username = trim($username);
         $db = (new Database())->getConnection();
-        $stmt = $db->prepare('SELECT u.*, r.nombre AS rol_nombre FROM usuarios u INNER JOIN roles r ON r.id_rol = u.id_rol WHERE u.username = :username LIMIT 1');
+        $stmt = $db->prepare('SELECT u.*, r.nombre AS rol_nombre FROM usuarios u INNER JOIN roles r ON r.id_rol = u.id_rol WHERE u.username = :username AND r.activo = 1 LIMIT 1');
         $stmt->execute(['username' => $username]);
         $user = $stmt->fetch();
 
@@ -139,6 +140,24 @@ class Auth
     {
         self::requireLogin();
         if (self::can($module, $action)) {
+            return;
+        }
+
+        http_response_code(403);
+        $title = 'Acceso denegado';
+        require __DIR__ . '/../Views/errors/403.php';
+        exit;
+    }
+
+    public static function isOperator(): bool
+    {
+        return ($_SESSION['rol_nombre'] ?? '') === 'Operador';
+    }
+
+    public static function requireNonOperator(): void
+    {
+        self::requireLogin();
+        if (!self::isOperator()) {
             return;
         }
 

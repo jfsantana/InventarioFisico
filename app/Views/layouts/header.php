@@ -10,7 +10,7 @@
     <?php if (Auth::check()) : ?>
         <?php $authUser = Auth::user(); ?>
         <header class="auth-topbar">
-            <a class="auth-brand" href="<?= APP_URL ?>/">
+            <a class="auth-brand" href="<?= APP_URL ?><?= Auth::isOperator() ? '/salida' : '/' ?>">
                 <img src="<?= APP_URL ?>/public/media/logoAdyarca.png" alt="Logo Adyarca">
                 <strong><?= APP_NAME ?></strong>
             </a>

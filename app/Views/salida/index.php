@@ -9,8 +9,40 @@ $codigoPredespachoSeleccionado = $codigoPredespachoSeleccionado ?? '';
 $predespachoSeleccionado = $predespachoSeleccionado ?? null;
 $items = $items ?? [];
 $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho'] ?? 0);
+$requiresAuthentication = $requiresAuthentication ?? false;
 ?>
 
+<?php if ($requiresAuthentication) : ?>
+<section class="panel salida-auth-page" aria-hidden="true">
+    <p class="eyebrow">Inventario saliente</p>
+    <h1>Registrar entrega</h1>
+</section>
+
+<div class="delivery-auth-modal" role="dialog" aria-modal="true" aria-label="Iniciar sesión para registrar salida">
+    <section class="delivery-auth-card">
+        <?php if (!empty($authError)) : ?>
+            <div class="message message--error" role="alert"><?= $text($authError) ?></div>
+        <?php endif; ?>
+
+        <form class="delivery-auth-form" method="post" action="<?= APP_URL ?>/salida/autenticar">
+            <?= Auth::csrfField() ?>
+            <input type="hidden" name="return_query" value="<?= $text($returnQuery ?? '') ?>">
+            <label>
+                Usuario
+                <input name="username" type="text" value="<?= $text($authUsername ?? '') ?>" required autocomplete="username" autofocus>
+            </label>
+            <label>
+                Contraseña
+                <span class="delivery-password-field">
+                    <input id="deliveryLoginPassword" name="password" type="password" required autocomplete="current-password">
+                    <button type="button" class="password-toggle" data-password-toggle="deliveryLoginPassword">Mostrar</button>
+                </span>
+            </label>
+            <button class="button-link button-link--submit" type="submit">Ingresar</button>
+        </form>
+    </section>
+</div>
+<?php else : ?>
 <section class="panel report-panel admin-page salida-panel" data-salida-predespacho data-submit-url="<?= APP_URL ?>/salida/guardar" data-predespacho-codigo="<?= $text($codigoPredespachoSeleccionado) ?>">
     <div class="admin-heading">
         <div>
@@ -18,10 +50,12 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
             <h1>Registrar entrega</h1>
             <p class="intro">Selecciona el predespacho, revisa sus productos por sector y registra la cantidad entregada por producto/lote.</p>
         </div>
-        <?php if (Auth::check()) : ?>
+        <?php if (Auth::can('corregir_salidas')) : ?>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/salida/detalle">Corregir salidas</a>
         <?php endif; ?>
-        <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
+        <?php if (($_SESSION['rol_nombre'] ?? '') !== 'Operador') : ?>
+            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
+        <?php endif; ?>
     </div>
 
     <div class="message message--success" role="status" data-salida-message <?= empty($successMessage) ? 'hidden' : '' ?>><?= $text($successMessage ?? '') ?></div>
@@ -165,5 +199,7 @@ $idCabeceraSeleccionada = (int) ($predespachoSeleccionado['idCabeceraPredespacho
 </section>
 
 <script src="<?= APP_URL ?>/public/js/salida.js?v=<?= filemtime(__DIR__ . '/../../../public/js/salida.js') ?>"></script>
+<?php endif; ?>
+<script src="<?= APP_URL ?>/public/js/login.js"></script>
 
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

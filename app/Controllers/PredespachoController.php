@@ -4,7 +4,7 @@ class PredespachoController extends Controller
 {
     public function index(): void
     {
-        $this->requiereLogin();
+        $this->requierePermiso('predespacho');
 
         $this->view('predespacho/lista', [
             'title' => 'Gestion de Predespachos',
@@ -13,7 +13,7 @@ class PredespachoController extends Controller
 
     public function detalle(): void
     {
-        $this->requiereLogin();
+        $this->requierePermiso('predespacho');
 
         $idCabeceraPredespacho = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT) ?: 0;
 
@@ -25,7 +25,7 @@ class PredespachoController extends Controller
 
     public function salida(): void
     {
-        $this->requiereLogin();
+        $this->requierePermiso('predespacho');
 
         $model = $this->model('Predespacho');
         $sectorSeleccionado = trim($_GET['sector'] ?? '');

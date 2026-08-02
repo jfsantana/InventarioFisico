@@ -6,6 +6,10 @@ class HomeController extends Controller
     {
         $this->requiereLogin();
 
+        if (Auth::isOperator()) {
+            $this->redirect('/salida');
+        }
+
         $connectionStatus = 'No verificada';
         $connectionError = null;
 

@@ -1402,6 +1402,10 @@ h1 {
     gap: 18px;
 }
 
+.entry-form-fieldset {
+    display: contents;
+}
+
 .correction-card {
     display: grid;
     gap: 16px;
@@ -3036,6 +3040,85 @@ body:has(.auth-topbar) {
     color: var(--accent-strong);
     font-weight: 700;
     cursor: pointer;
+}
+
+.salida-auth-page {
+    min-height: 70vh;
+}
+
+.delivery-auth-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    display: grid;
+    place-items: center;
+    padding: 20px;
+    background: rgba(255, 255, 255, 0.24);
+    backdrop-filter: blur(4px);
+}
+
+.delivery-auth-card {
+    width: min(360px, 100%);
+    padding: 24px;
+    border: 1px solid #b9b0ad;
+    border-radius: 4px;
+    background: #ffffff;
+    box-shadow: 0 4px 14px rgba(52, 35, 32, 0.24);
+}
+
+.delivery-auth-form,
+.delivery-auth-form label {
+    display: grid;
+    gap: 8px;
+}
+
+.delivery-auth-form {
+    gap: 16px;
+    font-family: Verdana, sans-serif;
+}
+
+.delivery-auth-form label {
+    color: var(--accent-strong);
+    font-size: 0.95rem;
+    font-weight: 700;
+}
+
+.delivery-auth-form input {
+    width: 100%;
+    min-width: 0;
+    height: 46px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.delivery-password-field {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
+    overflow: hidden;
+}
+
+.delivery-password-field input {
+    border: 0;
+    border-radius: 0;
+    outline: 0;
+}
+
+.delivery-password-field .password-toggle {
+    margin: 0 6px 0 0;
+}
+
+.delivery-auth-form > .button-link {
+    width: 100%;
+    min-height: 44px;
+    margin-top: 2px;
 }
 
 .checkbox-line,

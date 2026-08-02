@@ -2,8 +2,27 @@
 
 class SalidaController extends Controller
 {
-    public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
+    public function index(
+        array $formData = [],
+        array $errors = [],
+        ?string $successMessage = null,
+        ?string $authError = null,
+        string $authUsername = ''
+    ): void
     {
+        $canRegisterDelivery = Auth::check() && Auth::can('salida', 'editar');
+
+        if (!$canRegisterDelivery) {
+            $this->view('salida/index', [
+                'title' => 'Registrar salida',
+                'requiresAuthentication' => true,
+                'authError' => $authError,
+                'authUsername' => $authUsername,
+                'returnQuery' => http_build_query(array_intersect_key($_GET, array_flip(['predespacho', 'sector']))),
+            ]);
+            return;
+        }
+
         $model = $this->model('Predespacho');
         $sectorSeleccionado = trim($_GET['sector'] ?? '');
         $codigoPredespachoSeleccionado = trim($_GET['predespacho'] ?? '');
@@ -51,7 +70,35 @@ class SalidaController extends Controller
             'errors' => $errors,
             'successMessage' => $successMessage,
             'loadError' => $loadError,
+            'requiresAuthentication' => false,
         ]);
+    }
+
+    public function autenticar(): void
+    {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/salida');
+        }
+
+        $this->validarCsrf();
+
+        $username = trim($_POST['username'] ?? '');
+        $password = (string) ($_POST['password'] ?? '');
+        $returnQuery = trim((string) ($_POST['return_query'] ?? ''));
+
+        if (!Auth::login($username, $password, false)) {
+            $this->index([], [], null, 'Usuario o contraseña incorrectos.', $username);
+            return;
+        }
+
+        if (!Auth::can('salida', 'editar')) {
+            Auth::logout();
+            $this->index([], [], null, 'Este usuario no tiene permiso para registrar entregas.', $username);
+            return;
+        }
+
+        header('Location: ' . APP_URL . '/salida' . ($returnQuery !== '' ? '?' . $returnQuery : ''));
+        exit;
     }
 
     public function guardar(): void
@@ -61,6 +108,18 @@ class SalidaController extends Controller
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             http_response_code(405);
             echo json_encode(['success' => false, 'error' => 'Metodo HTTP no permitido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (!Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Debe iniciar sesión para registrar entregas.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (!Auth::can('salida', 'editar')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'No tiene permiso para registrar entregas.'], JSON_UNESCAPED_UNICODE);
             return;
         }
 

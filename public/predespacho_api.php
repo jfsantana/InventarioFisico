@@ -2,9 +2,12 @@
 
 require_once 'predespacho_crud.php';
 
-if (session_status() !== PHP_SESSION_ACTIVE) {
-    session_start();
+try {
+    AuthSchema::ensure();
+} catch (Throwable $exception) {
 }
+
+Auth::boot();
 
 header('Content-Type: application/json');
 
@@ -60,11 +63,19 @@ function decimalRequerido(array $source, string $key): float
     return (float) $value;
 }
 
-if (empty($_SESSION['usuario'])) {
+if (!Auth::check()) {
     responderJson([
         'success' => false,
         'mensaje' => 'No autorizado',
     ], 401);
+}
+
+$requiredAction = $_SERVER['REQUEST_METHOD'] === 'POST' ? 'editar' : 'ver';
+if (!Auth::can('predespacho', $requiredAction)) {
+    responderJson([
+        'success' => false,
+        'mensaje' => 'No tiene permiso para gestionar predespachos.',
+    ], 403);
 }
 
 $accion = $_POST['accion'] ?? $_GET['accion'] ?? '';

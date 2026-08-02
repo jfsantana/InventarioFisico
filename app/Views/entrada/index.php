@@ -5,6 +5,7 @@ $productos = $productos ?? [];
 $presentaciones = $presentaciones ?? [];
 $ubicaciones = $ubicaciones ?? [];
 $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
+$canCreateEntry = Auth::can('entrada', 'editar');
 $isEntradaCompleta = !empty($formData['idProducto'])
     && !empty($formData['NumLote'])
     && !empty($formData['idPresentacion'])
@@ -36,8 +37,13 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
     <?php endif; ?>
 
+    <?php if (!$canCreateEntry) : ?>
+        <div class="message" role="status">Tu rol permite consultar esta pantalla, pero no registrar entradas.</div>
+    <?php endif; ?>
+
     <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" data-entrada-form>
         <?= Auth::csrfField() ?>
+        <fieldset class="entry-form-fieldset" <?= $canCreateEntry ? '' : 'disabled' ?>>
         <div class="form-field">
             <label for="idProducto">1. Producto</label>
             <select id="idProducto" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
@@ -115,11 +121,12 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-actions form-actions--full">
-            <button id="guardarEntrada" class="button-link button-link--submit" type="submit" <?= $isEntradaCompleta ? '' : 'disabled' ?>>Guardar entrada</button>
+            <button id="guardarEntrada" class="button-link button-link--submit" type="submit" <?= $canCreateEntry && $isEntradaCompleta ? '' : 'disabled' ?>>Guardar entrada</button>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/entrada/detalle">Corregir entradas</a>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
             <small id="entradaFormMessage" class="field-warning" aria-live="polite"></small>
         </div>
+        </fieldset>
     </form>
 </section>
 

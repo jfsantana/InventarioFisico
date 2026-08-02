@@ -59,6 +59,7 @@ class AuthSchema
         self::migrateExistingTables($db);
         self::seedRoles($db);
         self::seedPermissions($db);
+        self::synchronizeRolePermissions($db);
         self::seedAdmin($db);
     }
 
@@ -140,7 +141,7 @@ class AuthSchema
     private static function seedPermissions(PDO $db): void
     {
         $roles = $db->query('SELECT id_rol, nombre FROM roles')->fetchAll(PDO::FETCH_KEY_PAIR);
-        $modules = ['entrada', 'salida', 'corregir_entradas', 'corregir_salidas', 'reporte_lote', 'inteligencia', 'administracion'];
+        $modules = ['entrada', 'salida', 'predespacho', 'corregir_entradas', 'corregir_salidas', 'reporte_lote', 'inteligencia', 'administracion'];
         $stmt = $db->prepare('INSERT IGNORE INTO permisos_modulo (id_rol, modulo, puede_ver, puede_editar, puede_borrar) VALUES (:id_rol, :modulo, :puede_ver, :puede_editar, :puede_borrar)');
 
         foreach ($roles as $idRol => $nombre) {
@@ -174,14 +175,51 @@ class AuthSchema
         }
 
         if ($role === 'Supervisor') {
-            return $module === 'administracion' ? [0, 0, 0] : [1, 1, 0];
+            if (in_array($module, ['entrada', 'salida', 'predespacho', 'corregir_entradas', 'corregir_salidas'], true)) {
+                return [1, 1, 0];
+            }
+
+            if (in_array($module, ['reporte_lote', 'inteligencia'], true)) {
+                return [1, 0, 0];
+            }
+
+            return [0, 0, 0];
         }
 
         if ($role === 'Operador') {
-            return in_array($module, ['entrada', 'salida', 'corregir_entradas', 'corregir_salidas'], true) ? [1, 1, 0] : [0, 0, 0];
+            return $module === 'salida' ? [1, 1, 0] : [0, 0, 0];
         }
 
-        return in_array($module, ['reporte_lote', 'inteligencia'], true) ? [1, 0, 0] : [0, 0, 0];
+        if ($role === 'Solo lectura') {
+            return in_array($module, ['reporte_lote', 'inteligencia'], true) ? [1, 0, 0] : [0, 0, 0];
+        }
+
+        return [0, 0, 0];
+    }
+
+    private static function synchronizeRolePermissions(PDO $db): void
+    {
+        $roles = $db->query('SELECT id_rol, nombre FROM roles')->fetchAll(PDO::FETCH_KEY_PAIR);
+        $stmt = $db->prepare(
+            'UPDATE permisos_modulo
+             SET puede_ver = :puede_ver,
+                 puede_editar = :puede_editar,
+                 puede_borrar = :puede_borrar
+             WHERE id_rol = :id_rol AND modulo = :modulo'
+        );
+
+        foreach ($roles as $idRol => $role) {
+            foreach (['entrada', 'salida', 'predespacho', 'corregir_entradas', 'corregir_salidas', 'reporte_lote', 'inteligencia', 'administracion'] as $module) {
+                $permission = self::permissionFor($role, $module);
+                $stmt->execute([
+                    'puede_ver' => $permission[0],
+                    'puede_editar' => $permission[1],
+                    'puede_borrar' => $permission[2],
+                    'id_rol' => $idRol,
+                    'modulo' => $module,
+                ]);
+            }
+        }
     }
 
     private static function seedAdmin(PDO $db): void

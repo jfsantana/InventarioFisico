@@ -50,7 +50,7 @@
 
             <a class="public-access-link" href="<?= APP_URL ?>/salida" aria-label="Ir a registrar entrega sin iniciar sesion">
                 <span aria-hidden="true">↗</span>
-                <strong>Registrar entrega sin iniciar sesión</strong>
+                <strong>Registrar entrega </br>(solo Operadores)</strong>
                 <small>Acceso para usuarios que solo reportan salidas</small>
             </a>
         </section>
