@@ -9,12 +9,13 @@ $entradas = $entradas ?? [];
 $presentaciones = $presentaciones ?? [];
 $ubicaciones = $ubicaciones ?? [];
 $productos = $productos ?? [];
+$sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
 ?>
 
 <section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
-    <p class="intro">Revise cada entrada de inventario y corrija producto, lote, presentacion, ubicacion o cantidad cuando sea necesario.</p>
+    <p class="intro">Revise cada entrada de inventario y corrija producto, lote, presentacion, ubicacion, sector o cantidad cuando sea necesario.</p>
 
     <?php if (!empty($message)) : ?>
         <div class="message message--<?= $messageType === 'error' ? 'error' : 'success' ?> correction-server-message" role="alert" data-server-message data-message-type="<?= $messageType === 'error' ? 'error' : 'success' ?>">
@@ -38,7 +39,7 @@ $productos = $productos ?? [];
     <section class="correction-filters" data-filter-panel aria-label="Filtros de entradas registradas">
         <label>
             Buscar
-            <input type="search" data-filter-search placeholder="Producto, lote o ubicacion" aria-label="Buscar por producto, lote o ubicacion">
+            <input type="search" data-filter-search placeholder="Producto, lote, sector o ubicacion" aria-label="Buscar por producto, lote, sector o ubicacion">
         </label>
         <label>
             Presentacion
@@ -83,6 +84,7 @@ $productos = $productos ?? [];
                         <th><button type="button" data-sort="lote">Lote <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="presentacion">Presentacion <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="ubicacion">Ubicacion <span data-sort-indicator>↕</span></button></th>
+                        <th><button type="button" data-sort="sector">Sector <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="cantidad" data-type="number">Cantidad <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="salidas" data-type="number">Salidas <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="disponible" data-type="number">Disponible <span data-sort-indicator>↕</span></button></th>
@@ -102,16 +104,18 @@ $productos = $productos ?? [];
                             data-presentacion="<?= $text($entrada['presentacion']) ?>"
                             data-location="<?= (int) $entrada['idUbicacion'] ?>"
                             data-ubicacion="<?= $text($entrada['ubicacion']) ?>"
+                            data-sector="<?= $text($entrada['Sector'] ?? '') ?>"
                             data-cantidad="<?= $text($entrada['CantidadEntrante']) ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
-                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . $entrada['ubicacion']) ?>">
+                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion']) ?>">
                             <td data-label="#"><?= (int) $entrada['idInventarioEntrante'] ?></td>
                             <td data-label="Fecha"><?= $formatDate($entrada['fecha']) ?></td>
                             <td data-label="Producto"><strong><?= $text($entrada['producto']) ?></strong></td>
                             <td data-label="Lote"><?= $text($entrada['NumLote']) ?></td>
                             <td data-label="Presentacion"><?= $text($entrada['presentacion']) ?></td>
                             <td data-label="Ubicacion"><?= $text($entrada['ubicacion']) ?></td>
+                            <td data-label="Sector"><?= $text($entrada['Sector'] ?? '') ?></td>
                             <td data-label="Cantidad"><?= $money($entrada['CantidadEntrante']) ?></td>
                             <td data-label="Salidas"><?= $money($entrada['salidaTotal']) ?></td>
                             <td data-label="Disponible"><span class="stock-pill <?= $danger ? 'stock-pill--risk' : '' ?>"><?= $money($entrada['disponible']) ?></span></td>
@@ -177,6 +181,14 @@ $productos = $productos ?? [];
                     <select name="idUbicacion" required>
                         <?php foreach ($ubicaciones as $ubicacion) : ?>
                             <option value="<?= (int) $ubicacion['idUbicacion'] ?>"><?= $text($ubicacion['nombre']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>
+                    Sector
+                    <select name="Sector" required>
+                        <?php foreach ($sectores as $sector) : ?>
+                            <option value="<?= $text($sector) ?>"><?= $text($sector) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </label>

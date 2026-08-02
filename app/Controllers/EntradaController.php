@@ -2,6 +2,8 @@
 
 class EntradaController extends Controller
 {
+    private const SECTORES = ['Sector1', 'Sector2', 'Sector3'];
+
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
         $this->requierePermiso('entrada');
@@ -25,6 +27,7 @@ class EntradaController extends Controller
             'productos' => $productos,
             'presentaciones' => $presentaciones,
             'ubicaciones' => $ubicaciones,
+            'sectores' => self::SECTORES,
             'formData' => $formData,
             'errors' => $errors,
             'successMessage' => $successMessage,
@@ -48,6 +51,7 @@ class EntradaController extends Controller
             'idProducto' => $_POST['idProducto'] ?? '',
             'idPresentacion' => $_POST['idPresentacion'] ?? '',
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
+            'Sector' => trim($_POST['Sector'] ?? ''),
             'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
         ];
 
@@ -65,6 +69,7 @@ class EntradaController extends Controller
                 'idProducto' => (int) $formData['idProducto'],
                 'idPresentacion' => (int) $formData['idPresentacion'],
                 'idUbicacion' => (int) $formData['idUbicacion'],
+                'Sector' => $formData['Sector'],
                 'CantidadEntrante' => (int) $formData['CantidadEntrante'],
             ]);
 
@@ -100,6 +105,7 @@ class EntradaController extends Controller
             'productos' => $productos,
             'presentaciones' => $presentaciones,
             'ubicaciones' => $ubicaciones,
+            'sectores' => self::SECTORES,
             'message' => $message,
             'messageType' => $messageType,
             'loadError' => $loadError,
@@ -123,6 +129,7 @@ class EntradaController extends Controller
             'idProducto' => $_POST['idProducto'] ?? '',
             'idPresentacion' => $_POST['idPresentacion'] ?? '',
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
+            'Sector' => trim($_POST['Sector'] ?? ''),
             'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
         ];
 
@@ -152,6 +159,7 @@ class EntradaController extends Controller
                 'idProducto' => (int) $formData['idProducto'],
                 'idPresentacion' => (int) $formData['idPresentacion'],
                 'idUbicacion' => (int) $formData['idUbicacion'],
+                'Sector' => $formData['Sector'],
                 'CantidadEntrante' => (int) $formData['CantidadEntrante'],
             ]);
 
@@ -217,6 +225,10 @@ class EntradaController extends Controller
 
         if (filter_var($formData['idUbicacion'], FILTER_VALIDATE_INT) === false) {
             $errors['idUbicacion'] = 'Seleccione una ubicacion.';
+        }
+
+        if (!in_array($formData['Sector'], self::SECTORES, true)) {
+            $errors['Sector'] = 'Seleccione un sector.';
         }
 
         if (!ctype_digit($formData['CantidadEntrante']) || (int) $formData['CantidadEntrante'] <= 0) {

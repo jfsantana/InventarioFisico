@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS inventarioentrante (
     idUbicacion INT UNSIGNED NULL,
     CantidadEntrante DECIMAL(12, 2) NOT NULL DEFAULT 0,
     fecha DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    sector VARCHAR(50) NOT NULL,
     INDEX idx_inventarioentrante_producto (idProducto),
     CONSTRAINT fk_inventarioentrante_producto
         FOREIGN KEY (idProducto) REFERENCES Producto (idProducto)

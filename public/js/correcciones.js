@@ -216,6 +216,7 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'NumLote', row.dataset.lote);
             setFormValue(editForm, 'idPresentacion', row.dataset.presentation);
             setFormValue(editForm, 'idUbicacion', row.dataset.location);
+            setFormValue(editForm, 'Sector', row.dataset.sector);
             setFormValue(editForm, 'CantidadEntrante', row.dataset.cantidad);
             editForm.querySelector('[data-summary-salidas]').textContent = formatNumber(row.dataset.salidas);
             editForm.querySelector('[data-summary-salidas]').dataset.raw = row.dataset.salidas;

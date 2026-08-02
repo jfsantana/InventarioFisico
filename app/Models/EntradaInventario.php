@@ -26,8 +26,8 @@ class EntradaInventario extends BaseModel
     public function registrarEntrada(array $data): bool
     {
         $statement = $this->db->prepare(
-            'INSERT INTO inventarioentrante (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha)
-             VALUES (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE())'
+            'INSERT INTO inventarioentrante (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector)
+             VALUES (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector)'
         );
 
         return $statement->execute([
@@ -36,6 +36,7 @@ class EntradaInventario extends BaseModel
             'idPresentacion' => $data['idPresentacion'],
             'idUbicacion' => $data['idUbicacion'],
             'cantidadEntrante' => $data['CantidadEntrante'],
+            'sector' => $data['Sector'],
         ]);
     }
 
@@ -50,6 +51,7 @@ class EntradaInventario extends BaseModel
                     pr.nombre AS presentacion,
                     ie.`idUbicación` AS idUbicacion,
                     u.nombre AS ubicacion,
+                    ie.sector AS Sector,
                     ie.CantidadEntrante,
                     ie.fecha,
                     COALESCE(SUM(ins.cantidadSaliente), 0) AS salidaTotal,
@@ -59,7 +61,7 @@ class EntradaInventario extends BaseModel
              INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
              INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
              LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
-             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.CantidadEntrante, ie.fecha
+               GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha
              ORDER BY ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
 
@@ -87,6 +89,7 @@ class EntradaInventario extends BaseModel
                  idProducto = :idProducto,
                  idPresentacion = :idPresentacion,
                  `idUbicación` = :idUbicacion,
+                 sector = :sector,
                  CantidadEntrante = :cantidadEntrante
              WHERE idInventarioEntrante = :idInventarioEntrante'
         );
@@ -96,6 +99,7 @@ class EntradaInventario extends BaseModel
             'idProducto' => $data['idProducto'],
             'idPresentacion' => $data['idPresentacion'],
             'idUbicacion' => $data['idUbicacion'],
+            'sector' => $data['Sector'],
             'cantidadEntrante' => $data['CantidadEntrante'],
             'idInventarioEntrante' => $idInventarioEntrante,
         ]);

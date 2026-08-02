@@ -1,10 +1,15 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
 <?php
+$productos = $productos ?? [];
+$presentaciones = $presentaciones ?? [];
+$ubicaciones = $ubicaciones ?? [];
+$sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
 $isEntradaCompleta = !empty($formData['idProducto'])
     && !empty($formData['NumLote'])
     && !empty($formData['idPresentacion'])
     && !empty($formData['idUbicacion'])
+    && !empty($formData['Sector'])
     && ctype_digit((string) ($formData['CantidadEntrante'] ?? ''))
     && (int) ($formData['CantidadEntrante'] ?? 0) > 0;
 ?>
@@ -57,7 +62,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="idPresentacion">3. Presentacion</label>
+            <label for="idPresentacion">3. Presentacion (Efecto reporteria)</label>
             <select id="idPresentacion" name="idPresentacion" required>
                 <option value="">Seleccione una presentacion</option>
                 <?php foreach ($presentaciones as $presentacion) : ?>
@@ -87,7 +92,22 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="CantidadEntrante">5. Cantidad entrante</label>
+            <label for="Sector">5. Sector</label>
+            <select id="Sector" name="Sector" required>
+                <option value="">Seleccione un sector</option>
+                <?php foreach ($sectores as $sector) : ?>
+                    <option value="<?= htmlspecialchars($sector, ENT_QUOTES, 'UTF-8') ?>" <?= (string) ($formData['Sector'] ?? '') === (string) $sector ? 'selected' : '' ?>>
+                        <?= htmlspecialchars($sector, ENT_QUOTES, 'UTF-8') ?>
+                    </option>
+                <?php endforeach; ?>
+            </select>
+            <?php if (!empty($errors['Sector'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['Sector'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="CantidadEntrante">6. Cantidad entrante (OBLIGATORIAMENTE SE DEBE CARGAR EN KILOS)</label>
             <input id="CantidadEntrante" name="CantidadEntrante" type="number" min="1" step="1" value="<?= htmlspecialchars($formData['CantidadEntrante'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required placeholder="0">
             <?php if (!empty($errors['CantidadEntrante'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['CantidadEntrante'], ENT_QUOTES, 'UTF-8') ?></small>

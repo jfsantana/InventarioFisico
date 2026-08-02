@@ -6,6 +6,7 @@ if (entradaForm) {
         entradaForm.elements.NumLote,
         entradaForm.elements.idPresentacion,
         entradaForm.elements.idUbicacion,
+        entradaForm.elements.Sector,
         entradaForm.elements.CantidadEntrante,
     ];
     const submitButton = document.getElementById('guardarEntrada');
