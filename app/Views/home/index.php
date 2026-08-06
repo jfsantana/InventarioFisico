@@ -90,7 +90,7 @@ $authUser = Auth::user();
         <?php if ($canReporte || $canInteligencia || $canAdmin) : ?>
         <section class="menu-section menu-section--wide menu-section--reportes">
             <span>Consulta y direccion</span>
-            <h2>Reportes</h2>
+            <h2>Reportes y consultas</h2>
             <div class="menu-section-grid menu-section-grid--three">
                 <?php if ($canReporte) : ?>
                 <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/reporte">
@@ -112,13 +112,13 @@ $authUser = Auth::user();
                     <i aria-hidden="true">→</i>
                 </a>
                 <?php endif; ?>
-                <?php if ($canAdmin) : ?>
-                <a class="menu-card menu-card--conexion" href="<?= APP_URL ?>/conexion">
+                <?php if ($canInteligencia) : ?>
+                <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/ia/View/ia_view.php">
                     <span class="menu-card-icon" aria-hidden="true">
-                        <svg viewBox="0 0 24 24"><path d="M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Z" /><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7" /><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></svg>
+                        <svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3v-14Z" /><path d="M9 9h6M9 12h4" /><path d="m17 3 .5 1.5L19 5l-1.5.5L17 7l-.5-1.5L15 5l1.5-.5L17 3Z" /></svg>
                     </span>
-                    <span>Base de datos</span>
-                    <strong>Probar conexion</strong>
+                    <span>Lenguaje natural</span>
+                    <strong>Consulta inteligente</strong>
                     <i aria-hidden="true">→</i>
                 </a>
                 <?php endif; ?>
@@ -147,6 +147,14 @@ $authUser = Auth::user();
                         <span class="menu-card-icon" aria-hidden="true">📋</span>
                         <span>Auditoría</span>
                         <strong>Log de accesos</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
+                    <a class="menu-card menu-card--conexion" href="<?= APP_URL ?>/conexion">
+                        <span class="menu-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Z" /><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7" /><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></svg>
+                        </span>
+                        <span>Base de datos</span>
+                        <strong>Probar conexion</strong>
                         <i aria-hidden="true">→</i>
                     </a>
                 </div>
