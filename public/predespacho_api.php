@@ -192,28 +192,6 @@ try {
                     'mensaje' => $predespachoEmbarcado ? 'Predespacho embarcado.' : 'Predespacho actualizado.',
                 ]);
 
-            case 'cerrarPredespacho':
-                $idCabeceraPredespacho = enteroRequerido($_POST, 'idCabeceraPredespacho');
-                $predespacho = obtenerPredespachoPorId($idCabeceraPredespacho);
-                $success = actualizarStatusCabecera($idCabeceraPredespacho, 'cerrado');
-
-                if ($success && $predespacho) {
-                    try {
-                        enviarAlertaTelegram(
-                            "*Predespacho cerrado*\n" .
-                            "Predespacho: " . (string) $predespacho['codigoInterno'] . "\n" .
-                            "Cliente: " . (string) $predespacho['nombreCliente'] . "\n" .
-                            "Fecha retiro: " . (string) $predespacho['fechaRetiro']
-                        );
-                    } catch (Throwable $exception) {
-                    }
-                }
-
-                responderJson([
-                    'success' => $success,
-                    'mensaje' => $success ? 'Predespacho cerrado correctamente.' : 'No se pudo cerrar el predespacho.',
-                ]);
-
             default:
                 responderJson([
                     'success' => false,

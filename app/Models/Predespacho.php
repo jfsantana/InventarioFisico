@@ -25,9 +25,9 @@ class Predespacho extends BaseModel
 
             $statement = $this->db->prepare(
                 'INSERT INTO tbl_cabecera_predespacho
-                    (idCliente, fechaRetiro, codigoInterno, codigoNotaEntregaSAP, userCreador, statusGeneralPredespacho, observaciones)
+                    (idCliente, fechaRetiro, codigoInterno, codigoNotaEntregaSAP, userCreador, statusGeneralPredespacho, tokenCierre, observaciones)
                  VALUES
-                    (:idCliente, :fechaRetiro, :codigoInterno, :codigoNotaEntregaSAP, :userCreador, :statusGeneralPredespacho, :observaciones)'
+                    (:idCliente, :fechaRetiro, :codigoInterno, :codigoNotaEntregaSAP, :userCreador, :statusGeneralPredespacho, :tokenCierre, :observaciones)'
             );
             $statement->execute([
                 'idCliente' => $idCliente,
@@ -36,6 +36,7 @@ class Predespacho extends BaseModel
                 'codigoNotaEntregaSAP' => $codigoNotaEntregaSAP,
                 'userCreador' => $userCreador,
                 'statusGeneralPredespacho' => 'abierto',
+                'tokenCierre' => bin2hex(random_bytes(32)),
                 'observaciones' => $observaciones,
             ]);
 
@@ -81,6 +82,9 @@ class Predespacho extends BaseModel
                     cp.codigoNotaEntregaSAP,
                     cp.userCreador,
                     cp.statusGeneralPredespacho,
+                    cp.idUsuarioCierre,
+                    cp.usuarioCierre,
+                    cp.fechaCierre,
                     cp.observaciones,
                     cp.fechaCreacion,
                     cp.fechaActualizacion
@@ -117,6 +121,157 @@ class Predespacho extends BaseModel
         $predespacho = $statement->fetch();
 
         return $predespacho ?: null;
+    }
+
+    public function obtenerTokenCierre(int $idCabeceraPredespacho): ?string
+    {
+        $statement = $this->db->prepare(
+            'SELECT tokenCierre
+             FROM tbl_cabecera_predespacho
+             WHERE idCabeceraPredespacho = :idCabeceraPredespacho
+             LIMIT 1'
+        );
+        $statement->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+        $token = $statement->fetchColumn();
+
+        return is_string($token) && $token !== '' ? $token : null;
+    }
+
+    public function obtenerResumenCierrePorQr(string $codigoInterno, string $tokenCierre): ?array
+    {
+        if (!preg_match('/^[a-f0-9]{64}$/', $tokenCierre)) {
+            return null;
+        }
+
+        $statement = $this->db->prepare(
+            'SELECT cp.idCabeceraPredespacho,
+                    cp.codigoInterno,
+                    cp.codigoNotaEntregaSAP,
+                    cp.fechaRetiro,
+                    cp.statusGeneralPredespacho,
+                    cp.idUsuarioCierre,
+                    cp.usuarioCierre,
+                    cp.fechaCierre,
+                    cp.observaciones,
+                    c.nombre AS nombreCliente,
+                    c.rif AS rifCliente
+             FROM tbl_cabecera_predespacho cp
+             INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
+             WHERE cp.codigoInterno = :codigoInterno
+               AND cp.tokenCierre = :tokenCierre
+             LIMIT 1'
+        );
+        $statement->execute([
+            'codigoInterno' => $codigoInterno,
+            'tokenCierre' => $tokenCierre,
+        ]);
+        $cabecera = $statement->fetch();
+
+        if (!$cabecera) {
+            return null;
+        }
+
+        $itemsStatement = $this->db->prepare(
+            'SELECT p.nombre AS nombreProducto,
+                    ip.cantidadDespachada
+             FROM tbl_items_predespacho ip
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ip.idInventarioEntrante
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
+             WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho
+             ORDER BY ip.idItem ASC'
+        );
+        $itemsStatement->execute([
+            'idCabeceraPredespacho' => (int) $cabecera['idCabeceraPredespacho'],
+        ]);
+        $cabecera['items'] = $itemsStatement->fetchAll();
+
+        return $cabecera;
+    }
+
+    public function debeEnviarAlertaQrUrgente(string $codigoInterno, string $estado): bool
+    {
+        $statement = $this->db->prepare(
+            'SELECT COUNT(*)
+             FROM log_accesos
+             WHERE modulo = :modulo
+               AND accion = :accion
+               AND resultado = :resultado
+               AND detalle = :detalle
+               AND fecha >= DATE_SUB(NOW(), INTERVAL 5 MINUTE)'
+        );
+        $statement->execute([
+            'modulo' => 'predespacho',
+            'accion' => 'alerta_qr_estado_invalido',
+            'resultado' => 'exitoso',
+            'detalle' => $codigoInterno . '|' . $estado,
+        ]);
+
+        return (int) $statement->fetchColumn() === 0;
+    }
+
+    public function cerrarPredespachoPorQr(
+        string $codigoInterno,
+        string $tokenCierre,
+        int $idUsuarioCierre,
+        string $usuarioCierre
+    ): array
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $statement = $this->db->prepare(
+                'SELECT idCabeceraPredespacho, statusGeneralPredespacho
+                 FROM tbl_cabecera_predespacho
+                 WHERE codigoInterno = :codigoInterno
+                   AND tokenCierre = :tokenCierre
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $statement->execute([
+                'codigoInterno' => $codigoInterno,
+                'tokenCierre' => $tokenCierre,
+            ]);
+            $predespacho = $statement->fetch();
+
+            if (!$predespacho) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El enlace de cierre no es válido.'];
+            }
+
+            if ($predespacho['statusGeneralPredespacho'] === 'cerrado') {
+                $this->db->commit();
+                return ['success' => true, 'cerradoAhora' => false, 'mensaje' => 'Este predespacho ya estaba cerrado.'];
+            }
+
+            if ($predespacho['statusGeneralPredespacho'] !== 'embarcado') {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El predespacho debe estar embarcado antes de cerrar su salida.'];
+            }
+
+            $update = $this->db->prepare(
+                'UPDATE tbl_cabecera_predespacho
+                 SET statusGeneralPredespacho = :estatusCerrado,
+                     idUsuarioCierre = :idUsuarioCierre,
+                     usuarioCierre = :usuarioCierre,
+                     fechaCierre = NOW()
+                 WHERE idCabeceraPredespacho = :idCabeceraPredespacho'
+            );
+            $update->execute([
+                'estatusCerrado' => 'cerrado',
+                'idUsuarioCierre' => $idUsuarioCierre,
+                'usuarioCierre' => $usuarioCierre,
+                'idCabeceraPredespacho' => (int) $predespacho['idCabeceraPredespacho'],
+            ]);
+
+            $this->db->commit();
+            return ['success' => true, 'cerradoAhora' => true, 'mensaje' => 'Predespacho despachado y cerrado correctamente.'];
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            return ['success' => false, 'mensaje' => 'No se pudo cerrar el predespacho.'];
+        }
     }
 
     public function actualizarCodigoSAP(int $idCabeceraPredespacho, ?string $codigoNotaEntregaSAP): bool

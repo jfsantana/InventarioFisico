@@ -130,7 +130,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td class="table-actions" data-label="Acciones">
                     <button type="button" data-ver-detalle>Ver Detalle</button>
                     <button type="button" data-editar-sap>Editar SAP</button>
-                    <button type="button" data-cerrar-predespacho ${item.statusGeneralPredespacho === 'cerrado' ? 'disabled' : ''}>Cerrar</button>
                 </td>
             </tr>
         `).join('');
@@ -212,22 +211,6 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }
 
-    window.confirmarCerrar = function confirmarCerrar(idCabeceraPredespacho) {
-        if (!confirm('¿Deseas cerrar este predespacho?')) {
-            return;
-        }
-
-        const formData = new FormData();
-        formData.set('idCabeceraPredespacho', idCabeceraPredespacho);
-
-        apiPost('cerrarPredespacho', formData)
-            .then((data) => {
-                showMessage(data.mensaje || 'Predespacho cerrado correctamente.');
-                loadPredespachos();
-            })
-            .catch((error) => showMessage(error.message, true));
-    };
-
     document.querySelectorAll('[data-modal-close]').forEach((button) => {
         button.addEventListener('click', () => closeModal(button.closest('.correction-modal')));
     });
@@ -264,10 +247,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         if (event.target.closest('[data-editar-sap]')) {
             openSapModal(predespacho);
-        }
-
-        if (event.target.closest('[data-cerrar-predespacho]')) {
-            window.confirmarCerrar(predespacho.idCabeceraPredespacho);
         }
     });
 

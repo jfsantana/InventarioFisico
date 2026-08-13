@@ -10,6 +10,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const errorBox = page.querySelector('[data-detalle-error]');
     const itemsRows = page.querySelector('[data-items-rows]');
     const sapForm = page.querySelector('[data-inline-sap-form]');
+    const closeUrl = page.dataset.closeUrl;
+    const qrPanel = page.querySelector('[data-qr-panel]');
+    const printButton = page.querySelector('[data-print-dispatch]');
+    const closeQrCanvas = page.querySelector('[data-close-qr]');
+    const printQrCanvas = document.querySelector('[data-print-qr]');
+    const printItemsRows = document.querySelector('[data-print-items]');
     const addItemModal = document.querySelector('[data-add-item-modal]');
     const productSearchInput = addItemModal.querySelector('[data-product-search-input]');
     const productResults = addItemModal.querySelector('[data-product-results]');
@@ -118,13 +124,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderDetalle(data) {
         detalle = data;
+        const qrDisponible = ['embarcado', 'cerrado'].includes(data?.statusGeneralPredespacho);
         page.querySelector('[data-summary-codigo]').textContent = data?.codigoInterno || 'Sin codigo';
         page.querySelector('[data-summary-cliente]').textContent = data?.nombreCliente || 'Sin cliente';
         page.querySelector('[data-summary-fecha]').textContent = data?.fechaRetiro || 'Sin dato';
         page.querySelector('[data-summary-sap]').textContent = data?.codigoNotaEntregaSAP || 'Sin dato';
         page.querySelector('[data-summary-observaciones]').textContent = data?.observaciones || 'Sin observaciones';
         page.querySelector('[data-summary-status]').innerHTML = `<span class="status-pill ${statusClass(data?.statusGeneralPredespacho)}">${formatValue(data?.statusGeneralPredespacho)}</span>`;
+        page.querySelector('[data-summary-usuario-cierre]').textContent = data?.usuarioCierre || 'Sin cerrar';
+        page.querySelector('[data-summary-fecha-cierre]').textContent = data?.fechaCierre || 'Sin cerrar';
         sapForm.elements.codigoNotaEntregaSAP.value = data?.codigoNotaEntregaSAP || '';
+        document.querySelector('[data-print-codigo]').textContent = data?.codigoInterno || 'Sin código';
+        document.querySelector('[data-print-cliente]').textContent = data?.nombreCliente || 'Sin cliente';
+        document.querySelector('[data-print-fecha]').textContent = data?.fechaRetiro || 'Sin dato';
+        document.querySelector('[data-print-sap]').textContent = data?.codigoNotaEntregaSAP || 'Sin dato';
+        document.querySelector('[data-print-status]').textContent = data?.statusGeneralPredespacho || 'Sin dato';
+        document.querySelector('[data-print-observaciones]').textContent = data?.observaciones || 'Sin observaciones';
+        if (qrPanel) {
+            qrPanel.hidden = !qrDisponible;
+        }
+        if (printButton) {
+            printButton.hidden = !qrDisponible;
+        }
+        if (qrDisponible) {
+            renderQr(closeQrCanvas);
+            renderQr(printQrCanvas);
+        }
     }
 
     function loadDetalle() {
@@ -144,6 +169,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderItems(items) {
+        if (printItemsRows) {
+            printItemsRows.innerHTML = items.length === 0
+                ? '<tr><td colspan="2">Este predespacho no tiene productos.</td></tr>'
+                : items.map((item) => `
+                    <tr>
+                        <td>${formatValue(item.nombreProducto)}</td>
+                        <td>${formatDecimal(item.cantidadDespachada)}</td>
+                    </tr>
+                `).join('');
+        }
+
         if (items.length === 0) {
             itemsRows.innerHTML = '<tr><td colspan="8">Este predespacho no tiene items.</td></tr>';
             return;
@@ -174,6 +210,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 </tr>
             `;
         }).join('');
+    }
+
+    function renderQr(container) {
+        if (!container || !closeUrl || !window.QRCode) {
+            return;
+        }
+
+        container.replaceChildren();
+        new window.QRCode(container, {
+            text: closeUrl,
+            width: 180,
+            height: 180,
+            margin: 1,
+            colorDark: '#171717',
+            colorLight: '#ffffff',
+            correctLevel: window.QRCode.CorrectLevel.M
+        });
     }
 
     function loadItems() {
@@ -422,6 +475,16 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .catch((error) => showAddItemError(error.message));
     });
+
+    if (printButton) {
+        printButton.addEventListener('click', () => {
+            if (!['embarcado', 'cerrado'].includes(detalle?.statusGeneralPredespacho)) {
+                return;
+            }
+
+            window.print();
+        });
+    }
 
     document.querySelectorAll('[data-modal-close]').forEach((button) => {
         button.addEventListener('click', () => closeModal(button.closest('.correction-modal')));

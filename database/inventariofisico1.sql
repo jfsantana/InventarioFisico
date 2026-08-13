@@ -464,15 +464,22 @@ CREATE TABLE IF NOT EXISTS `tbl_cabecera_predespacho` (
   `codigoNotaEntregaSAP` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `userCreador` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
   `statusGeneralPredespacho` enum('abierto','pendiente','embarcado','cerrado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'abierto',
+  `tokenCierre` char(64) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `idUsuarioCierre` int DEFAULT NULL,
+  `usuarioCierre` varchar(150) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `fechaCierre` datetime DEFAULT NULL,
   `observaciones` text COLLATE utf8mb4_unicode_ci,
   `fechaCreacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`idCabeceraPredespacho`),
   UNIQUE KEY `uq_codigo_interno` (`codigoInterno`),
+  UNIQUE KEY `uq_predespacho_token_cierre` (`tokenCierre`),
   KEY `idx_cab_cliente` (`idCliente`),
   KEY `idx_cab_status` (`statusGeneralPredespacho`),
   KEY `idx_cab_fecha_retiro` (`fechaRetiro`),
-  KEY `idx_cab_nota_sap` (`codigoNotaEntregaSAP`)
+  KEY `idx_cab_nota_sap` (`codigoNotaEntregaSAP`),
+  KEY `idx_predespacho_usuario_cierre` (`idUsuarioCierre`),
+  KEY `idx_predespacho_fecha_cierre` (`fechaCierre`)
 ) ENGINE=InnoDB AUTO_INCREMENT=8 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
