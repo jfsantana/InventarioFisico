@@ -185,11 +185,11 @@ try {
 
             case 'verificarCierrePredespacho':
                 $idCabeceraPredespacho = enteroRequerido($_POST, 'idCabeceraPredespacho');
-                $predespachoCerrado = verificarYCerrarPredespacho($idCabeceraPredespacho);
+                $predespachoEmbarcado = predespachoModel()->verificarYEmbarcarPredespacho($idCabeceraPredespacho);
                 responderJson([
                     'success' => true,
-                    'predespacho_cerrado' => $predespachoCerrado,
-                    'mensaje' => $predespachoCerrado ? 'Predespacho cerrado.' : 'Predespacho actualizado.',
+                    'predespacho_embarcado' => $predespachoEmbarcado,
+                    'mensaje' => $predespachoEmbarcado ? 'Predespacho embarcado.' : 'Predespacho actualizado.',
                 ]);
 
             case 'cerrarPredespacho':

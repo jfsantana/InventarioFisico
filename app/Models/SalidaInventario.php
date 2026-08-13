@@ -280,7 +280,7 @@ class SalidaInventario extends BaseModel
             ]);
         }
 
-        $estatusCabecera = $todosCerrados ? 'cerrado' : ($tieneMovimiento ? 'pendiente' : 'abierto');
+        $estatusCabecera = $todosCerrados ? 'embarcado' : ($tieneMovimiento ? 'pendiente' : 'abierto');
         $statement = $this->db->prepare(
             'UPDATE tbl_cabecera_predespacho
              SET statusGeneralPredespacho = :statusGeneralPredespacho

@@ -111,8 +111,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 return data;
             }))
             .then((data) => {
-                if (data.predespacho_cerrado) {
-                    showMessage(data.mensaje || 'Predespacho completado y cerrado correctamente.');
+                if (data.predespacho_embarcado) {
+                    showMessage(data.mensaje || 'Predespacho embarcado correctamente.');
 
                     const deliverySection = document.querySelector('[data-delivery-section]');
                     if (deliverySection) {
@@ -121,7 +121,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     const url = new URL(window.location.href);
                     url.searchParams.delete('predespacho');
-                    url.searchParams.set('cerrado', '1');
+                    url.searchParams.set('embarcado', '1');
                     window.location.href = url.href;
                     return;
                 }

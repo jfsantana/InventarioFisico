@@ -148,8 +148,8 @@ document.addEventListener('DOMContentLoaded', () => {
             .then((response) => {
                 showMessage('Entrega registrada correctamente');
 
-                if (response.predespacho_cerrado || response.predespachoCerrado) {
-                    window.alert(`Predespacho ${page.dataset.predespachoCodigo} completado y cerrado`);
+                if (response.predespacho_embarcado || response.predespachoEmbarcado) {
+                    window.alert(`Predespacho ${page.dataset.predespachoCodigo} completado y embarcado`);
                 }
 
                 clearForm();

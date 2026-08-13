@@ -32,8 +32,8 @@ class SalidaController extends Controller
         $items = [];
         $loadError = null;
 
-        if (($_GET['cerrado'] ?? '') === '1') {
-            $successMessage = 'Predespacho completado y cerrado correctamente.';
+        if (($_GET['embarcado'] ?? '') === '1') {
+            $successMessage = 'Predespacho embarcado correctamente.';
         }
 
         try {
@@ -42,7 +42,7 @@ class SalidaController extends Controller
             if ($codigoPredespachoSeleccionado !== '') {
                 $predespachoSeleccionado = $model->obtenerPredespachoPorCodigo($codigoPredespachoSeleccionado);
 
-                if ($predespachoSeleccionado && $predespachoSeleccionado['statusGeneralPredespacho'] === 'cerrado') {
+                if ($predespachoSeleccionado && !in_array($predespachoSeleccionado['statusGeneralPredespacho'], ['abierto', 'pendiente'], true)) {
                     $predespachoSeleccionado = null;
                 }
 
@@ -155,7 +155,7 @@ class SalidaController extends Controller
             echo json_encode([
                 'success' => true,
                 'mensaje' => $resultado['mensaje'] ?? 'Entrega registrada correctamente.',
-                'predespacho_cerrado' => !empty($resultado['predespacho_cerrado']) || !empty($resultado['predespachoCerrado']),
+                'predespacho_embarcado' => !empty($resultado['predespacho_embarcado']) || !empty($resultado['predespachoEmbarcado']),
                 'producto_cerrado' => !empty($resultado['producto_cerrado']) || !empty($resultado['productoCerrado']),
             ], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $exception) {

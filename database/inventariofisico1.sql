@@ -463,7 +463,7 @@ CREATE TABLE IF NOT EXISTS `tbl_cabecera_predespacho` (
   `codigoInterno` varchar(20) COLLATE utf8mb4_unicode_ci NOT NULL,
   `codigoNotaEntregaSAP` varchar(50) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `userCreador` varchar(100) COLLATE utf8mb4_unicode_ci NOT NULL,
-  `statusGeneralPredespacho` enum('abierto','pendiente','cerrado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'abierto',
+  `statusGeneralPredespacho` enum('abierto','pendiente','embarcado','cerrado') COLLATE utf8mb4_unicode_ci NOT NULL DEFAULT 'abierto',
   `observaciones` text COLLATE utf8mb4_unicode_ci,
   `fechaCreacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `fechaActualizacion` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

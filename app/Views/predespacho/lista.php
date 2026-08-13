@@ -22,6 +22,7 @@
             <option value="">Todos</option>
             <option value="abierto">abierto</option>
             <option value="pendiente">pendiente</option>
+            <option value="embarcado">embarcado</option>
             <option value="cerrado">cerrado</option>
         </select>
         <button class="button-link button-link--secondary" type="button" data-refresh-predespachos>Actualizar</button>

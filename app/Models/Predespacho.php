@@ -2,7 +2,7 @@
 
 class Predespacho extends BaseModel
 {
-    private const STATUS_VALIDOS = ['abierto', 'pendiente', 'cerrado'];
+    private const STATUS_VALIDOS = ['abierto', 'pendiente', 'embarcado', 'cerrado'];
 
     public function crearCabeceraPredespacho(
         int $idCliente,
@@ -188,7 +188,7 @@ class Predespacho extends BaseModel
         }
     }
 
-    public function verificarYCerrarPredespacho(int $idCabeceraPredespacho): bool
+    public function verificarYEmbarcarPredespacho(int $idCabeceraPredespacho): bool
     {
         $statement = $this->db->prepare(
             'SELECT COUNT(*) AS itemsAbiertos
@@ -206,7 +206,12 @@ class Predespacho extends BaseModel
             return false;
         }
 
-        return $this->actualizarStatusCabecera($idCabeceraPredespacho, 'cerrado');
+        return $this->actualizarStatusCabecera($idCabeceraPredespacho, 'embarcado');
+    }
+
+    public function verificarYCerrarPredespacho(int $idCabeceraPredespacho): bool
+    {
+        return $this->verificarYEmbarcarPredespacho($idCabeceraPredespacho);
     }
 
     public function agregarItemPredespacho(
@@ -551,11 +556,12 @@ class Predespacho extends BaseModel
                     cp.fechaActualizacion
              FROM tbl_cabecera_predespacho cp
              INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
-             WHERE cp.statusGeneralPredespacho <> :estatusCabeceraCerrado
+             WHERE cp.statusGeneralPredespacho IN (:estatusAbierto, :estatusPendiente)
              ORDER BY cp.fechaCreacion DESC'
         );
         $statement->execute([
-            'estatusCabeceraCerrado' => 'cerrado',
+            'estatusAbierto' => 'abierto',
+            'estatusPendiente' => 'pendiente',
         ]);
 
         return $statement->fetchAll();
@@ -835,7 +841,7 @@ class Predespacho extends BaseModel
                 return [
                     'success' => false,
                     'mensaje' => 'Item de predespacho no encontrado.',
-                    'predespachoCerrado' => false,
+                    'predespachoEmbarcado' => false,
                 ];
             }
 
@@ -845,8 +851,8 @@ class Predespacho extends BaseModel
                 return [
                     'success' => false,
                     'mensaje' => 'La cantidad debe ser mayor que cero.',
-                    'predespachoCerrado' => false,
-                    'predespacho_cerrado' => false,
+                    'predespachoEmbarcado' => false,
+                    'predespacho_embarcado' => false,
                     'productoCerrado' => false,
                     'producto_cerrado' => false,
                 ];
@@ -873,8 +879,8 @@ class Predespacho extends BaseModel
                 return [
                     'success' => false,
                     'mensaje' => 'Cantidad supera el disponible.',
-                    'predespachoCerrado' => false,
-                    'predespacho_cerrado' => false,
+                    'predespachoEmbarcado' => false,
+                    'predespacho_embarcado' => false,
                     'productoCerrado' => false,
                     'producto_cerrado' => false,
                 ];
@@ -906,10 +912,10 @@ class Predespacho extends BaseModel
                 'idItem' => $idItem,
             ]);
 
-            $predespachoCerrado = $this->verificarYCerrarPredespacho($idCabeceraPredespacho);
+            $predespachoEmbarcado = $this->verificarYEmbarcarPredespacho($idCabeceraPredespacho);
             $this->db->commit();
 
-            if ($predespachoCerrado) {
+            if ($predespachoEmbarcado) {
                 try {
                     $detalleStmt = $this->db->prepare(
                         'SELECT p.nombre AS nombreProducto,
@@ -940,10 +946,10 @@ class Predespacho extends BaseModel
                     }
 
                     $mensaje =
-                        "✅ *Predespacho Cerrado*\n"
+                        "✅ *Predespacho Embarcado*\n"
                         . "────────────────────\n"
                         . '*Código:* ' . $item['codigoInterno'] . "\n"
-                        . '*Fecha cierre:* ' . date('d/m/Y H:i') . "\n"
+                        . '*Fecha de embarque:* ' . date('d/m/Y H:i') . "\n"
                         . '*Cliente:* ' . $item['nombreCliente'] . "\n"
                         . $sapLinea . "\n\n"
                         . '*Productos entregados (' . count($itemsDetalle) . '):*' . "\n"
@@ -957,8 +963,8 @@ class Predespacho extends BaseModel
             return [
                 'success' => true,
                 'mensaje' => 'Entrega registrada correctamente',
-                'predespachoCerrado' => $predespachoCerrado,
-                'predespacho_cerrado' => $predespachoCerrado,
+                'predespachoEmbarcado' => $predespachoEmbarcado,
+                'predespacho_embarcado' => $predespachoEmbarcado,
                 'productoCerrado' => $productoCerrado,
                 'producto_cerrado' => $productoCerrado,
             ];
@@ -970,8 +976,8 @@ class Predespacho extends BaseModel
             return [
                 'success' => false,
                 'mensaje' => 'No se pudo registrar la salida.',
-                'predespachoCerrado' => false,
-                'predespacho_cerrado' => false,
+                'predespachoEmbarcado' => false,
+                'predespacho_embarcado' => false,
                 'productoCerrado' => false,
                 'producto_cerrado' => false,
             ];
