@@ -44,60 +44,91 @@ class IaController
             ],
         ];
 
-        try {
-            $payload = json_encode([
-                'model' => IA_MODEL,
-                'messages' => $messages,
-                'temperature' => 0.2,
-                'max_tokens' => 1024,
-            ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
-        } catch (JsonException $exception) {
-            return 'Error al preparar la solicitud para OpenRouter: ' . $exception->getMessage();
+        $ultimoError = 'Ningún modelo de IA disponible respondió correctamente.';
+
+        foreach (IA_MODELS as $modelo) {
+            try {
+                $payload = json_encode([
+                    'model' => $modelo,
+                    'messages' => $messages,
+                    'temperature' => 0.2,
+                    'max_tokens' => 1024,
+                    'provider' => [
+                        'allow_fallbacks' => true,
+                        'max_price' => [
+                            'prompt' => 0,
+                            'completion' => 0,
+                        ],
+                    ],
+                ], JSON_UNESCAPED_UNICODE | JSON_THROW_ON_ERROR);
+            } catch (JsonException $exception) {
+                return 'Error al preparar la solicitud para OpenRouter: ' . $exception->getMessage();
+            }
+
+            $curl = curl_init(IA_API_URL);
+            if ($curl === false) {
+                return 'Error: no se pudo inicializar la conexión con OpenRouter.';
+            }
+
+            curl_setopt_array($curl, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST => true,
+                CURLOPT_POSTFIELDS => $payload,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_TIMEOUT => IA_TIMEOUT_SEGUNDOS,
+                CURLOPT_CAINFO => $caBundle,
+                CURLOPT_SSL_VERIFYPEER => true,
+                CURLOPT_SSL_VERIFYHOST => 2,
+            ]);
+
+            $respuestaHttp = curl_exec($curl);
+            $errorCurl = curl_error($curl);
+            $codigoHttp = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+            curl_close($curl);
+
+            if ($respuestaHttp === false) {
+                $ultimoError = 'Error de conexión: ' . ($errorCurl !== '' ? $errorCurl : 'respuesta vacía.');
+                continue;
+            }
+
+            try {
+                $resultado = json_decode($respuestaHttp, true, 512, JSON_THROW_ON_ERROR);
+            } catch (JsonException) {
+                $ultimoError = 'Error: OpenRouter devolvió una respuesta JSON inválida.';
+                continue;
+            }
+
+            if ($codigoHttp < 200 || $codigoHttp >= 300) {
+                $mensajeApi = $resultado['error']['message'] ?? 'OpenRouter rechazó la solicitud.';
+                $ultimoError = 'Error de IA (' . $codigoHttp . '): ' . $mensajeApi;
+
+                if (!$this->debeIntentarOtroModelo($codigoHttp, $mensajeApi)) {
+                    return $ultimoError;
+                }
+
+                continue;
+            }
+
+            $texto = $resultado['choices'][0]['message']['content'] ?? null;
+            if (is_string($texto) && trim($texto) !== '') {
+                return trim($texto);
+            }
+
+            $ultimoError = 'Error: el modelo devolvió una respuesta vacía.';
         }
 
-        $curl = curl_init(IA_API_URL);
+        return $ultimoError;
+    }
 
-        if ($curl === false) {
-            return 'Error: no se pudo inicializar la conexión con OpenRouter.';
+    private function debeIntentarOtroModelo(int $codigoHttp, string $mensajeApi): bool
+    {
+        if (in_array($codigoHttp, [404, 408, 409, 429], true) || $codigoHttp >= 500) {
+            return true;
         }
 
-        curl_setopt_array($curl, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_POST => true,
-            CURLOPT_POSTFIELDS => $payload,
-            CURLOPT_HTTPHEADER => $headers,
-            CURLOPT_TIMEOUT => IA_TIMEOUT_SEGUNDOS,
-            CURLOPT_CAINFO => $caBundle,
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_SSL_VERIFYHOST => 2,
-        ]);
-
-        $respuestaHttp = curl_exec($curl);
-        $errorCurl = curl_error($curl);
-        $codigoHttp = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-
-        if ($respuestaHttp === false) {
-            return 'Error de conexión: ' . ($errorCurl !== '' ? $errorCurl : 'respuesta vacía.');
-        }
-
-        try {
-            $resultado = json_decode($respuestaHttp, true, 512, JSON_THROW_ON_ERROR);
-        } catch (JsonException $exception) {
-            return 'Error: OpenRouter devolvió una respuesta JSON inválida.';
-        }
-
-        if ($codigoHttp < 200 || $codigoHttp >= 300) {
-            $mensajeApi = $resultado['error']['message'] ?? 'OpenRouter rechazó la solicitud.';
-            return 'Error de IA (' . $codigoHttp . '): ' . $mensajeApi;
-        }
-
-        $texto = $resultado['choices'][0]['message']['content'] ?? null;
-        if (!is_string($texto) || trim($texto) === '') {
-            return 'Error: no se pudo obtener una respuesta válida de OpenRouter. Intenta de nuevo.';
-        }
-
-        return trim($texto);
+        return $codigoHttp === 400
+            && (str_contains($mensajeApi, 'not a valid model ID')
+                || str_contains($mensajeApi, 'model is unavailable'));
     }
 
     public function procesarPregunta(): void
