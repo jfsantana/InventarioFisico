@@ -44,6 +44,51 @@ class EntradaInventario extends BaseModel
         return $statement->fetchAll();
     }
 
+    public function obtenerDestinatariosEntrada(): array
+    {
+        $statement = $this->db->query(
+            "SELECT nombre, email
+             FROM contactosinternosemail
+             WHERE LOWER(TRIM(proceso)) = 'entrada'
+               AND TRIM(email) <> ''
+             ORDER BY nombre ASC"
+        );
+
+        return array_values(array_filter(
+            $statement->fetchAll(),
+            static fn (array $contacto): bool => filter_var($contacto['email'], FILTER_VALIDATE_EMAIL) !== false
+        ));
+    }
+
+    public function obtenerDetalleEntradaParaCorreo(int $idInventarioEntrante): ?array
+    {
+        $statement = $this->db->prepare(
+            'SELECT ie.idInventarioEntrante,
+                    ie.fecha,
+                    tc.descripcion AS tipoCompra,
+                    p.nombre AS producto,
+                    proveedor.CardName AS proveedor,
+                    fabricante.CardName AS fabricante,
+                    pais.Name AS pais,
+                    ie.NumLote,
+                    ie.CantidadEntrante,
+                    presentacion.nombre AS presentacion
+             FROM inventarioentrante ie
+             INNER JOIN Producto p ON p.idProducto = ie.idProducto
+             INNER JOIN presentacion ON presentacion.idPresentacion = ie.idPresentacion
+             LEFT JOIN tipo_compra tc ON tc.id = ie.idTipoCompra
+             LEFT JOIN proveedores proveedor ON proveedor.CardCode = ie.CardCode
+             LEFT JOIN proveedores fabricante ON fabricante.CardCode = ie.FabricanteCode
+             LEFT JOIN paises pais ON pais.Code = ie.PaisCode
+             WHERE ie.idInventarioEntrante = :idInventarioEntrante
+             LIMIT 1'
+        );
+        $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
+        $entrada = $statement->fetch();
+
+        return $entrada ?: null;
+    }
+
     public function registrarEntrada(array $data): int
     {
         $statement = $this->db->prepare(

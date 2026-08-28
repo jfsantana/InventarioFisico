@@ -81,7 +81,7 @@ class EntradaController extends Controller
 
         $errors = array_merge(
             $this->validarFormulario($formData),
-            $this->validarDocumentos([], true)
+            $this->validarDocumentos([], false)
         );
 
         if (!empty($errors)) {
@@ -106,8 +106,13 @@ class EntradaController extends Controller
                 'PaisCode' => $formData['PaisCode'],
             ]);
             $this->guardarDocumentos($model, $idNuevaEntrada, []);
+            $correoEnviado = $this->notificarEntrada($model, $idNuevaEntrada, 'creacion');
 
-            $this->index([], [], 'La entrada de inventario fue registrada correctamente.');
+            $mensaje = 'La entrada de inventario fue registrada correctamente.';
+            if (!$correoEnviado) {
+                $mensaje .= ' No se pudo enviar el correo de notificacion; revise el log del servidor.';
+            }
+            $this->index([], [], $mensaje);
         } catch (Throwable $exception) {
             if ($idNuevaEntrada !== null && isset($model)) {
                 $this->eliminarArchivos($model->obtenerDocumentosEntrada($idNuevaEntrada));
@@ -226,8 +231,13 @@ class EntradaController extends Controller
                 'PaisCode' => $formData['PaisCode'],
             ]);
             $this->guardarDocumentos($model, $idInventarioEntrante, $documentosExistentes);
+            $correoEnviado = $this->notificarEntrada($model, $idInventarioEntrante, 'edicion');
 
-            $this->detalle('La entrada fue corregida correctamente.');
+            $mensaje = 'La entrada fue corregida correctamente.';
+            if (!$correoEnviado) {
+                $mensaje .= ' No se pudo enviar el correo de notificacion; revise el log del servidor.';
+            }
+            $this->detalle($mensaje, $correoEnviado ? 'success' : 'error');
         } catch (Throwable $exception) {
             $this->detalle($exception->getMessage(), 'error');
         }
@@ -263,6 +273,32 @@ class EntradaController extends Controller
         header('Content-Disposition: attachment; filename="' . $nombreAscii . '"; filename*=UTF-8\'\'' . rawurlencode($documento['nombreOriginal']));
         readfile($filePath);
         exit;
+    }
+
+    public function reenviarCorreo(): void
+    {
+        $this->requierePermiso('corregir_entradas', 'editar');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: ' . APP_URL . '/entrada/detalle');
+            return;
+        }
+
+        $this->validarCsrf();
+
+        $idInventarioEntrante = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
+        if (!$idInventarioEntrante) {
+            $this->detalle('No se pudo identificar la entrada para reenviar el correo.', 'error');
+            return;
+        }
+
+        $model = $this->model('EntradaInventario');
+        if (!$this->notificarEntrada($model, $idInventarioEntrante, 'reenvio')) {
+            $this->detalle('No se pudo reenviar el correo de notificacion; revise el log del servidor.', 'error');
+            return;
+        }
+
+        $this->detalle('El correo de la entrada #' . $idInventarioEntrante . ' fue reenviado correctamente.');
     }
 
     public function eliminar(): void
@@ -368,7 +404,7 @@ class EntradaController extends Controller
             $error = (int) ($archivo['error'] ?? UPLOAD_ERR_NO_FILE);
 
             if ($error === UPLOAD_ERR_NO_FILE) {
-                if ($requeridos || !isset($existentes[$configuracion['tipo']])) {
+                if ($requeridos) {
                     $errors[$campo] = 'Adjunte ' . strtolower($configuracion['label']) . '.';
                 }
                 continue;
@@ -468,5 +504,30 @@ class EntradaController extends Controller
     private function rutaDocumentos(): string
     {
         return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'entradas';
+    }
+
+    private function notificarEntrada(EntradaInventario $model, int $idInventarioEntrante, string $evento): bool
+    {
+        try {
+            $entrada = $model->obtenerDetalleEntradaParaCorreo($idInventarioEntrante);
+            if (!$entrada) {
+                throw new RuntimeException('No se encontro el detalle de la entrada.');
+            }
+
+            $notificador = new EntradaNotificador();
+            $notificador->enviar(
+                $entrada,
+                $model->obtenerDestinatariosEntrada(),
+                $model->obtenerDocumentosEntrada($idInventarioEntrante),
+                $this->rutaDocumentos(),
+                $evento
+            );
+
+            return true;
+        } catch (Throwable $exception) {
+            error_log('No se pudo notificar la entrada #' . $idInventarioEntrante . ': ' . $exception->getMessage());
+
+            return false;
+        }
     }
 }

@@ -7,6 +7,7 @@ Aplicacion PHP basica con patron MVC y conexion PDO a MySQL local.
 - WAMP instalado y en ejecucion
 - PHP con extension `pdo_mysql` habilitada
 - MySQL local
+- Composer
 
 ## Configurar la base de datos
 
@@ -18,6 +19,16 @@ define('DB_NAME', 'inventariofisico');
 define('DB_USER', 'root');
 define('DB_PASS', '');
 ```
+
+Instala las dependencias PHP con:
+
+```text
+composer install
+```
+
+Configura tambien `SMTP_HOST`, `SMTP_PORT`, `SMTP_ENCRYPTION`, `SMTP_USERNAME`,
+`SMTP_PASSWORD`, `SMTP_FROM_EMAIL` y `SMTP_FROM_NAME` en el archivo local de
+configuracion o mediante variables de entorno. No incluyas credenciales SMTP en Git.
 
 Puedes crear la base de datos con:
 

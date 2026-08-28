@@ -1,0 +1,9 @@
+{
+    "name": "adyarca/inventario-fisico",
+    "type": "project",
+    "license": "proprietary",
+    "require": {
+        "php": "^8.0",
+        "phpmailer/phpmailer": "^6.10"
+    }
+}

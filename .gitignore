@@ -1,2 +1,4 @@
 # Ignorar el archivo de configuración local
 /config/config.php
+/config/smtp.local.php
+/vendor/

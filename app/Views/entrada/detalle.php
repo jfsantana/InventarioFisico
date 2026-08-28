@@ -14,9 +14,10 @@ $proveedores = $proveedores ?? [];
 $paises = $paises ?? [];
 $documentosPorEntrada = $documentosPorEntrada ?? [];
 $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
+$canResendEmail = Auth::can('corregir_entradas', 'editar');
 ?>
 
-<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-document-download-endpoint="<?= APP_URL ?>/entrada/descargarDocumento" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-email-resend-endpoint="<?= APP_URL ?>/entrada/reenviarCorreo" data-document-download-endpoint="<?= APP_URL ?>/entrada/descargarDocumento" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
     <p class="intro">Revise cada entrada de inventario y corrija sus datos cuando sea necesario.</p>
@@ -136,6 +137,9 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                             <td data-label="Disponible"><span class="stock-pill <?= $danger ? 'stock-pill--risk' : '' ?>"><?= $money($entrada['disponible']) ?></span></td>
                             <td class="actions-column" data-label="Acciones">
                                 <button class="icon-action icon-action--edit" type="button" data-edit-row aria-label="Editar entrada #<?= (int) $entrada['idInventarioEntrante'] ?>">✏️</button>
+                                <?php if ($canResendEmail) : ?>
+                                    <button class="icon-action icon-action--email" type="button" data-email-row aria-label="Reenviar correo de entrada #<?= (int) $entrada['idInventarioEntrante'] ?>" title="Reenviar correo">&#9993;</button>
+                                <?php endif; ?>
                                 <button class="icon-action icon-action--delete" type="button" data-delete-row aria-label="Eliminar entrada #<?= (int) $entrada['idInventarioEntrante'] ?>">🗑️</button>
                             </td>
                         </tr>
@@ -263,7 +267,7 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                         <span class="document-current"><a href="#" data-document-link>Descargar <span data-document-name></span></a><span data-document-empty>Sin documento cargado</span></span>
                         <input name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png">
                     </label>
-                    <small>Seleccione un archivo solo para reemplazar el documento actual. Formatos: PDF, JPG o PNG. Maximo conjunto: 10 MB.</small>
+                    <small>Los documentos son opcionales. Seleccione un archivo solo para agregarlo o reemplazar el actual. Formatos: PDF, JPG o PNG. Maximo conjunto: 10 MB.</small>
                 </div>
             </div>
             <dl class="modal-summary">

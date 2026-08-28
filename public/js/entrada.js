@@ -18,7 +18,6 @@ if (entradaForm) {
         entradaForm.elements.CardCode,
         entradaForm.elements.FabricanteCode,
         entradaForm.elements.PaisCode,
-        ...fileFields,
     ];
     const submitButton = document.getElementById('guardarEntrada');
     const message = document.getElementById('entradaFormMessage');
@@ -55,7 +54,7 @@ if (entradaForm) {
             : (formComplete ? '' : 'Complete todos los campos obligatorios para guardar la entrada.');
     }
 
-    requiredFields.forEach((field) => {
+    [...requiredFields, ...fileFields].forEach((field) => {
         if (!field) {
             return;
         }

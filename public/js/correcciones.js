@@ -22,6 +22,7 @@ function initCorrectionPage(page) {
     const toastHost = page.querySelector('[data-toast-host]');
     const pageType = page.dataset.pageType;
     const deleteEndpoint = page.dataset.deleteEndpoint;
+    const emailResendEndpoint = page.dataset.emailResendEndpoint;
     const documentDownloadEndpoint = page.dataset.documentDownloadEndpoint;
     const csrfToken = page.dataset.csrfToken;
 
@@ -237,7 +238,7 @@ function initCorrectionPage(page) {
 
                 link.hidden = !documentId || documentId === '0';
                 empty.hidden = !link.hidden;
-                fileInput.required = link.hidden;
+                fileInput.required = false;
                 if (!link.hidden) {
                     link.href = `${documentDownloadEndpoint}/${documentId}`;
                     name.textContent = documentName;
@@ -392,9 +393,31 @@ function initCorrectionPage(page) {
 
     tableBody.addEventListener('click', (event) => {
         const editButton = event.target.closest('[data-edit-row]');
+        const emailButton = event.target.closest('[data-email-row]');
         const deleteButton = event.target.closest('[data-delete-row]');
         if (editButton) {
             openEditModal(editButton.closest('tr'));
+        }
+        if (emailButton) {
+            const row = emailButton.closest('tr');
+            if (!emailResendEndpoint || !row?.dataset.id) {
+                showToast('No se pudo identificar la entrada para reenviar el correo.', 'error');
+                return;
+            }
+
+            if (!window.confirm(`¿Reenviar el correo de la entrada #${row.dataset.id}?`)) {
+                return;
+            }
+
+            emailButton.classList.add('is-loading');
+            emailButton.disabled = true;
+
+            const form = document.createElement('form');
+            form.method = 'post';
+            form.action = emailResendEndpoint;
+            form.innerHTML = `<input type="hidden" name="idInventarioEntrante" value="${row.dataset.id}"><input type="hidden" name="csrf_token" value="${csrfToken}">`;
+            document.body.appendChild(form);
+            form.submit();
         }
         if (deleteButton) {
             openDeleteModal(deleteButton.closest('tr'));

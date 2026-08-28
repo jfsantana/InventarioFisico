@@ -189,7 +189,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <div class="form-field">
             <label for="ticketRomana">11. Ticket de romana</label>
-            <input id="ticketRomana" name="ticketRomana" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <input id="ticketRomana" name="ticketRomana" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['ticketRomana'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['ticketRomana'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
@@ -197,7 +197,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <div class="form-field">
             <label for="facturaProveedor">12. Factura del proveedor</label>
-            <input id="facturaProveedor" name="facturaProveedor" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <input id="facturaProveedor" name="facturaProveedor" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['facturaProveedor'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['facturaProveedor'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
@@ -205,7 +205,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <div class="form-field">
             <label for="documentoSeniat">13. Documento de Seniat</label>
-            <input id="documentoSeniat" name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <input id="documentoSeniat" name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['documentoSeniat'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['documentoSeniat'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
