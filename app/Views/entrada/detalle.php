@@ -9,13 +9,16 @@ $entradas = $entradas ?? [];
 $presentaciones = $presentaciones ?? [];
 $ubicaciones = $ubicaciones ?? [];
 $productos = $productos ?? [];
+$tiposCompra = $tiposCompra ?? [];
+$proveedores = $proveedores ?? [];
+$paises = $paises ?? [];
 $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
 ?>
 
 <section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
-    <p class="intro">Revise cada entrada de inventario y corrija producto, lote, presentacion, ubicacion, sector o cantidad cuando sea necesario.</p>
+    <p class="intro">Revise cada entrada de inventario y corrija sus datos cuando sea necesario.</p>
 
     <?php if (!empty($message)) : ?>
         <div class="message message--<?= $messageType === 'error' ? 'error' : 'success' ?> correction-server-message" role="alert" data-server-message data-message-type="<?= $messageType === 'error' ? 'error' : 'success' ?>">
@@ -106,9 +109,13 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                             data-ubicacion="<?= $text($entrada['ubicacion']) ?>"
                             data-sector="<?= $text($entrada['Sector'] ?? '') ?>"
                             data-cantidad="<?= $text($entrada['CantidadEntrante']) ?>"
+                            data-tipo-compra-id="<?= (int) ($entrada['idTipoCompra'] ?? 0) ?>"
+                            data-card-code="<?= $text($entrada['CardCode'] ?? '') ?>"
+                            data-fabricante-code="<?= $text($entrada['FabricanteCode'] ?? '') ?>"
+                            data-pais-code="<?= $text($entrada['PaisCode'] ?? '') ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
-                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion']) ?>">
+                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '')) ?>">
                             <td data-label="#"><?= (int) $entrada['idInventarioEntrante'] ?></td>
                             <td data-label="Fecha"><?= $formatDate($entrada['fecha']) ?></td>
                             <td data-label="Producto"><strong><?= $text($entrada['producto']) ?></strong></td>
@@ -156,6 +163,42 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
             </header>
             <input type="hidden" name="idInventarioEntrante">
             <div class="correction-modal-grid">
+                <label>
+                    Tipo de compra
+                    <select name="idTipoCompra" required>
+                        <option value="">Seleccione un tipo de compra</option>
+                        <?php foreach ($tiposCompra as $tipoCompra) : ?>
+                            <option value="<?= (int) $tipoCompra['id'] ?>"><?= $text($tipoCompra['descripcion']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>
+                    Proveedor
+                    <select name="CardCode" required data-searchable-select data-search-placeholder="Escriba codigo o nombre del proveedor" data-search-result-label="proveedor">
+                        <option value="">Seleccione un proveedor</option>
+                        <?php foreach ($proveedores as $proveedor) : ?>
+                            <option value="<?= $text($proveedor['CardCode']) ?>"><?= $text($proveedor['CardCode'] . ' - ' . ($proveedor['CardName'] ?? '')) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>
+                    Fabricante
+                    <select name="FabricanteCode" required data-searchable-select data-search-placeholder="Escriba codigo o nombre del fabricante" data-search-result-label="fabricante">
+                        <option value="">Seleccione un fabricante</option>
+                        <?php foreach ($proveedores as $proveedor) : ?>
+                            <option value="<?= $text($proveedor['CardCode']) ?>"><?= $text($proveedor['CardCode'] . ' - ' . ($proveedor['CardName'] ?? '')) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
+                <label>
+                    Pais
+                    <select name="PaisCode" required>
+                        <option value="">Seleccione un pais</option>
+                        <?php foreach ($paises as $pais) : ?>
+                            <option value="<?= $text($pais['Code']) ?>"><?= $text($pais['Name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </label>
                 <label>
                     Producto
                     <select id="entradaProductoSelect" name="idProducto" required data-product-search data-search-placeholder="Escriba codigo o nombre del producto">
@@ -223,6 +266,6 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
     <div class="correction-toast-host" data-toast-host aria-live="polite" aria-atomic="true"></div>
 </section>
 
-<script src="<?= APP_URL ?>/public/js/correcciones.js"></script>
-<script src="<?= APP_URL ?>/public/js/searchable-select.js"></script>
+<script src="<?= APP_URL ?>/public/js/correcciones.js?v=<?= filemtime(__DIR__ . '/../../../public/js/correcciones.js') ?>"></script>
+<script src="<?= APP_URL ?>/public/js/searchable-select.js?v=<?= filemtime(__DIR__ . '/../../../public/js/searchable-select.js') ?>"></script>
 <?php require_once __DIR__ . '/../layouts/footer.php'; ?>

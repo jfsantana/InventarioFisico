@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', () => {
-    document.querySelectorAll('select[data-product-search]').forEach(createSearchableSelect);
+    document.querySelectorAll('select[data-product-search], select[data-searchable-select]').forEach(createSearchableSelect);
 });
 
 function createSearchableSelect(select) {
@@ -103,7 +103,8 @@ function createSearchableSelect(select) {
             list.appendChild(item);
         });
 
-        status.textContent = `${matches.length} producto${matches.length === 1 ? '' : 's'} encontrado${matches.length === 1 ? '' : 's'}`;
+        const resultLabel = select.dataset.searchResultLabel || 'producto';
+        status.textContent = `${matches.length} ${resultLabel}${matches.length === 1 ? '' : 's'} encontrado${matches.length === 1 ? '' : 's'}`;
     }
 
     function selectValue(value) {

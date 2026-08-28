@@ -23,11 +23,34 @@ class EntradaInventario extends BaseModel
         return $statement->fetchAll();
     }
 
+    public function obtenerTiposCompra(): array
+    {
+        $statement = $this->db->query('SELECT id, descripcion FROM tipo_compra ORDER BY descripcion ASC');
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerProveedores(): array
+    {
+        $statement = $this->db->query('SELECT CardCode, CardName FROM proveedores ORDER BY CardName ASC, CardCode ASC');
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerPaises(): array
+    {
+        $statement = $this->db->query('SELECT Code, Name FROM paises ORDER BY Name ASC');
+
+        return $statement->fetchAll();
+    }
+
     public function registrarEntrada(array $data): bool
     {
         $statement = $this->db->prepare(
-            'INSERT INTO inventarioentrante (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector)
-             VALUES (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector)'
+            'INSERT INTO inventarioentrante
+                (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector, idTipoCompra, CardCode, FabricanteCode, PaisCode)
+             VALUES
+                (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode)'
         );
 
         return $statement->execute([
@@ -37,6 +60,10 @@ class EntradaInventario extends BaseModel
             'idUbicacion' => $data['idUbicacion'],
             'cantidadEntrante' => $data['CantidadEntrante'],
             'sector' => $data['Sector'],
+            'idTipoCompra' => $data['idTipoCompra'],
+            'cardCode' => $data['CardCode'],
+            'fabricanteCode' => $data['FabricanteCode'],
+            'paisCode' => $data['PaisCode'],
         ]);
     }
 
@@ -54,14 +81,26 @@ class EntradaInventario extends BaseModel
                     ie.sector AS Sector,
                     ie.CantidadEntrante,
                     ie.fecha,
+                    ie.idTipoCompra,
+                    tc.descripcion AS tipoCompra,
+                    ie.CardCode,
+                    proveedor.CardName AS proveedor,
+                    ie.FabricanteCode,
+                    fabricante.CardName AS fabricante,
+                    ie.PaisCode,
+                    pais.Name AS pais,
                     COALESCE(SUM(ins.cantidadSaliente), 0) AS salidaTotal,
                     ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
              INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
              INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
+                         LEFT JOIN tipo_compra tc ON tc.id = ie.idTipoCompra
+                         LEFT JOIN proveedores proveedor ON proveedor.CardCode = ie.CardCode
+                         LEFT JOIN proveedores fabricante ON fabricante.CardCode = ie.FabricanteCode
+                         LEFT JOIN paises pais ON pais.Code = ie.PaisCode
              LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
-               GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha
+                             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha, ie.idTipoCompra, tc.descripcion, ie.CardCode, proveedor.CardName, ie.FabricanteCode, fabricante.CardName, ie.PaisCode, pais.Name
              ORDER BY ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
 
@@ -90,7 +129,11 @@ class EntradaInventario extends BaseModel
                  idPresentacion = :idPresentacion,
                  `idUbicación` = :idUbicacion,
                  sector = :sector,
-                 CantidadEntrante = :cantidadEntrante
+                 CantidadEntrante = :cantidadEntrante,
+                 idTipoCompra = :idTipoCompra,
+                 CardCode = :cardCode,
+                 FabricanteCode = :fabricanteCode,
+                 PaisCode = :paisCode
              WHERE idInventarioEntrante = :idInventarioEntrante'
         );
 
@@ -101,6 +144,10 @@ class EntradaInventario extends BaseModel
             'idUbicacion' => $data['idUbicacion'],
             'sector' => $data['Sector'],
             'cantidadEntrante' => $data['CantidadEntrante'],
+            'idTipoCompra' => $data['idTipoCompra'],
+            'cardCode' => $data['CardCode'],
+            'fabricanteCode' => $data['FabricanteCode'],
+            'paisCode' => $data['PaisCode'],
             'idInventarioEntrante' => $idInventarioEntrante,
         ]);
     }

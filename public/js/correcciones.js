@@ -218,6 +218,10 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'idUbicacion', row.dataset.location);
             setFormValue(editForm, 'Sector', row.dataset.sector);
             setFormValue(editForm, 'CantidadEntrante', row.dataset.cantidad);
+            setFormValue(editForm, 'idTipoCompra', row.dataset.tipoCompraId);
+            setFormValue(editForm, 'CardCode', row.dataset.cardCode);
+            setFormValue(editForm, 'FabricanteCode', row.dataset.fabricanteCode);
+            setFormValue(editForm, 'PaisCode', row.dataset.paisCode);
             editForm.querySelector('[data-summary-salidas]').textContent = formatNumber(row.dataset.salidas);
             editForm.querySelector('[data-summary-salidas]').dataset.raw = row.dataset.salidas;
             editForm.querySelector('[data-summary-disponible]').textContent = formatNumber(row.dataset.disponible);
@@ -271,6 +275,7 @@ function initCorrectionPage(page) {
         const field = form.elements[name];
         if (field) {
             field.value = value || '';
+            field.dispatchEvent(new Event('change', { bubbles: true }));
         }
     }
 

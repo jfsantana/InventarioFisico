@@ -12,12 +12,18 @@ class EntradaController extends Controller
         $productos = [];
         $presentaciones = [];
         $ubicaciones = [];
+        $tiposCompra = [];
+        $proveedores = [];
+        $paises = [];
         $loadError = null;
 
         try {
             $productos = $model->obtenerProductos();
             $presentaciones = $model->obtenerPresentaciones();
             $ubicaciones = $model->obtenerUbicaciones();
+            $tiposCompra = $model->obtenerTiposCompra();
+            $proveedores = $model->obtenerProveedores();
+            $paises = $model->obtenerPaises();
         } catch (PDOException $exception) {
             $loadError = $exception->getMessage();
         }
@@ -27,6 +33,9 @@ class EntradaController extends Controller
             'productos' => $productos,
             'presentaciones' => $presentaciones,
             'ubicaciones' => $ubicaciones,
+            'tiposCompra' => $tiposCompra,
+            'proveedores' => $proveedores,
+            'paises' => $paises,
             'sectores' => self::SECTORES,
             'formData' => $formData,
             'errors' => $errors,
@@ -53,6 +62,10 @@ class EntradaController extends Controller
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
             'Sector' => trim($_POST['Sector'] ?? ''),
             'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
+            'idTipoCompra' => $_POST['idTipoCompra'] ?? '',
+            'CardCode' => trim($_POST['CardCode'] ?? ''),
+            'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
+            'PaisCode' => trim($_POST['PaisCode'] ?? ''),
         ];
 
         $errors = $this->validarFormulario($formData);
@@ -71,6 +84,10 @@ class EntradaController extends Controller
                 'idUbicacion' => (int) $formData['idUbicacion'],
                 'Sector' => $formData['Sector'],
                 'CantidadEntrante' => (int) $formData['CantidadEntrante'],
+                'idTipoCompra' => (int) $formData['idTipoCompra'],
+                'CardCode' => $formData['CardCode'],
+                'FabricanteCode' => $formData['FabricanteCode'],
+                'PaisCode' => $formData['PaisCode'],
             ]);
 
             $this->index([], [], 'La entrada de inventario fue registrada correctamente.');
@@ -88,6 +105,9 @@ class EntradaController extends Controller
         $productos = [];
         $presentaciones = [];
         $ubicaciones = [];
+        $tiposCompra = [];
+        $proveedores = [];
+        $paises = [];
         $loadError = null;
 
         try {
@@ -95,6 +115,9 @@ class EntradaController extends Controller
             $productos = $model->obtenerProductos();
             $presentaciones = $model->obtenerPresentaciones();
             $ubicaciones = $model->obtenerUbicaciones();
+            $tiposCompra = $model->obtenerTiposCompra();
+            $proveedores = $model->obtenerProveedores();
+            $paises = $model->obtenerPaises();
         } catch (PDOException $exception) {
             $loadError = $exception->getMessage();
         }
@@ -105,6 +128,9 @@ class EntradaController extends Controller
             'productos' => $productos,
             'presentaciones' => $presentaciones,
             'ubicaciones' => $ubicaciones,
+            'tiposCompra' => $tiposCompra,
+            'proveedores' => $proveedores,
+            'paises' => $paises,
             'sectores' => self::SECTORES,
             'message' => $message,
             'messageType' => $messageType,
@@ -131,6 +157,10 @@ class EntradaController extends Controller
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
             'Sector' => trim($_POST['Sector'] ?? ''),
             'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
+            'idTipoCompra' => $_POST['idTipoCompra'] ?? '',
+            'CardCode' => trim($_POST['CardCode'] ?? ''),
+            'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
+            'PaisCode' => trim($_POST['PaisCode'] ?? ''),
         ];
 
         if (!$idInventarioEntrante) {
@@ -161,6 +191,10 @@ class EntradaController extends Controller
                 'idUbicacion' => (int) $formData['idUbicacion'],
                 'Sector' => $formData['Sector'],
                 'CantidadEntrante' => (int) $formData['CantidadEntrante'],
+                'idTipoCompra' => (int) $formData['idTipoCompra'],
+                'CardCode' => $formData['CardCode'],
+                'FabricanteCode' => $formData['FabricanteCode'],
+                'PaisCode' => $formData['PaisCode'],
             ]);
 
             $this->detalle('La entrada fue corregida correctamente.');
@@ -233,6 +267,22 @@ class EntradaController extends Controller
 
         if (!ctype_digit($formData['CantidadEntrante']) || (int) $formData['CantidadEntrante'] <= 0) {
             $errors['CantidadEntrante'] = 'Escriba una cantidad mayor que cero.';
+        }
+
+        if (filter_var($formData['idTipoCompra'], FILTER_VALIDATE_INT) === false) {
+            $errors['idTipoCompra'] = 'Seleccione un tipo de compra.';
+        }
+
+        if ($formData['CardCode'] === '' || strlen($formData['CardCode']) > 15) {
+            $errors['CardCode'] = 'Seleccione un proveedor.';
+        }
+
+        if ($formData['FabricanteCode'] === '' || strlen($formData['FabricanteCode']) > 15) {
+            $errors['FabricanteCode'] = 'Seleccione un fabricante.';
+        }
+
+        if ($formData['PaisCode'] === '' || strlen($formData['PaisCode']) > 3) {
+            $errors['PaisCode'] = 'Seleccione un pais.';
         }
 
         return $errors;

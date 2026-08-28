@@ -8,6 +8,10 @@ if (entradaForm) {
         entradaForm.elements.idUbicacion,
         entradaForm.elements.Sector,
         entradaForm.elements.CantidadEntrante,
+        entradaForm.elements.idTipoCompra,
+        entradaForm.elements.CardCode,
+        entradaForm.elements.FabricanteCode,
+        entradaForm.elements.PaisCode,
     ];
     const submitButton = document.getElementById('guardarEntrada');
     const message = document.getElementById('entradaFormMessage');
