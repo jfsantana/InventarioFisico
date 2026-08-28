@@ -48,7 +48,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         <div class="message" role="status">Tu rol permite consultar esta pantalla, pero no registrar entradas.</div>
     <?php endif; ?>
 
-    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" data-entrada-form>
+    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form>
         <?= Auth::csrfField() ?>
         <fieldset class="entry-form-fieldset" <?= $canCreateEntry ? '' : 'disabled' ?>>
         <div class="form-field">
@@ -186,6 +186,34 @@ $isEntradaCompleta = !empty($formData['idProducto'])
                 <small class="field-error"><?= htmlspecialchars($errors['CantidadEntrante'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
         </div>
+
+        <div class="form-field">
+            <label for="ticketRomana">11. Ticket de romana</label>
+            <input id="ticketRomana" name="ticketRomana" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <?php if (!empty($errors['ticketRomana'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['ticketRomana'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="facturaProveedor">12. Factura del proveedor</label>
+            <input id="facturaProveedor" name="facturaProveedor" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <?php if (!empty($errors['facturaProveedor'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['facturaProveedor'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="documentoSeniat">13. Documento de Seniat</label>
+            <input id="documentoSeniat" name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
+            <?php if (!empty($errors['documentoSeniat'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['documentoSeniat'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($errors['documentos'])) : ?>
+            <small class="field-error form-field-message"><?= htmlspecialchars($errors['documentos'], ENT_QUOTES, 'UTF-8') ?></small>
+        <?php endif; ?>
 
         <div class="form-actions form-actions--full">
             <button id="guardarEntrada" class="button-link button-link--submit" type="submit" <?= $canCreateEntry && $isEntradaCompleta ? '' : 'disabled' ?>>Guardar entrada</button>

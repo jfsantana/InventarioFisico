@@ -3,6 +3,17 @@
 class EntradaController extends Controller
 {
     private const SECTORES = ['Sector1', 'Sector2', 'Sector3'];
+    private const MAX_DOCUMENTOS_BYTES = 10485760;
+    private const DOCUMENTOS = [
+        'ticketRomana' => ['tipo' => 'ticket_romana', 'label' => 'Ticket de romana'],
+        'facturaProveedor' => ['tipo' => 'factura_proveedor', 'label' => 'Factura del proveedor'],
+        'documentoSeniat' => ['tipo' => 'documento_seniat', 'label' => 'Documento de Seniat'],
+    ];
+    private const MIME_EXTENSIONS = [
+        'application/pdf' => 'pdf',
+        'image/jpeg' => 'jpg',
+        'image/png' => 'png',
+    ];
 
     public function index(array $formData = [], array $errors = [], ?string $successMessage = null): void
     {
@@ -68,16 +79,21 @@ class EntradaController extends Controller
             'PaisCode' => trim($_POST['PaisCode'] ?? ''),
         ];
 
-        $errors = $this->validarFormulario($formData);
+        $errors = array_merge(
+            $this->validarFormulario($formData),
+            $this->validarDocumentos([], true)
+        );
 
         if (!empty($errors)) {
             $this->index($formData, $errors);
             return;
         }
 
+        $idNuevaEntrada = null;
+
         try {
             $model = $this->model('EntradaInventario');
-            $model->registrarEntrada([
+            $idNuevaEntrada = $model->registrarEntrada([
                 'NumLote' => $formData['NumLote'],
                 'idProducto' => (int) $formData['idProducto'],
                 'idPresentacion' => (int) $formData['idPresentacion'],
@@ -89,9 +105,15 @@ class EntradaController extends Controller
                 'FabricanteCode' => $formData['FabricanteCode'],
                 'PaisCode' => $formData['PaisCode'],
             ]);
+            $this->guardarDocumentos($model, $idNuevaEntrada, []);
 
             $this->index([], [], 'La entrada de inventario fue registrada correctamente.');
-        } catch (PDOException $exception) {
+        } catch (Throwable $exception) {
+            if ($idNuevaEntrada !== null && isset($model)) {
+                $this->eliminarArchivos($model->obtenerDocumentosEntrada($idNuevaEntrada));
+                $model->eliminarDocumentosEntrada($idNuevaEntrada);
+                $model->eliminarEntrada($idNuevaEntrada);
+            }
             $this->index($formData, ['general' => $exception->getMessage()]);
         }
     }
@@ -108,6 +130,7 @@ class EntradaController extends Controller
         $tiposCompra = [];
         $proveedores = [];
         $paises = [];
+        $documentosPorEntrada = [];
         $loadError = null;
 
         try {
@@ -118,6 +141,7 @@ class EntradaController extends Controller
             $tiposCompra = $model->obtenerTiposCompra();
             $proveedores = $model->obtenerProveedores();
             $paises = $model->obtenerPaises();
+            $documentosPorEntrada = $model->obtenerTodosDocumentos();
         } catch (PDOException $exception) {
             $loadError = $exception->getMessage();
         }
@@ -131,6 +155,7 @@ class EntradaController extends Controller
             'tiposCompra' => $tiposCompra,
             'proveedores' => $proveedores,
             'paises' => $paises,
+            'documentosPorEntrada' => $documentosPorEntrada,
             'sectores' => self::SECTORES,
             'message' => $message,
             'messageType' => $messageType,
@@ -168,7 +193,12 @@ class EntradaController extends Controller
             return;
         }
 
-        $errors = $this->validarFormulario($formData);
+        $model = $this->model('EntradaInventario');
+        $documentosExistentes = $model->obtenerDocumentosEntrada($idInventarioEntrante);
+        $errors = array_merge(
+            $this->validarFormulario($formData),
+            $this->validarDocumentos($documentosExistentes, false)
+        );
 
         if (!empty($errors)) {
             $this->detalle(implode(' ', $errors), 'error');
@@ -176,7 +206,6 @@ class EntradaController extends Controller
         }
 
         try {
-            $model = $this->model('EntradaInventario');
             $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
 
             if ((int) $formData['CantidadEntrante'] < $salidaTotal) {
@@ -196,11 +225,44 @@ class EntradaController extends Controller
                 'FabricanteCode' => $formData['FabricanteCode'],
                 'PaisCode' => $formData['PaisCode'],
             ]);
+            $this->guardarDocumentos($model, $idInventarioEntrante, $documentosExistentes);
 
             $this->detalle('La entrada fue corregida correctamente.');
-        } catch (PDOException $exception) {
+        } catch (Throwable $exception) {
             $this->detalle($exception->getMessage(), 'error');
         }
+    }
+
+    public function descargarDocumento(?string $idDocumento = null): void
+    {
+        $this->requierePermiso('corregir_entradas');
+
+        $id = filter_var($idDocumento, FILTER_VALIDATE_INT);
+        if (!$id) {
+            http_response_code(404);
+            return;
+        }
+
+        $model = $this->model('EntradaInventario');
+        $documento = $model->obtenerDocumentoPorId((int) $id);
+        if (!$documento) {
+            http_response_code(404);
+            return;
+        }
+
+        $basePath = realpath($this->rutaDocumentos());
+        $filePath = realpath($this->rutaDocumentos() . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $documento['rutaRelativa']));
+        if ($basePath === false || $filePath === false || !str_starts_with($filePath, $basePath . DIRECTORY_SEPARATOR) || !is_file($filePath)) {
+            http_response_code(404);
+            return;
+        }
+
+        $nombreAscii = preg_replace('/[^A-Za-z0-9._-]/', '_', $documento['nombreOriginal']) ?: 'documento';
+        header('Content-Type: ' . $documento['mimeType']);
+        header('Content-Length: ' . filesize($filePath));
+        header('Content-Disposition: attachment; filename="' . $nombreAscii . '"; filename*=UTF-8\'\'' . rawurlencode($documento['nombreOriginal']));
+        readfile($filePath);
+        exit;
     }
 
     public function eliminar(): void
@@ -224,6 +286,7 @@ class EntradaController extends Controller
         try {
             $model = $this->model('EntradaInventario');
             $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
+            $documentos = $model->obtenerDocumentosEntrada($idInventarioEntrante);
 
             if ($salidaTotal > 0) {
                 $this->detalle('No se puede eliminar una entrada con salidas registradas.', 'error');
@@ -234,6 +297,9 @@ class EntradaController extends Controller
                 $this->detalle('La entrada seleccionada no existe.', 'error');
                 return;
             }
+
+            $model->eliminarDocumentosEntrada($idInventarioEntrante);
+            $this->eliminarArchivos($documentos);
 
             $this->detalle('La entrada fue eliminada correctamente.');
         } catch (PDOException $exception) {
@@ -286,5 +352,121 @@ class EntradaController extends Controller
         }
 
         return $errors;
+    }
+
+    private function validarDocumentos(array $existentes, bool $requeridos): array
+    {
+        $errors = [];
+        $totalBytes = array_sum(array_map(
+            static fn (array $documento): int => (int) $documento['tamanoBytes'],
+            $existentes
+        ));
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+
+        foreach (self::DOCUMENTOS as $campo => $configuracion) {
+            $archivo = $_FILES[$campo] ?? null;
+            $error = (int) ($archivo['error'] ?? UPLOAD_ERR_NO_FILE);
+
+            if ($error === UPLOAD_ERR_NO_FILE) {
+                if ($requeridos || !isset($existentes[$configuracion['tipo']])) {
+                    $errors[$campo] = 'Adjunte ' . strtolower($configuracion['label']) . '.';
+                }
+                continue;
+            }
+
+            if ($error !== UPLOAD_ERR_OK) {
+                $errors[$campo] = 'No se pudo cargar ' . strtolower($configuracion['label']) . '.';
+                continue;
+            }
+
+            if (!is_uploaded_file($archivo['tmp_name'])) {
+                $errors[$campo] = 'El archivo recibido no es valido.';
+                continue;
+            }
+
+            $mimeType = $finfo->file($archivo['tmp_name']);
+            if (!isset(self::MIME_EXTENSIONS[$mimeType])) {
+                $errors[$campo] = 'Solo se permiten archivos PDF, JPG o PNG.';
+                continue;
+            }
+
+            $tipo = $configuracion['tipo'];
+            $totalBytes -= (int) ($existentes[$tipo]['tamanoBytes'] ?? 0);
+            $totalBytes += (int) $archivo['size'];
+        }
+
+        if ($totalBytes > self::MAX_DOCUMENTOS_BYTES) {
+            $errors['documentos'] = 'Los tres documentos no pueden superar 10 MB en total.';
+        }
+
+        return $errors;
+    }
+
+    private function guardarDocumentos(EntradaInventario $model, int $idInventarioEntrante, array $existentes): void
+    {
+        $directorioEntrada = $this->rutaDocumentos() . DIRECTORY_SEPARATOR . $idInventarioEntrante;
+        if (!is_dir($directorioEntrada) && !mkdir($directorioEntrada, 0770, true) && !is_dir($directorioEntrada)) {
+            throw new RuntimeException('No se pudo crear la carpeta para los documentos.');
+        }
+
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $usuario = Auth::user();
+
+        foreach (self::DOCUMENTOS as $campo => $configuracion) {
+            $archivo = $_FILES[$campo] ?? null;
+            if ((int) ($archivo['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+
+            $mimeType = $finfo->file($archivo['tmp_name']);
+            $extension = self::MIME_EXTENSIONS[$mimeType];
+            $nombreAlmacenado = bin2hex(random_bytes(16)) . '.' . $extension;
+            $rutaRelativa = $idInventarioEntrante . '/' . $nombreAlmacenado;
+            $destino = $directorioEntrada . DIRECTORY_SEPARATOR . $nombreAlmacenado;
+
+            if (!move_uploaded_file($archivo['tmp_name'], $destino)) {
+                throw new RuntimeException('No se pudo guardar ' . strtolower($configuracion['label']) . '.');
+            }
+
+            try {
+                $model->guardarDocumento($idInventarioEntrante, [
+                    'tipoDocumento' => $configuracion['tipo'],
+                    'nombreOriginal' => basename($archivo['name']),
+                    'nombreAlmacenado' => $nombreAlmacenado,
+                    'rutaRelativa' => $rutaRelativa,
+                    'mimeType' => $mimeType,
+                    'tamanoBytes' => (int) $archivo['size'],
+                    'idUsuario' => (int) ($usuario['id_usuario'] ?? 0) ?: null,
+                ]);
+            } catch (Throwable $exception) {
+                @unlink($destino);
+                throw $exception;
+            }
+
+            $anterior = $existentes[$configuracion['tipo']] ?? null;
+            if ($anterior) {
+                $this->eliminarArchivo($anterior);
+            }
+        }
+    }
+
+    private function eliminarArchivos(array $documentos): void
+    {
+        foreach ($documentos as $documento) {
+            $this->eliminarArchivo($documento);
+        }
+    }
+
+    private function eliminarArchivo(array $documento): void
+    {
+        $ruta = $this->rutaDocumentos() . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $documento['rutaRelativa']);
+        if (is_file($ruta)) {
+            @unlink($ruta);
+        }
+    }
+
+    private function rutaDocumentos(): string
+    {
+        return dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'entradas';
     }
 }

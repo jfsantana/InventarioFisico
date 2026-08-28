@@ -12,10 +12,11 @@ $productos = $productos ?? [];
 $tiposCompra = $tiposCompra ?? [];
 $proveedores = $proveedores ?? [];
 $paises = $paises ?? [];
+$documentosPorEntrada = $documentosPorEntrada ?? [];
 $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
 ?>
 
-<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-document-download-endpoint="<?= APP_URL ?>/entrada/descargarDocumento" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
     <p class="intro">Revise cada entrada de inventario y corrija sus datos cuando sea necesario.</p>
@@ -97,6 +98,7 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                 <tbody data-correction-body>
                     <?php foreach ($entradas as $entrada) : ?>
                         <?php $danger = (float) $entrada['disponible'] <= 0; ?>
+                        <?php $documentosEntrada = $documentosPorEntrada[(int) $entrada['idInventarioEntrante']] ?? []; ?>
                         <tr class="<?= $danger ? 'is-risk-row' : '' ?>"
                             data-id="<?= (int) $entrada['idInventarioEntrante'] ?>"
                             data-fecha="<?= $dateValue($entrada['fecha']) ?>"
@@ -113,6 +115,12 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                             data-card-code="<?= $text($entrada['CardCode'] ?? '') ?>"
                             data-fabricante-code="<?= $text($entrada['FabricanteCode'] ?? '') ?>"
                             data-pais-code="<?= $text($entrada['PaisCode'] ?? '') ?>"
+                            data-ticket-romana-id="<?= (int) ($documentosEntrada['ticket_romana']['idDocumento'] ?? 0) ?>"
+                            data-ticket-romana-name="<?= $text($documentosEntrada['ticket_romana']['nombreOriginal'] ?? '') ?>"
+                            data-factura-proveedor-id="<?= (int) ($documentosEntrada['factura_proveedor']['idDocumento'] ?? 0) ?>"
+                            data-factura-proveedor-name="<?= $text($documentosEntrada['factura_proveedor']['nombreOriginal'] ?? '') ?>"
+                            data-documento-seniat-id="<?= (int) ($documentosEntrada['documento_seniat']['idDocumento'] ?? 0) ?>"
+                            data-documento-seniat-name="<?= $text($documentosEntrada['documento_seniat']['nombreOriginal'] ?? '') ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
                             data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '')) ?>">
@@ -152,7 +160,7 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
     </footer>
 
     <div class="correction-modal" data-edit-modal hidden role="dialog" aria-modal="true" aria-labelledby="entrada-modal-title">
-        <form class="correction-modal-card" method="post" action="<?= APP_URL ?>/entrada/actualizar" data-correction-modal-form novalidate>
+        <form class="correction-modal-card" method="post" action="<?= APP_URL ?>/entrada/actualizar" enctype="multipart/form-data" data-correction-modal-form novalidate>
             <?= Auth::csrfField() ?>
             <header>
                 <div>
@@ -239,6 +247,24 @@ $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
                     Cantidad
                     <input name="CantidadEntrante" data-modal-quantity type="number" min="1" step="1" required>
                 </label>
+                <div class="document-fields">
+                    <label data-document-field="ticketRomana">
+                        Ticket de romana
+                        <span class="document-current"><a href="#" data-document-link>Descargar <span data-document-name></span></a><span data-document-empty>Sin documento cargado</span></span>
+                        <input name="ticketRomana" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    </label>
+                    <label data-document-field="facturaProveedor">
+                        Factura del proveedor
+                        <span class="document-current"><a href="#" data-document-link>Descargar <span data-document-name></span></a><span data-document-empty>Sin documento cargado</span></span>
+                        <input name="facturaProveedor" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    </label>
+                    <label data-document-field="documentoSeniat">
+                        Documento de Seniat
+                        <span class="document-current"><a href="#" data-document-link>Descargar <span data-document-name></span></a><span data-document-empty>Sin documento cargado</span></span>
+                        <input name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png">
+                    </label>
+                    <small>Seleccione un archivo solo para reemplazar el documento actual. Formatos: PDF, JPG o PNG. Maximo conjunto: 10 MB.</small>
+                </div>
             </div>
             <dl class="modal-summary">
                 <div><dt>Salidas registradas</dt><dd data-summary-salidas>0.00</dd></div>

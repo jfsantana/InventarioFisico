@@ -22,6 +22,7 @@ function initCorrectionPage(page) {
     const toastHost = page.querySelector('[data-toast-host]');
     const pageType = page.dataset.pageType;
     const deleteEndpoint = page.dataset.deleteEndpoint;
+    const documentDownloadEndpoint = page.dataset.documentDownloadEndpoint;
     const csrfToken = page.dataset.csrfToken;
 
     document.body.appendChild(editModal);
@@ -205,6 +206,9 @@ function initCorrectionPage(page) {
 
     function openEditModal(row) {
         lastFocusedElement = document.activeElement;
+        editForm.querySelectorAll('input[type="file"]').forEach((field) => {
+            field.value = '';
+        });
         editModal.removeAttribute('hidden');
         document.body.classList.add('modal-is-open');
         editModal.querySelector('[data-modal-title]').textContent = `Editar ${pageType === 'entrada' ? 'Entrada' : 'Salida'} #${row.dataset.id}`;
@@ -222,6 +226,23 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'CardCode', row.dataset.cardCode);
             setFormValue(editForm, 'FabricanteCode', row.dataset.fabricanteCode);
             setFormValue(editForm, 'PaisCode', row.dataset.paisCode);
+            editForm.querySelectorAll('[data-document-field]').forEach((container) => {
+                const key = container.dataset.documentField;
+                const documentId = row.dataset[`${key}Id`];
+                const documentName = row.dataset[`${key}Name`];
+                const link = container.querySelector('[data-document-link]');
+                const empty = container.querySelector('[data-document-empty]');
+                const name = container.querySelector('[data-document-name]');
+                const fileInput = container.querySelector('input[type="file"]');
+
+                link.hidden = !documentId || documentId === '0';
+                empty.hidden = !link.hidden;
+                fileInput.required = link.hidden;
+                if (!link.hidden) {
+                    link.href = `${documentDownloadEndpoint}/${documentId}`;
+                    name.textContent = documentName;
+                }
+            });
             editForm.querySelector('[data-summary-salidas]').textContent = formatNumber(row.dataset.salidas);
             editForm.querySelector('[data-summary-salidas]').dataset.raw = row.dataset.salidas;
             editForm.querySelector('[data-summary-disponible]').textContent = formatNumber(row.dataset.disponible);

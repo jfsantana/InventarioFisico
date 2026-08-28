@@ -1,6 +1,12 @@
 const entradaForm = document.querySelector('[data-entrada-form]');
 
 if (entradaForm) {
+    const maxDocumentBytes = 10 * 1024 * 1024;
+    const fileFields = [
+        entradaForm.elements.ticketRomana,
+        entradaForm.elements.facturaProveedor,
+        entradaForm.elements.documentoSeniat,
+    ];
     const requiredFields = [
         entradaForm.elements.idProducto,
         entradaForm.elements.NumLote,
@@ -12,6 +18,7 @@ if (entradaForm) {
         entradaForm.elements.CardCode,
         entradaForm.elements.FabricanteCode,
         entradaForm.elements.PaisCode,
+        ...fileFields,
     ];
     const submitButton = document.getElementById('guardarEntrada');
     const message = document.getElementById('entradaFormMessage');
@@ -34,11 +41,18 @@ if (entradaForm) {
         });
     }
 
+    function documentsWithinLimit() {
+        const totalBytes = fileFields.reduce((total, field) => total + (field.files[0]?.size || 0), 0);
+        return totalBytes <= maxDocumentBytes;
+    }
+
     function updateSubmitState() {
-        const formComplete = isFormComplete();
+        const formComplete = isFormComplete() && documentsWithinLimit();
 
         submitButton.disabled = !formComplete;
-        message.textContent = formComplete ? '' : 'Complete todos los campos obligatorios para guardar la entrada.';
+        message.textContent = !documentsWithinLimit()
+            ? 'Los tres documentos no pueden superar 10 MB en total.'
+            : (formComplete ? '' : 'Complete todos los campos obligatorios para guardar la entrada.');
     }
 
     requiredFields.forEach((field) => {
@@ -53,7 +67,7 @@ if (entradaForm) {
     entradaForm.addEventListener('submit', (event) => {
         updateSubmitState();
 
-        if (!isFormComplete()) {
+        if (!isFormComplete() || !documentsWithinLimit()) {
             event.preventDefault();
         }
     });

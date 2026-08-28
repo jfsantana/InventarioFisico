@@ -44,7 +44,7 @@ class EntradaInventario extends BaseModel
         return $statement->fetchAll();
     }
 
-    public function registrarEntrada(array $data): bool
+    public function registrarEntrada(array $data): int
     {
         $statement = $this->db->prepare(
             'INSERT INTO inventarioentrante
@@ -53,7 +53,7 @@ class EntradaInventario extends BaseModel
                 (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode)'
         );
 
-        return $statement->execute([
+        $statement->execute([
             'numLote' => $data['NumLote'],
             'idProducto' => $data['idProducto'],
             'idPresentacion' => $data['idPresentacion'],
@@ -65,6 +65,97 @@ class EntradaInventario extends BaseModel
             'fabricanteCode' => $data['FabricanteCode'],
             'paisCode' => $data['PaisCode'],
         ]);
+
+        return (int) $this->db->lastInsertId();
+    }
+
+    public function obtenerDocumentosEntrada(int $idInventarioEntrante): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT idDocumento, idInventarioEntrante, tipoDocumento, nombreOriginal,
+                    nombreAlmacenado, rutaRelativa, mimeType, tamanoBytes, idUsuario, fechaCarga
+             FROM entrada_documentos
+             WHERE idInventarioEntrante = :idInventarioEntrante
+             ORDER BY idDocumento ASC'
+        );
+        $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
+
+        $documentos = [];
+        foreach ($statement->fetchAll() as $documento) {
+            $documentos[$documento['tipoDocumento']] = $documento;
+        }
+
+        return $documentos;
+    }
+
+    public function obtenerTodosDocumentos(): array
+    {
+        $statement = $this->db->query(
+            'SELECT idDocumento, idInventarioEntrante, tipoDocumento, nombreOriginal,
+                    nombreAlmacenado, rutaRelativa, mimeType, tamanoBytes, idUsuario, fechaCarga
+             FROM entrada_documentos
+             ORDER BY idInventarioEntrante ASC, idDocumento ASC'
+        );
+
+        $documentosPorEntrada = [];
+        foreach ($statement->fetchAll() as $documento) {
+            $documentosPorEntrada[(int) $documento['idInventarioEntrante']][$documento['tipoDocumento']] = $documento;
+        }
+
+        return $documentosPorEntrada;
+    }
+
+    public function obtenerDocumentoPorId(int $idDocumento): ?array
+    {
+        $statement = $this->db->prepare(
+            'SELECT idDocumento, idInventarioEntrante, tipoDocumento, nombreOriginal,
+                    nombreAlmacenado, rutaRelativa, mimeType, tamanoBytes, idUsuario, fechaCarga
+             FROM entrada_documentos
+             WHERE idDocumento = :idDocumento
+             LIMIT 1'
+        );
+        $statement->execute(['idDocumento' => $idDocumento]);
+        $documento = $statement->fetch();
+
+        return $documento ?: null;
+    }
+
+    public function guardarDocumento(int $idInventarioEntrante, array $documento): bool
+    {
+        $statement = $this->db->prepare(
+            'INSERT INTO entrada_documentos
+                (idInventarioEntrante, tipoDocumento, nombreOriginal, nombreAlmacenado, rutaRelativa, mimeType, tamanoBytes, idUsuario)
+             VALUES
+                (:idInventarioEntrante, :tipoDocumento, :nombreOriginal, :nombreAlmacenado, :rutaRelativa, :mimeType, :tamanoBytes, :idUsuario)
+             ON DUPLICATE KEY UPDATE
+                nombreOriginal = VALUES(nombreOriginal),
+                nombreAlmacenado = VALUES(nombreAlmacenado),
+                rutaRelativa = VALUES(rutaRelativa),
+                mimeType = VALUES(mimeType),
+                tamanoBytes = VALUES(tamanoBytes),
+                idUsuario = VALUES(idUsuario),
+                fechaCarga = CURRENT_TIMESTAMP'
+        );
+
+        return $statement->execute([
+            'idInventarioEntrante' => $idInventarioEntrante,
+            'tipoDocumento' => $documento['tipoDocumento'],
+            'nombreOriginal' => $documento['nombreOriginal'],
+            'nombreAlmacenado' => $documento['nombreAlmacenado'],
+            'rutaRelativa' => $documento['rutaRelativa'],
+            'mimeType' => $documento['mimeType'],
+            'tamanoBytes' => $documento['tamanoBytes'],
+            'idUsuario' => $documento['idUsuario'],
+        ]);
+    }
+
+    public function eliminarDocumentosEntrada(int $idInventarioEntrante): bool
+    {
+        $statement = $this->db->prepare(
+            'DELETE FROM entrada_documentos WHERE idInventarioEntrante = :idInventarioEntrante'
+        );
+
+        return $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
     }
 
     public function obtenerEntradas(): array
