@@ -2,6 +2,8 @@
 
 class EntradaController extends Controller
 {
+    private ?string $errorNotificacion = null;
+
     private const SECTORES = ['Sector1', 'Sector2', 'Sector3'];
     private const MAX_DOCUMENTOS_BYTES = 10485760;
     private const DOCUMENTOS = [
@@ -247,7 +249,7 @@ class EntradaController extends Controller
 
             $mensaje = 'La entrada fue corregida correctamente.';
             if (!$correoEnviado) {
-                $mensaje .= ' No se pudo enviar el correo de notificacion; revise el log del servidor.';
+                $mensaje .= ' No se pudo enviar el correo. Motivo: ' . ($this->errorNotificacion ?? 'Error desconocido.');
             }
             $this->detalle($mensaje, $correoEnviado ? 'success' : 'error');
         } catch (Throwable $exception) {
@@ -306,7 +308,10 @@ class EntradaController extends Controller
 
         $model = $this->model('EntradaInventario');
         if (!$this->notificarEntrada($model, $idInventarioEntrante, 'reenvio')) {
-            $this->detalle('No se pudo reenviar el correo de notificacion; revise el log del servidor.', 'error');
+            $this->detalle(
+                'No se pudo reenviar el correo. Motivo: ' . ($this->errorNotificacion ?? 'Error desconocido.'),
+                'error'
+            );
             return;
         }
 
@@ -551,6 +556,8 @@ class EntradaController extends Controller
 
     private function notificarEntrada(EntradaInventario $model, int $idInventarioEntrante, string $evento): bool
     {
+        $this->errorNotificacion = null;
+
         try {
             $entrada = $model->obtenerDetalleEntradaParaCorreo($idInventarioEntrante);
             if (!$entrada) {
@@ -568,6 +575,7 @@ class EntradaController extends Controller
 
             return true;
         } catch (Throwable $exception) {
+            $this->errorNotificacion = $exception->getMessage();
             $mensajeError = 'No se pudo notificar la entrada #' . $idInventarioEntrante . ': ' . $exception->getMessage();
             error_log($mensajeError);
             error_log(
