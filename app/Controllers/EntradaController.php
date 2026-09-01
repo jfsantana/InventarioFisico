@@ -77,6 +77,9 @@ class EntradaController extends Controller
             'CardCode' => trim($_POST['CardCode'] ?? ''),
             'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
             'PaisCode' => trim($_POST['PaisCode'] ?? ''),
+            'fecha_factura' => trim($_POST['fecha_factura'] ?? ''),
+            'peso_romana' => trim($_POST['peso_romana'] ?? ''),
+            'nro_factura' => trim($_POST['nro_factura'] ?? ''),
         ];
 
         $errors = array_merge(
@@ -104,6 +107,9 @@ class EntradaController extends Controller
                 'CardCode' => $formData['CardCode'],
                 'FabricanteCode' => $formData['FabricanteCode'],
                 'PaisCode' => $formData['PaisCode'],
+                'fecha_factura' => $formData['fecha_factura'],
+                'peso_romana' => (float) $formData['peso_romana'],
+                'nro_factura' => $formData['nro_factura'],
             ]);
             $this->guardarDocumentos($model, $idNuevaEntrada, []);
             $correoEnviado = $this->notificarEntrada($model, $idNuevaEntrada, 'creacion');
@@ -191,6 +197,9 @@ class EntradaController extends Controller
             'CardCode' => trim($_POST['CardCode'] ?? ''),
             'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
             'PaisCode' => trim($_POST['PaisCode'] ?? ''),
+            'fecha_factura' => trim($_POST['fecha_factura'] ?? ''),
+            'peso_romana' => trim($_POST['peso_romana'] ?? ''),
+            'nro_factura' => trim($_POST['nro_factura'] ?? ''),
         ];
 
         if (!$idInventarioEntrante) {
@@ -229,6 +238,9 @@ class EntradaController extends Controller
                 'CardCode' => $formData['CardCode'],
                 'FabricanteCode' => $formData['FabricanteCode'],
                 'PaisCode' => $formData['PaisCode'],
+                'fecha_factura' => $formData['fecha_factura'],
+                'peso_romana' => (float) $formData['peso_romana'],
+                'nro_factura' => $formData['nro_factura'],
             ]);
             $this->guardarDocumentos($model, $idInventarioEntrante, $documentosExistentes);
             $correoEnviado = $this->notificarEntrada($model, $idInventarioEntrante, 'edicion');
@@ -385,6 +397,19 @@ class EntradaController extends Controller
 
         if ($formData['PaisCode'] === '' || strlen($formData['PaisCode']) > 3) {
             $errors['PaisCode'] = 'Seleccione un pais.';
+        }
+
+        $fechaFactura = DateTimeImmutable::createFromFormat('!Y-m-d', $formData['fecha_factura']);
+        if (!$fechaFactura || $fechaFactura->format('Y-m-d') !== $formData['fecha_factura']) {
+            $errors['fecha_factura'] = 'Seleccione una fecha de factura valida.';
+        }
+
+        if (!is_numeric($formData['peso_romana']) || (float) $formData['peso_romana'] <= 0) {
+            $errors['peso_romana'] = 'Escriba un peso de romana mayor que cero.';
+        }
+
+        if (!preg_match('/^[A-Za-z0-9]+$/', $formData['nro_factura']) || strlen($formData['nro_factura']) > 50) {
+            $errors['nro_factura'] = 'El numero de factura debe contener solo letras y numeros (maximo 50).';
         }
 
         return $errors;

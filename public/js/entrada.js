@@ -18,12 +18,19 @@ if (entradaForm) {
         entradaForm.elements.CardCode,
         entradaForm.elements.FabricanteCode,
         entradaForm.elements.PaisCode,
+        entradaForm.elements.fecha_factura,
+        entradaForm.elements.peso_romana,
+        entradaForm.elements.nro_factura,
     ];
     const submitButton = document.getElementById('guardarEntrada');
     const message = document.getElementById('entradaFormMessage');
 
     function isPositiveInteger(value) {
         return /^\d+$/.test(value) && Number(value) > 0;
+    }
+
+    function isPositiveNumber(value) {
+        return value !== '' && Number.isFinite(Number(value)) && Number(value) > 0;
     }
 
     function isFormComplete() {
@@ -36,7 +43,15 @@ if (entradaForm) {
                 return isPositiveInteger(field.value.trim());
             }
 
-            return field.value.trim() !== '';
+            if (field.name === 'peso_romana') {
+                return isPositiveNumber(field.value.trim());
+            }
+
+            if (field.name === 'nro_factura') {
+                return /^[A-Za-z0-9]+$/.test(field.value.trim()) && field.value.trim().length <= 50;
+            }
+
+            return field.value.trim() !== '' && field.checkValidity();
         });
     }
 

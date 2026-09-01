@@ -29,7 +29,7 @@ class EntradaNotificador
 
         $producto = (string) ($entrada['producto'] ?? 'Materia prima');
         $eventoConfig = match ($evento) {
-            'edicion' => ['asunto' => '[EDICIÓN] ', 'label' => 'ENTRADA ACTUALIZADA', 'color' => '#9a5b00', 'fondo' => '#fff4d6'],
+            'edicion' => ['asunto' => '[ACTUALIZACIÓN] ', 'label' => 'ENTRADA ACTUALIZADA', 'color' => '#9a5b00', 'fondo' => '#fff4d6'],
             'reenvio' => ['asunto' => '[REENVÍO] ', 'label' => 'CORREO REENVIADO', 'color' => '#245b78', 'fondo' => '#e8f3f8'],
             default => ['asunto' => '[CREACIÓN] ', 'label' => 'NUEVA ENTRADA', 'color' => '#17643a', 'fondo' => '#e8f6ee'],
         };
@@ -63,6 +63,9 @@ class EntradaNotificador
             'País de origen' => $entrada['pais'] ?? '',
             'Lote' => $entrada['NumLote'] ?? '',
             'Cantidad' => number_format((float) ($entrada['CantidadEntrante'] ?? 0), 2, ',', '.'),
+            'Fecha de factura' => $this->formatearFecha($entrada['fecha_factura'] ?? ''),
+            'Peso de romana' => isset($entrada['peso_romana']) ? number_format((float) $entrada['peso_romana'], 2, ',', '.') : '',
+            'Número de factura' => $entrada['nro_factura'] ?? '',
             'Presentación' => $entrada['presentacion'] ?? '',
         ];
 
@@ -98,6 +101,9 @@ class EntradaNotificador
             . 'País de origen: ' . ($entrada['pais'] ?? 'No indicado') . "\n"
             . 'Lote: ' . ($entrada['NumLote'] ?? 'No indicado') . "\n"
             . 'Cantidad: ' . number_format((float) ($entrada['CantidadEntrante'] ?? 0), 2, ',', '.') . "\n"
+            . 'Fecha de factura: ' . ($this->formatearFecha($entrada['fecha_factura'] ?? '') ?: 'No indicada') . "\n"
+            . 'Peso de romana: ' . (isset($entrada['peso_romana']) ? number_format((float) $entrada['peso_romana'], 2, ',', '.') : 'No indicado') . "\n"
+            . 'Número de factura: ' . ($entrada['nro_factura'] ?? 'No indicado') . "\n"
             . 'Presentación: ' . ($entrada['presentacion'] ?? 'No indicado') . "\n\n"
             . "Los documentos asociados se encuentran adjuntos a este correo.";
     }

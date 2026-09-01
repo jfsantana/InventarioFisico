@@ -149,6 +149,12 @@ $authUser = Auth::user();
                         <strong>Log de accesos</strong>
                         <i aria-hidden="true">→</i>
                     </a>
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/contactosEmail">
+                        <span class="menu-card-icon" aria-hidden="true">&#9993;</span>
+                        <span>Destinatarios internos</span>
+                        <strong>Contactos de notificacion</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
                     <a class="menu-card menu-card--conexion" href="<?= APP_URL ?>/conexion">
                         <span class="menu-card-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><path d="M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Z" /><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7" /><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></svg>

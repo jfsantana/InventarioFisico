@@ -2,6 +2,8 @@
 
 class AdminController extends Controller
 {
+    private const PROCESOS_CONTACTO = ['Entrada', 'PreDespacho', 'Salida', 'En_Camino'];
+
     public function usuarios(): void
     {
         $this->requiereAdmin();
@@ -145,6 +147,83 @@ class AdminController extends Controller
         ]);
     }
 
+    public function contactosEmail(): void
+    {
+        $this->requiereAdmin();
+        $model = $this->model('ContactoInternoEmail');
+
+        $this->view('admin/contactos-email', [
+            'title' => 'Contactos de notificacion',
+            'contactos' => $model->listar($_GET),
+            'procesos' => self::PROCESOS_CONTACTO,
+            'filters' => $_GET,
+            'message' => $_GET['msg'] ?? null,
+            'messageType' => ($_GET['tipo'] ?? '') === 'error' ? 'error' : 'success',
+        ]);
+    }
+
+    public function guardarContactoEmail(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $model = $this->model('ContactoInternoEmail');
+        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT) ?: null;
+
+        try {
+            $data = $this->normalizarContactoEmail($_POST);
+            if ($id) {
+                if (!$model->obtener($id)) {
+                    throw new InvalidArgumentException('El contacto no existe.');
+                }
+                $model->actualizar($id, $data);
+                $accion = 'editar_contacto_email';
+            } else {
+                $model->crear($data);
+                $accion = 'crear_contacto_email';
+            }
+
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                $accion,
+                'exitoso',
+                $data['email'] . ' - ' . $data['proceso']
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/contactosEmail?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/contactosEmail?msg=Contacto guardado correctamente.');
+    }
+
+    public function eliminarContactoEmail(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+
+        if (!$id) {
+            $this->redirect('/admin/contactosEmail?tipo=error&msg=No se pudo identificar el contacto.');
+        }
+
+        $model = $this->model('ContactoInternoEmail');
+        $contacto = $model->obtener($id);
+        if (!$contacto || !$model->eliminar($id)) {
+            $this->redirect('/admin/contactosEmail?tipo=error&msg=El contacto no existe.');
+        }
+
+        Auth::log(
+            (int) ($_SESSION['id_usuario'] ?? 0),
+            $_SESSION['username'] ?? null,
+            'administracion',
+            'eliminar_contacto_email',
+            'exitoso',
+            $contacto['email'] . ' - ' . $contacto['proceso']
+        );
+        $this->redirect('/admin/contactosEmail?msg=Contacto eliminado correctamente.');
+    }
+
     private function normalizarUsuario(array $data): array
     {
         $username = trim($data['username'] ?? '');
@@ -167,6 +246,36 @@ class AdminController extends Controller
             'username' => $username,
             'id_rol' => (int) $idRol,
             'activo' => !empty($data['activo']) ? 1 : 0,
+        ];
+    }
+
+    private function normalizarContactoEmail(array $data): array
+    {
+        $nombre = trim($data['nombre'] ?? '');
+        if ($nombre === '' || strlen($nombre) > 100) {
+            throw new InvalidArgumentException('Escriba un nombre valido de hasta 100 caracteres.');
+        }
+
+        $email = strtolower(trim($data['email'] ?? ''));
+        if (filter_var($email, FILTER_VALIDATE_EMAIL) === false || strlen($email) > 150) {
+            throw new InvalidArgumentException('Escriba un correo electronico valido.');
+        }
+
+        $cargo = trim($data['cargo'] ?? '');
+        if (strlen($cargo) > 50) {
+            throw new InvalidArgumentException('El cargo no puede superar 50 caracteres.');
+        }
+
+        $proceso = trim($data['proceso'] ?? '');
+        if (!in_array($proceso, self::PROCESOS_CONTACTO, true)) {
+            throw new InvalidArgumentException('Seleccione un proceso valido.');
+        }
+
+        return [
+            'nombre' => $nombre,
+            'email' => $email,
+            'cargo' => $cargo === '' ? null : $cargo,
+            'proceso' => $proceso,
         ];
     }
 

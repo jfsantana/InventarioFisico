@@ -72,6 +72,9 @@ class EntradaInventario extends BaseModel
                     pais.Name AS pais,
                     ie.NumLote,
                     ie.CantidadEntrante,
+                    ie.fecha_factura,
+                    ie.peso_romana,
+                    ie.nro_factura,
                     presentacion.nombre AS presentacion
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
@@ -93,9 +96,9 @@ class EntradaInventario extends BaseModel
     {
         $statement = $this->db->prepare(
             'INSERT INTO inventarioentrante
-                (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector, idTipoCompra, CardCode, FabricanteCode, PaisCode)
+                (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector, idTipoCompra, CardCode, FabricanteCode, PaisCode, fecha_factura, peso_romana, nro_factura)
              VALUES
-                (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode)'
+                (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode, :fechaFactura, :pesoRomana, :nroFactura)'
         );
 
         $statement->execute([
@@ -109,6 +112,9 @@ class EntradaInventario extends BaseModel
             'cardCode' => $data['CardCode'],
             'fabricanteCode' => $data['FabricanteCode'],
             'paisCode' => $data['PaisCode'],
+            'fechaFactura' => $data['fecha_factura'],
+            'pesoRomana' => $data['peso_romana'],
+            'nroFactura' => $data['nro_factura'],
         ]);
 
         return (int) $this->db->lastInsertId();
@@ -225,6 +231,9 @@ class EntradaInventario extends BaseModel
                     fabricante.CardName AS fabricante,
                     ie.PaisCode,
                     pais.Name AS pais,
+                    ie.fecha_factura,
+                    ie.peso_romana,
+                    ie.nro_factura,
                     COALESCE(SUM(ins.cantidadSaliente), 0) AS salidaTotal,
                     ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
              FROM inventarioentrante ie
@@ -236,7 +245,7 @@ class EntradaInventario extends BaseModel
                          LEFT JOIN proveedores fabricante ON fabricante.CardCode = ie.FabricanteCode
                          LEFT JOIN paises pais ON pais.Code = ie.PaisCode
              LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
-                             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha, ie.idTipoCompra, tc.descripcion, ie.CardCode, proveedor.CardName, ie.FabricanteCode, fabricante.CardName, ie.PaisCode, pais.Name
+                             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha, ie.idTipoCompra, tc.descripcion, ie.CardCode, proveedor.CardName, ie.FabricanteCode, fabricante.CardName, ie.PaisCode, pais.Name, ie.fecha_factura, ie.peso_romana, ie.nro_factura
              ORDER BY ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
 
@@ -269,7 +278,10 @@ class EntradaInventario extends BaseModel
                  idTipoCompra = :idTipoCompra,
                  CardCode = :cardCode,
                  FabricanteCode = :fabricanteCode,
-                 PaisCode = :paisCode
+                 PaisCode = :paisCode,
+                 fecha_factura = :fechaFactura,
+                 peso_romana = :pesoRomana,
+                 nro_factura = :nroFactura
              WHERE idInventarioEntrante = :idInventarioEntrante'
         );
 
@@ -284,6 +296,9 @@ class EntradaInventario extends BaseModel
             'cardCode' => $data['CardCode'],
             'fabricanteCode' => $data['FabricanteCode'],
             'paisCode' => $data['PaisCode'],
+            'fechaFactura' => $data['fecha_factura'],
+            'pesoRomana' => $data['peso_romana'],
+            'nroFactura' => $data['nro_factura'],
             'idInventarioEntrante' => $idInventarioEntrante,
         ]);
     }

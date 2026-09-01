@@ -227,6 +227,9 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'CardCode', row.dataset.cardCode);
             setFormValue(editForm, 'FabricanteCode', row.dataset.fabricanteCode);
             setFormValue(editForm, 'PaisCode', row.dataset.paisCode);
+            setFormValue(editForm, 'fecha_factura', row.dataset.fechaFactura);
+            setFormValue(editForm, 'peso_romana', row.dataset.pesoRomana);
+            setFormValue(editForm, 'nro_factura', row.dataset.nroFactura);
             editForm.querySelectorAll('[data-document-field]').forEach((container) => {
                 const key = container.dataset.documentField;
                 const documentId = row.dataset[`${key}Id`];
@@ -327,7 +330,9 @@ function initCorrectionPage(page) {
     function validateModalForm() {
         let isValid = true;
         editForm.querySelectorAll('[required]').forEach((field) => {
-            const valid = field.value.trim() !== '' && (!field.matches('[type="number"]') || Number(field.value) > 0);
+            const valid = field.value.trim() !== ''
+                && (!field.matches('[type="number"]') || Number(field.value) > 0)
+                && field.checkValidity();
             field.classList.toggle('is-invalid', !valid);
             if (!valid) {
                 isValid = false;

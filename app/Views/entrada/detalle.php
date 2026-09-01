@@ -91,6 +91,9 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                         <th><button type="button" data-sort="ubicacion">Ubicacion <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="sector">Sector <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="cantidad" data-type="number">Cantidad <span data-sort-indicator>↕</span></button></th>
+                        <th><button type="button" data-sort="fechaFactura">Fecha factura <span data-sort-indicator>↕</span></button></th>
+                        <th><button type="button" data-sort="pesoRomana" data-type="number">Peso romana <span data-sort-indicator>↕</span></button></th>
+                        <th><button type="button" data-sort="nroFactura">Nro. factura <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="salidas" data-type="number">Salidas <span data-sort-indicator>↕</span></button></th>
                         <th><button type="button" data-sort="disponible" data-type="number">Disponible <span data-sort-indicator>↕</span></button></th>
                         <th class="actions-column">Acciones</th>
@@ -112,6 +115,9 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             data-ubicacion="<?= $text($entrada['ubicacion']) ?>"
                             data-sector="<?= $text($entrada['Sector'] ?? '') ?>"
                             data-cantidad="<?= $text($entrada['CantidadEntrante']) ?>"
+                            data-fecha-factura="<?= !empty($entrada['fecha_factura']) ? $dateValue($entrada['fecha_factura']) : '' ?>"
+                            data-peso-romana="<?= $text($entrada['peso_romana'] ?? '') ?>"
+                            data-nro-factura="<?= $text($entrada['nro_factura'] ?? '') ?>"
                             data-tipo-compra-id="<?= (int) ($entrada['idTipoCompra'] ?? 0) ?>"
                             data-card-code="<?= $text($entrada['CardCode'] ?? '') ?>"
                             data-fabricante-code="<?= $text($entrada['FabricanteCode'] ?? '') ?>"
@@ -124,7 +130,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             data-documento-seniat-name="<?= $text($documentosEntrada['documento_seniat']['nombreOriginal'] ?? '') ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
-                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '')) ?>">
+                            data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '') . ' ' . ($entrada['nro_factura'] ?? '')) ?>">
                             <td data-label="#"><?= (int) $entrada['idInventarioEntrante'] ?></td>
                             <td data-label="Fecha"><?= $formatDate($entrada['fecha']) ?></td>
                             <td data-label="Producto"><strong><?= $text($entrada['producto']) ?></strong></td>
@@ -133,6 +139,9 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             <td data-label="Ubicacion"><?= $text($entrada['ubicacion']) ?></td>
                             <td data-label="Sector"><?= $text($entrada['Sector'] ?? '') ?></td>
                             <td data-label="Cantidad"><?= $money($entrada['CantidadEntrante']) ?></td>
+                            <td data-label="Fecha factura"><?= !empty($entrada['fecha_factura']) ? $formatDate($entrada['fecha_factura']) : 'No indicada' ?></td>
+                            <td data-label="Peso romana"><?= $entrada['peso_romana'] !== null ? $money($entrada['peso_romana']) : 'No indicado' ?></td>
+                            <td data-label="Nro. factura"><?= $text($entrada['nro_factura'] ?? 'No indicado') ?></td>
                             <td data-label="Salidas"><?= $money($entrada['salidaTotal']) ?></td>
                             <td data-label="Disponible"><span class="stock-pill <?= $danger ? 'stock-pill--risk' : '' ?>"><?= $money($entrada['disponible']) ?></span></td>
                             <td class="actions-column" data-label="Acciones">
@@ -250,6 +259,18 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                 <label>
                     Cantidad
                     <input name="CantidadEntrante" data-modal-quantity type="number" min="1" step="1" required>
+                </label>
+                <label>
+                    Fecha de factura (dd/mm/aaaa)
+                    <input name="fecha_factura" type="date" required>
+                </label>
+                <label>
+                    Peso de romana
+                    <input name="peso_romana" type="number" min="0.01" step="any" inputmode="decimal" required>
+                </label>
+                <label>
+                    Numero de factura
+                    <input name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9]+" required>
                 </label>
                 <div class="document-fields">
                     <label data-document-field="ticketRomana">

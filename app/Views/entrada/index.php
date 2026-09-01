@@ -18,6 +18,10 @@ $isEntradaCompleta = !empty($formData['idProducto'])
     && !empty($formData['CardCode'])
     && !empty($formData['FabricanteCode'])
     && !empty($formData['PaisCode'])
+    && !empty($formData['fecha_factura'])
+    && is_numeric($formData['peso_romana'] ?? null)
+    && (float) ($formData['peso_romana'] ?? 0) > 0
+    && !empty($formData['nro_factura'])
     && ctype_digit((string) ($formData['CantidadEntrante'] ?? ''))
     && (int) ($formData['CantidadEntrante'] ?? 0) > 0;
 ?>
@@ -188,7 +192,31 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="ticketRomana">11. Ticket de romana</label>
+            <label for="fecha_factura">11. Fecha de factura (dd/mm/aaaa)</label>
+            <input id="fecha_factura" name="fecha_factura" type="date" value="<?= htmlspecialchars($formData['fecha_factura'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required>
+            <?php if (!empty($errors['fecha_factura'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['fecha_factura'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="peso_romana">12. Peso de romana</label>
+            <input id="peso_romana" name="peso_romana" type="number" min="0.01" step="any" inputmode="decimal" value="<?= htmlspecialchars($formData['peso_romana'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required placeholder="0.00">
+            <?php if (!empty($errors['peso_romana'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['peso_romana'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="nro_factura">13. Numero de factura</label>
+            <input id="nro_factura" name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9]+" value="<?= htmlspecialchars($formData['nro_factura'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required autocomplete="off">
+            <?php if (!empty($errors['nro_factura'])) : ?>
+                <small class="field-error"><?= htmlspecialchars($errors['nro_factura'], ENT_QUOTES, 'UTF-8') ?></small>
+            <?php endif; ?>
+        </div>
+
+        <div class="form-field">
+            <label for="ticketRomana">14. Ticket de romana</label>
             <input id="ticketRomana" name="ticketRomana" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['ticketRomana'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['ticketRomana'], ENT_QUOTES, 'UTF-8') ?></small>
@@ -196,7 +224,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="facturaProveedor">12. Factura del proveedor</label>
+            <label for="facturaProveedor">15. Factura del proveedor</label>
             <input id="facturaProveedor" name="facturaProveedor" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['facturaProveedor'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['facturaProveedor'], ENT_QUOTES, 'UTF-8') ?></small>
@@ -204,7 +232,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="documentoSeniat">13. Documento de Seniat</label>
+            <label for="documentoSeniat">16. Documento de Seniat</label>
             <input id="documentoSeniat" name="documentoSeniat" type="file" accept=".pdf,.jpg,.jpeg,.png">
             <?php if (!empty($errors['documentoSeniat'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['documentoSeniat'], ENT_QUOTES, 'UTF-8') ?></small>
