@@ -4,6 +4,7 @@
     "license": "proprietary",
     "require": {
         "php": "^8.0",
+        "ext-fileinfo": "*",
         "phpmailer/phpmailer": "^6.10"
     }
 }

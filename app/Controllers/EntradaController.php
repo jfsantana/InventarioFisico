@@ -422,7 +422,6 @@ class EntradaController extends Controller
             static fn (array $documento): int => (int) $documento['tamanoBytes'],
             $existentes
         ));
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
 
         foreach (self::DOCUMENTOS as $campo => $configuracion) {
             $archivo = $_FILES[$campo] ?? null;
@@ -445,7 +444,12 @@ class EntradaController extends Controller
                 continue;
             }
 
-            $mimeType = $finfo->file($archivo['tmp_name']);
+            $mimeType = $this->detectarMimeType($archivo['tmp_name']);
+            if ($mimeType === null) {
+                $errors[$campo] = 'El servidor no tiene habilitada la extension PHP Fileinfo para validar documentos.';
+                continue;
+            }
+
             if (!isset(self::MIME_EXTENSIONS[$mimeType])) {
                 $errors[$campo] = 'Solo se permiten archivos PDF, JPG o PNG.';
                 continue;
@@ -470,7 +474,6 @@ class EntradaController extends Controller
             throw new RuntimeException('No se pudo crear la carpeta para los documentos.');
         }
 
-        $finfo = new finfo(FILEINFO_MIME_TYPE);
         $usuario = Auth::user();
 
         foreach (self::DOCUMENTOS as $campo => $configuracion) {
@@ -479,7 +482,11 @@ class EntradaController extends Controller
                 continue;
             }
 
-            $mimeType = $finfo->file($archivo['tmp_name']);
+            $mimeType = $this->detectarMimeType($archivo['tmp_name']);
+            if ($mimeType === null || !isset(self::MIME_EXTENSIONS[$mimeType])) {
+                throw new RuntimeException('No se pudo validar el tipo del documento. Habilite la extension PHP Fileinfo.');
+            }
+
             $extension = self::MIME_EXTENSIONS[$mimeType];
             $nombreAlmacenado = bin2hex(random_bytes(16)) . '.' . $extension;
             $rutaRelativa = $idInventarioEntrante . '/' . $nombreAlmacenado;
@@ -509,6 +516,17 @@ class EntradaController extends Controller
                 $this->eliminarArchivo($anterior);
             }
         }
+    }
+
+    private function detectarMimeType(string $ruta): ?string
+    {
+        if (!class_exists('finfo') || !defined('FILEINFO_MIME_TYPE')) {
+            return null;
+        }
+
+        $mimeType = (new finfo(FILEINFO_MIME_TYPE))->file($ruta);
+
+        return is_string($mimeType) ? $mimeType : null;
     }
 
     private function eliminarArchivos(array $documentos): void
