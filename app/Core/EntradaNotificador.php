@@ -10,6 +10,10 @@ class EntradaNotificador
             throw new RuntimeException('No hay contactos configurados para el proceso Entrada.');
         }
 
+        if (SMTP_HOST === '' || SMTP_USERNAME === '' || SMTP_PASSWORD === '') {
+            throw new RuntimeException('La configuracion SMTP esta incompleta. Verifique host, usuario y contrasena en el servidor.');
+        }
+
         $mail = new PHPMailer(true);
         $mail->isSMTP();
         $mail->Host = SMTP_HOST;

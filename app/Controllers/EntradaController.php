@@ -568,7 +568,13 @@ class EntradaController extends Controller
 
             return true;
         } catch (Throwable $exception) {
-            error_log('No se pudo notificar la entrada #' . $idInventarioEntrante . ': ' . $exception->getMessage());
+            $mensajeError = 'No se pudo notificar la entrada #' . $idInventarioEntrante . ': ' . $exception->getMessage();
+            error_log($mensajeError);
+            error_log(
+                '[' . date('Y-m-d H:i:s') . '] ' . $mensajeError . PHP_EOL,
+                3,
+                dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'entrada-email.log'
+            );
 
             return false;
         }
