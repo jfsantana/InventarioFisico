@@ -10,31 +10,32 @@ class EntradaNotificador
             throw new RuntimeException('No hay contactos configurados para el proceso Entrada.');
         }
 
-        $constantesSmtp = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_ENCRYPTION', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME'];
-        $constantesFaltantes = array_values(array_filter(
-            $constantesSmtp,
-            static fn (string $constante): bool => !defined($constante)
-        ));
-        if (!empty($constantesFaltantes)) {
-            throw new RuntimeException('Faltan constantes SMTP en config/config.php: ' . implode(', ', $constantesFaltantes) . '.');
-        }
+        $smtpLocalFile = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'smtp.local.php';
+        $smtpLocal = is_file($smtpLocalFile) ? require $smtpLocalFile : [];
+        $smtpHost = defined('SMTP_HOST') ? SMTP_HOST : (string) ($smtpLocal['host'] ?? '');
+        $smtpPort = defined('SMTP_PORT') ? SMTP_PORT : (int) ($smtpLocal['port'] ?? 465);
+        $smtpEncryption = defined('SMTP_ENCRYPTION') ? SMTP_ENCRYPTION : (string) ($smtpLocal['encryption'] ?? 'ssl');
+        $smtpUsername = defined('SMTP_USERNAME') ? SMTP_USERNAME : (string) ($smtpLocal['username'] ?? '');
+        $smtpPassword = defined('SMTP_PASSWORD') ? SMTP_PASSWORD : (string) ($smtpLocal['password'] ?? '');
+        $smtpFromEmail = defined('SMTP_FROM_EMAIL') ? SMTP_FROM_EMAIL : (string) ($smtpLocal['from_email'] ?? $smtpUsername);
+        $smtpFromName = defined('SMTP_FROM_NAME') ? SMTP_FROM_NAME : (string) ($smtpLocal['from_name'] ?? 'Inventario Fisico');
 
-        if (SMTP_HOST === '' || SMTP_USERNAME === '' || SMTP_PASSWORD === '') {
+        if ($smtpHost === '' || $smtpUsername === '' || $smtpPassword === '') {
             throw new RuntimeException('La configuracion SMTP esta incompleta. Verifique host, usuario y contrasena en el servidor.');
         }
 
         $mail = new PHPMailer(true);
         $mail->isSMTP();
-        $mail->Host = SMTP_HOST;
-        $mail->Port = SMTP_PORT;
+        $mail->Host = $smtpHost;
+        $mail->Port = $smtpPort;
         $mail->SMTPAuth = true;
-        $mail->Username = SMTP_USERNAME;
-        $mail->Password = SMTP_PASSWORD;
-        $mail->SMTPSecure = SMTP_ENCRYPTION === 'tls'
+        $mail->Username = $smtpUsername;
+        $mail->Password = $smtpPassword;
+        $mail->SMTPSecure = $smtpEncryption === 'tls'
             ? PHPMailer::ENCRYPTION_STARTTLS
             : PHPMailer::ENCRYPTION_SMTPS;
         $mail->CharSet = PHPMailer::CHARSET_UTF8;
-        $mail->setFrom(SMTP_FROM_EMAIL, SMTP_FROM_NAME);
+        $mail->setFrom($smtpFromEmail, $smtpFromName);
 
         foreach ($destinatarios as $destinatario) {
             $mail->addAddress($destinatario['email'], $destinatario['nombre']);
