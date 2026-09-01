@@ -10,6 +10,15 @@ class EntradaNotificador
             throw new RuntimeException('No hay contactos configurados para el proceso Entrada.');
         }
 
+        $constantesSmtp = ['SMTP_HOST', 'SMTP_PORT', 'SMTP_ENCRYPTION', 'SMTP_USERNAME', 'SMTP_PASSWORD', 'SMTP_FROM_EMAIL', 'SMTP_FROM_NAME'];
+        $constantesFaltantes = array_values(array_filter(
+            $constantesSmtp,
+            static fn (string $constante): bool => !defined($constante)
+        ));
+        if (!empty($constantesFaltantes)) {
+            throw new RuntimeException('Faltan constantes SMTP en config/config.php: ' . implode(', ', $constantesFaltantes) . '.');
+        }
+
         if (SMTP_HOST === '' || SMTP_USERNAME === '' || SMTP_PASSWORD === '') {
             throw new RuntimeException('La configuracion SMTP esta incompleta. Verifique host, usuario y contrasena en el servidor.');
         }
