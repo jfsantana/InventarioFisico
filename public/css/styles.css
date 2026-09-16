@@ -2880,6 +2880,10 @@ body.modal-is-open {
     --section-color: #2d6fa3;
 }
 
+.dashboard-home .menu-section--directiva {
+    --section-color: #60438f;
+}
+
 .dashboard-home .menu-section--admin {
     --section-color: #7a1c2e;
 }
@@ -3024,6 +3028,10 @@ body.modal-is-open {
 
 .dashboard-home .menu-card--reporte {
     --card-color: #2d6fa3;
+}
+
+.dashboard-home .menu-card--directiva {
+    --card-color: #60438f;
 }
 
 .dashboard-home .menu-card--conexion {

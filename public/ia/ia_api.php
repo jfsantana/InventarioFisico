@@ -21,6 +21,16 @@ try {
         exit;
     }
 
+    if (!Auth::isDirector()) {
+        http_response_code(403);
+        echo json_encode([
+            'success' => false,
+            'respuesta' => '',
+            'error' => 'No tiene permiso para consultar el asistente.',
+        ], JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     $controller = new IaController();
     $controller->procesarPregunta();
 } catch (Throwable $exception) {

@@ -8,6 +8,7 @@ $canCorregirSalidas = Auth::can('corregir_salidas');
 $canReporte = Auth::can('reporte_lote');
 $canInteligencia = Auth::can('inteligencia');
 $canAdmin = Auth::can('administracion');
+$isDirector = Auth::isDirector();
 $authUser = Auth::user();
 ?>
 
@@ -107,21 +108,28 @@ $authUser = Auth::user();
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M4 19V5" /><path d="M4 19h16" /><path d="M8 16v-5M12 16V8M16 16v-8" /></svg>
                     </span>
-                    <span>Junta directiva</span>
+                    <span>Analisis operacional</span>
                     <strong>Inteligencia de inventario</strong>
                     <i aria-hidden="true">→</i>
                 </a>
                 <?php endif; ?>
-                <?php if ($canInteligencia) : ?>
-                <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/ia/View/ia_view.php">
+            </div>
+        </section>
+        <?php endif; ?>
+
+        <?php if ($isDirector) : ?>
+        <section class="menu-section menu-section--wide menu-section--directiva">
+            <span>Acceso exclusivo</span>
+            <h2>Junta Directiva</h2>
+            <div class="menu-section-grid menu-section-grid--three">
+                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/ia/View/ia_view.php">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3v-14Z" /><path d="M9 9h6M9 12h4" /><path d="m17 3 .5 1.5L19 5l-1.5.5L17 7l-.5-1.5L15 5l1.5-.5L17 3Z" /></svg>
                     </span>
                     <span>Lenguaje natural</span>
-                    <strong>Consulta inteligente</strong>
+                    <strong>Asistente IA de Inventario</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <?php endif; ?>
             </div>
         </section>
         <?php endif; ?>

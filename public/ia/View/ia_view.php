@@ -13,7 +13,7 @@ require_once __DIR__ . '/../../../app/Core/Database.php';
 require_once __DIR__ . '/../../../app/Core/Auth.php';
 
 Auth::boot();
-Auth::requireLogin();
+Auth::requireDirector();
 
 $title = 'Asistente IA de Inventario';
 $apiUrl = rtrim($rutaProyecto, '/') . '/ia/ia_api.php';

@@ -154,6 +154,11 @@ class Auth
         return ($_SESSION['rol_nombre'] ?? '') === 'Operador';
     }
 
+    public static function isDirector(): bool
+    {
+        return (int) ($_SESSION['id_rol'] ?? 0) === 5;
+    }
+
     public static function requireNonOperator(): void
     {
         self::requireLogin();
@@ -186,7 +191,20 @@ class Auth
     public static function requireAdmin(): void
     {
         self::requireLogin();
-        if (($_SESSION['rol_nombre'] ?? '') === 'Administrador') {
+        if (($_SESSION['rol_nombre'] ?? '') === 'Administrador' || self::isDirector()) {
+            return;
+        }
+
+        http_response_code(403);
+        $title = 'Acceso denegado';
+        require __DIR__ . '/../Views/errors/403.php';
+        exit;
+    }
+
+    public static function requireDirector(): void
+    {
+        self::requireLogin();
+        if (self::isDirector()) {
             return;
         }
 

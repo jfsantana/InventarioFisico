@@ -122,7 +122,7 @@ class AuthSchema
 
     private static function seedRoles(PDO $db): void
     {
-        $roles = ['Administrador', 'Supervisor', 'Operador', 'Solo lectura'];
+        $roles = ['Administrador', 'Supervisor', 'Operador', 'Solo lectura', 'Director'];
         $hasNombreRol = self::hasColumn($db, 'roles', 'nombre_rol');
         $sql = $hasNombreRol
             ? 'INSERT IGNORE INTO roles (nombre, nombre_rol, activo) VALUES (:nombre, :nombre_rol, 1)'
@@ -170,7 +170,7 @@ class AuthSchema
 
     private static function permissionFor(string $role, string $module): array
     {
-        if ($role === 'Administrador') {
+        if (in_array($role, ['Administrador', 'Director'], true)) {
             return [1, 1, 1];
         }
 
