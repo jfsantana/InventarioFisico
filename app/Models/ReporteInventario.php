@@ -14,6 +14,95 @@ class ReporteInventario extends BaseModel
         return $statement->fetchAll();
     }
 
+    public function obtenerSaldosPorLote(array $idsProducto = []): array
+    {
+        [$where, $params] = $this->crearFiltroProductos($idsProducto);
+        $sql = $this->consultaSaldosPorLote() . $where
+             . ' ORDER BY p.nombre ASC, dl.NumLote ASC, ie.fecha ASC, dl.idInventarioEntrante ASC';
+        $statement = $this->db->prepare($sql);
+        $statement->execute($params);
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerSaldosPorLotePaginados(array $idsProducto, int $limite, int $offset): array
+    {
+        [$where, $params] = $this->crearFiltroProductos($idsProducto);
+        $sql = $this->consultaSaldosPorLote() . $where
+             . ' ORDER BY p.nombre ASC, dl.NumLote ASC, ie.fecha ASC, dl.idInventarioEntrante ASC
+                 LIMIT :limite OFFSET :offset';
+        $statement = $this->db->prepare($sql);
+        foreach ($params as $key => $value) {
+            $statement->bindValue(':' . $key, $value, PDO::PARAM_INT);
+        }
+        $statement->bindValue(':limite', max(1, $limite), PDO::PARAM_INT);
+        $statement->bindValue(':offset', max(0, $offset), PDO::PARAM_INT);
+        $statement->execute();
+
+        return $statement->fetchAll();
+    }
+
+    public function obtenerResumenSaldosPorLote(array $idsProducto = []): array
+    {
+        [$where, $params] = $this->crearFiltroProductos($idsProducto);
+        $statement = $this->db->prepare(
+            'SELECT COUNT(*) AS total_lotes,
+                    COALESCE(SUM(dl.cantidad_disponible + dl.cantidad_reservada), 0) AS total_fisico,
+                    COALESCE(SUM(dl.cantidad_reservada), 0) AS total_reservado,
+                    COALESCE(SUM(dl.cantidad_disponible), 0) AS total_disponible
+             FROM v_disponibilidad_lotes dl' . $where
+        );
+        $statement->execute($params);
+
+        return $statement->fetch() ?: [
+            'total_lotes' => 0,
+            'total_fisico' => 0,
+            'total_reservado' => 0,
+            'total_disponible' => 0,
+        ];
+    }
+
+    private function consultaSaldosPorLote(): string
+    {
+        return 'SELECT dl.idInventarioEntrante,
+                       dl.idProducto,
+                       p.codigoInterno,
+                       p.nombre AS producto,
+                       dl.NumLote,
+                       ie.fecha AS fechaEntrada,
+                       pr.nombre AS presentacion,
+                       u.nombre AS ubicacion,
+                       dl.sector,
+                       dl.stock_total,
+                       dl.stock_total - dl.cantidad_reservada - dl.cantidad_disponible AS cantidad_saliente,
+                       dl.cantidad_reservada,
+                       dl.cantidad_disponible + dl.cantidad_reservada AS saldo_fisico,
+                       dl.cantidad_disponible
+                FROM v_disponibilidad_lotes dl
+                INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = dl.idInventarioEntrante
+                INNER JOIN Producto p ON p.idProducto = dl.idProducto
+                LEFT JOIN presentacion pr ON pr.idPresentacion = dl.idPresentacion
+                LEFT JOIN ubicacion u ON u.idUbicacion = dl.`idUbicación`';
+    }
+
+    private function crearFiltroProductos(array $idsProducto): array
+    {
+        $params = [];
+
+        if ($idsProducto === []) {
+            return ['', $params];
+        }
+
+        $placeholders = [];
+        foreach (array_values($idsProducto) as $index => $idProducto) {
+            $key = 'producto' . $index;
+            $placeholders[] = ':' . $key;
+            $params[$key] = (int) $idProducto;
+        }
+
+        return [' WHERE dl.idProducto IN (' . implode(', ', $placeholders) . ')', $params];
+    }
+
     public function obtenerLotesPorProducto(int $idProducto): array
     {
         $statement = $this->db->prepare(

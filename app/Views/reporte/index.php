@@ -32,10 +32,10 @@ $buildPageUrl = static function (int $paginaDestino) use ($idProducto, $idInvent
     return APP_URL . '/reporte?' . http_build_query($query);
 };
 
-$buildExportUrl = static function () use ($idProducto, $idInventarioEntrante): string {
+$buildExportUrl = static function (string $format) use ($idProducto, $idInventarioEntrante): string {
     $query = [
         'idProducto' => $idProducto,
-        'export' => 'pdf',
+        'export' => $format,
     ];
 
     if (!empty($idInventarioEntrante)) {
@@ -88,8 +88,10 @@ $movimientosRender = $modoExport ? $movimientos : $movimientosPaginados;
         <div class="form-actions form-actions--full">
             <button class="button-link button-link--submit" type="submit">Ver reporte</button>
             <?php if (!empty($encabezado)) : ?>
-                <a class="button-link button-link--submit report-export-button" href="<?= htmlspecialchars($buildExportUrl(), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Generar PDF</a>
+                <a class="button-link button-link--submit report-export-button" href="<?= htmlspecialchars($buildExportUrl('pdf'), ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Generar PDF</a>
+                <a class="button-link button-link--submit report-export-button report-export-button--excel" href="<?= htmlspecialchars($buildExportUrl('excel'), ENT_QUOTES, 'UTF-8') ?>">Exportar Excel</a>
             <?php endif; ?>
+            <a class="button-link button-link--secondary" href="<?= APP_URL ?>/reporte/saldos">Saldo por producto y lote</a>
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/">Volver al menu</a>
         </div>
     </form>

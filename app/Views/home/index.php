@@ -102,6 +102,14 @@ $authUser = Auth::user();
                     <strong>Reporte por lote</strong>
                     <i aria-hidden="true">→</i>
                 </a>
+                <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/reporte/saldos">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4z" /><path d="M8 10h8M8 14h5" /><path d="M17 14h2" /></svg>
+                    </span>
+                    <span>Existencia por lote</span>
+                    <strong>Saldo de productos</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
                 <?php endif; ?>
                 <?php if ($canInteligencia) : ?>
                 <a class="menu-card menu-card--reporte" href="<?= APP_URL ?>/analitica">

@@ -281,7 +281,8 @@ class EntradaInventario extends BaseModel
                  PaisCode = :paisCode,
                  fecha_factura = :fechaFactura,
                  peso_romana = :pesoRomana,
-                 nro_factura = :nroFactura
+                 nro_factura = :nroFactura,
+                 observaciones = :observaciones
              WHERE idInventarioEntrante = :idInventarioEntrante'
         );
 
@@ -299,6 +300,7 @@ class EntradaInventario extends BaseModel
             'fechaFactura' => $data['fecha_factura'],
             'pesoRomana' => $data['peso_romana'],
             'nroFactura' => $data['nro_factura'],
+            'observaciones' => $data['observaciones'],
             'idInventarioEntrante' => $idInventarioEntrante,
         ]);
     }

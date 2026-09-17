@@ -273,6 +273,11 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                     Numero de factura
                     <input name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9 \-]+" required>
                 </label>
+                <label class="correction-field--full">
+                    Motivo de la edición
+                    <textarea name="observaciones" maxlength="256" rows="3" placeholder="Explique por qué se modifica esta entrada" required></textarea>
+                    <small>Obligatorio. Máximo 256 caracteres.</small>
+                </label>
                 <div class="document-fields">
                     <label data-document-field="ticketRomana">
                         Ticket de romana

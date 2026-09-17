@@ -95,6 +95,29 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        const producto = document.getElementById('txt_producto')?.value || 'Sin producto';
+        const lote = document.getElementById('txt_lote')?.value || 'Sin lote';
+        const cantidadFormateada = cantidad.toLocaleString('es-VE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 3,
+        });
+        const disponibleFormateado = disponible.toLocaleString('es-VE', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 3,
+        });
+        const confirmado = window.confirm(
+            '¿Está seguro de registrar esta entrega?\n\n'
+            + `Producto: ${producto}\n`
+            + `Lote: ${lote}\n`
+            + `Cantidad a entregar: ${cantidadFormateada}\n`
+            + `Disponible: ${disponibleFormateado}`
+        );
+
+        if (!confirmado) {
+            cantidadInput.focus();
+            return;
+        }
+
         const button = form.querySelector('button[type="submit"]');
         const originalText = button.textContent;
         button.disabled = true;

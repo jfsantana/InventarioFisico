@@ -230,6 +230,7 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'fecha_factura', row.dataset.fechaFactura);
             setFormValue(editForm, 'peso_romana', row.dataset.pesoRomana);
             setFormValue(editForm, 'nro_factura', row.dataset.nroFactura);
+            setFormValue(editForm, 'observaciones', '');
             editForm.querySelectorAll('[data-document-field]').forEach((container) => {
                 const key = container.dataset.documentField;
                 const documentId = row.dataset[`${key}Id`];

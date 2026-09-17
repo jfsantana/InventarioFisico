@@ -82,6 +82,7 @@ class EntradaController extends Controller
             'fecha_factura' => trim($_POST['fecha_factura'] ?? ''),
             'peso_romana' => trim($_POST['peso_romana'] ?? ''),
             'nro_factura' => trim($_POST['nro_factura'] ?? ''),
+            'observaciones' => trim($_POST['observaciones'] ?? ''),
         ];
 
         $errors = array_merge(
@@ -278,6 +279,12 @@ class EntradaController extends Controller
             $this->validarDocumentos($documentosExistentes, false)
         );
 
+        if ($formData['observaciones'] === '') {
+            $errors['observaciones'] = 'Indique el motivo de la edición.';
+        } elseif (mb_strlen($formData['observaciones']) > 256) {
+            $errors['observaciones'] = 'El motivo de la edición no puede superar los 256 caracteres.';
+        }
+
         if (!empty($errors)) {
             $this->detalle(implode(' ', $errors), 'error');
             return;
@@ -305,6 +312,7 @@ class EntradaController extends Controller
                 'fecha_factura' => $formData['fecha_factura'],
                 'peso_romana' => (float) $formData['peso_romana'],
                 'nro_factura' => $formData['nro_factura'],
+                'observaciones' => $formData['observaciones'],
             ]);
             $this->guardarDocumentos($model, $idInventarioEntrante, $documentosExistentes);
             $correoEnviado = $this->notificarEntrada($model, $idInventarioEntrante, 'edicion');
