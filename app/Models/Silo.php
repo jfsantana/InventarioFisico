@@ -23,20 +23,35 @@ class Silo extends BaseModel
         return $statement->fetchAll();
     }
 
-    public function disponiblesParaProducto(int $idProducto): array
+        public function disponiblesParaProducto(int $idProducto, ?int $idInventarioEntrante = null): array
     {
         $statement = $this->db->prepare(
             'SELECT es.idSilo, es.codigo, es.nombre, es.capacidad,
-                    es.cantidadOcupada, es.capacidadDisponible, es.idProductoActual,
+                                        es.cantidadOcupada,
+                                        es.capacidadDisponible + COALESCE(actual.cantidadActual, 0) AS capacidadDisponible,
+                                        COALESCE(actual.cantidadActual, 0) AS cantidadActual,
+                                        es.idProductoActual,
                     p.nombre AS productoActual
              FROM v_estado_silos es
              LEFT JOIN Producto p ON p.idProducto = es.idProductoActual
-             WHERE es.activo = 1
-               AND es.capacidadDisponible > 0.0005
-               AND (es.cantidadOcupada <= 0.0005 OR es.idProductoActual = :idProducto)
-             ORDER BY (es.idProductoActual = :idProductoOrden) DESC, es.codigo ASC'
+                         LEFT JOIN (
+                                 SELECT a.idSilo,
+                                                SUM(GREATEST(a.cantidadAsignada - COALESCE(x.cantidadSaliente, 0), 0)) AS cantidadActual
+                                 FROM silo_asignaciones a
+                                 LEFT JOIN (SELECT idAsignacion, SUM(cantidad) AS cantidadSaliente FROM silo_salidas GROUP BY idAsignacion) x
+                                                ON x.idAsignacion = a.idAsignacion
+                                 WHERE a.idInventarioEntrante = :idInventarioEntrante
+                                 GROUP BY a.idSilo
+                         ) actual ON actual.idSilo = es.idSilo
+                         WHERE (es.activo = 1 OR COALESCE(actual.cantidadActual, 0) > 0.0005)
+                             AND es.capacidadDisponible + COALESCE(actual.cantidadActual, 0) > 0.0005
+                             AND (es.cantidadOcupada <= 0.0005 OR es.idProductoActual = :idProducto)
+                         ORDER BY (COALESCE(actual.cantidadActual, 0) > 0.0005) DESC,
+                                            (es.idProductoActual = :idProductoOrden) DESC,
+                                            es.codigo ASC'
         );
         $statement->execute([
+                        'idInventarioEntrante' => $idInventarioEntrante ?? 0,
             'idProducto' => $idProducto,
             'idProductoOrden' => $idProducto,
         ]);

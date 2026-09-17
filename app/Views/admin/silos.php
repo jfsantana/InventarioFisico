@@ -27,6 +27,62 @@ $messageType = $messageType ?? 'success';
         <?php if (!empty($filters['q'])) : ?><a class="button-link button-link--secondary" href="<?= APP_URL ?>/admin/silos">Limpiar</a><?php endif; ?>
     </form>
 
+    <section class="silo-visual-report" aria-labelledby="silo-visual-title">
+        <div class="silo-visual-heading">
+            <div>
+                <p class="eyebrow">Estado en tiempo real</p>
+                <h2 id="silo-visual-title">Nivel de ocupación</h2>
+            </div>
+            <div class="silo-visual-legend" aria-label="Leyenda de ocupación">
+                <span><i class="is-available"></i> Menos de 60%</span>
+                <span><i class="is-warning"></i> Entre 60% y 84%</span>
+                <span><i class="is-critical"></i> 85% o más</span>
+            </div>
+        </div>
+
+        <?php if (!$silos) : ?>
+            <div class="message">Registre un silo para visualizar su nivel.</div>
+        <?php else : ?>
+            <div class="silo-visual-grid">
+                <?php foreach ($silos as $silo) : ?>
+                    <?php
+                    $capacidad = (float) $silo['capacidad'];
+                    $ocupado = (float) $silo['cantidadOcupada'];
+                    $disponible = (float) $silo['capacidadDisponible'];
+                    $porcentaje = $capacidad > 0 ? max(0, min(100, ($ocupado / $capacidad) * 100)) : 0;
+                    $nivelClase = $ocupado <= 0.0005
+                        ? 'is-empty'
+                        : ($porcentaje >= 85 ? 'is-critical' : ($porcentaje >= 60 ? 'is-warning' : 'is-available'));
+                    ?>
+                    <article class="silo-visual-card <?= (int) $silo['activo'] === 1 ? '' : 'is-inactive' ?>">
+                        <div class="silo-visual-code">
+                            <span><?= $text($silo['nombre']) ?></span>
+                            <strong><?= $text($silo['codigo']) ?></strong>
+                        </div>
+                        <div class="silo-vessel <?= $nivelClase ?>" role="img" aria-label="Silo <?= $text($silo['codigo']) ?> al <?= number_format($porcentaje, 1) ?> por ciento, <?= number_format($ocupado, 3) ?> kilogramos ocupados">
+                            <div class="silo-vessel-cap"></div>
+                            <div class="silo-vessel-body">
+                                <div class="silo-vessel-fill" style="height: <?= number_format($porcentaje, 2, '.', '') ?>%"></div>
+                                <span class="silo-vessel-percent"><?= number_format($porcentaje, 1) ?>%</span>
+                                <span class="silo-vessel-quantity"><?= number_format($ocupado, 3) ?> kg</span>
+                            </div>
+                            <div class="silo-vessel-hopper"></div>
+                            <div class="silo-vessel-legs"><i></i><i></i></div>
+                        </div>
+                        <div class="silo-visual-product">
+                            <span>Producto almacenado</span>
+                            <strong><?= $text($silo['productoActual'] ?: 'Silo vacío') ?></strong>
+                        </div>
+                        <dl class="silo-visual-values">
+                            <div><dt>Disponible</dt><dd><?= number_format($disponible, 3) ?> kg</dd></div>
+                            <div><dt>Capacidad</dt><dd><?= number_format($capacidad, 3) ?> kg</dd></div>
+                        </dl>
+                    </article>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
+    </section>
+
     <div class="admin-table-wrap">
         <table class="admin-table silo-table">
             <thead><tr><th>Código</th><th>Nombre</th><th>Producto actual</th><th>Capacidad</th><th>Ocupado</th><th>Disponible</th><th>Estado</th><th>Acciones</th></tr></thead>

@@ -14,11 +14,12 @@ $tiposCompra = $tiposCompra ?? [];
 $proveedores = $proveedores ?? [];
 $paises = $paises ?? [];
 $documentosPorEntrada = $documentosPorEntrada ?? [];
+$asignacionesSiloPorEntrada = $asignacionesSiloPorEntrada ?? [];
 $sectores = $sectores ?? ['Sector1', 'Sector2', 'Sector3'];
 $canResendEmail = Auth::can('corregir_entradas', 'editar');
 ?>
 
-<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-email-resend-endpoint="<?= APP_URL ?>/entrada/reenviarCorreo" data-document-download-endpoint="<?= APP_URL ?>/entrada/descargarDocumento" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+<section class="panel report-panel correction-panel correction-table-page" data-correction-page data-page-type="entrada" data-delete-endpoint="<?= APP_URL ?>/entrada/eliminar" data-email-resend-endpoint="<?= APP_URL ?>/entrada/reenviarCorreo" data-document-download-endpoint="<?= APP_URL ?>/entrada/descargarDocumento" data-silo-endpoint="<?= APP_URL ?>/entrada/silosDisponibles" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <p class="eyebrow">CORRECCION OPERATIVA</p>
     <h1>Entradas registradas</h1>
     <p class="intro">Revise cada entrada de inventario y corrija sus datos cuando sea necesario.</p>
@@ -104,6 +105,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                     <?php foreach ($entradas as $entrada) : ?>
                         <?php $danger = (float) $entrada['disponible'] <= 0; ?>
                         <?php $documentosEntrada = $documentosPorEntrada[(int) $entrada['idInventarioEntrante']] ?? []; ?>
+                        <?php $asignacionesEntrada = $asignacionesSiloPorEntrada[(int) $entrada['idInventarioEntrante']] ?? []; ?>
                         <tr class="<?= $danger ? 'is-risk-row' : '' ?>"
                             data-id="<?= (int) $entrada['idInventarioEntrante'] ?>"
                             data-fecha="<?= $dateValue($entrada['fecha']) ?>"
@@ -131,6 +133,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             data-documento-seniat-name="<?= $text($documentosEntrada['documento_seniat']['nombreOriginal'] ?? '') ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
+                            data-silo-assignments="<?= $text(json_encode($asignacionesEntrada, JSON_UNESCAPED_UNICODE)) ?>"
                             data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '') . ' ' . ($entrada['nro_factura'] ?? '')) ?>">
                             <td data-label="#"><?= (int) $entrada['idInventarioEntrante'] ?></td>
                             <td data-label="Fecha"><?= $formatDate($entrada['fecha']) ?></td>
@@ -273,6 +276,20 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                     Numero de factura
                     <input name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9 \-]+" required>
                 </label>
+                <section class="entry-silo-allocation correction-field--full" data-edit-silo-allocation hidden>
+                    <div class="entry-silo-heading">
+                        <div><span>Saldo físico actual</span><h3>Distribución en silos</h3></div>
+                        <button class="button-link button-link--secondary" type="button" data-add-edit-silo>+ Agregar silo</button>
+                    </div>
+                    <p>Puede cambiar las cantidades y mover el saldo restante a otros silos. Las salidas ya realizadas conservan su historial.</p>
+                    <div class="silo-edit-history" data-edit-silo-history hidden></div>
+                    <div class="silo-assignment-rows" data-edit-silo-rows></div>
+                    <div class="silo-entry-totals">
+                        <span>Saldo por distribuir: <strong data-edit-silo-required>0.000 kg</strong></span>
+                        <span>Asignado: <strong data-edit-silo-assigned>0.000 kg</strong></span>
+                        <span data-edit-silo-status>Pendiente</span>
+                    </div>
+                </section>
                 <label class="correction-field--full">
                     Motivo de la edición
                     <textarea name="observaciones" maxlength="256" rows="3" placeholder="Explique por qué se modifica esta entrada" required></textarea>

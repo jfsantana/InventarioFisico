@@ -180,6 +180,28 @@ class EntradaInventario extends BaseModel
         return $documentosPorEntrada;
     }
 
+    public function obtenerAsignacionesSiloPorEntradas(): array
+    {
+        $statement = $this->db->query(
+            'SELECT a.idInventarioEntrante, a.idSilo, s.codigo, s.nombre,
+                    a.cantidadAsignada,
+                    COALESCE(SUM(ss.cantidad), 0) AS cantidadConsumida,
+                    GREATEST(a.cantidadAsignada - COALESCE(SUM(ss.cantidad), 0), 0) AS cantidadDisponible
+             FROM silo_asignaciones a
+             INNER JOIN silos s ON s.idSilo = a.idSilo
+             LEFT JOIN silo_salidas ss ON ss.idAsignacion = a.idAsignacion
+             GROUP BY a.idAsignacion, a.idInventarioEntrante, a.idSilo, s.codigo, s.nombre, a.cantidadAsignada
+             ORDER BY a.idInventarioEntrante, a.fechaAsignacion, a.idAsignacion'
+        );
+
+        $porEntrada = [];
+        foreach ($statement->fetchAll() as $asignacion) {
+            $porEntrada[(int) $asignacion['idInventarioEntrante']][] = $asignacion;
+        }
+
+        return $porEntrada;
+    }
+
     public function obtenerDocumentoPorId(int $idDocumento): ?array
     {
         $statement = $this->db->prepare(
@@ -289,13 +311,16 @@ class EntradaInventario extends BaseModel
         return (float) ($resultado['salidaTotal'] ?? 0);
     }
 
-    public function actualizarEntrada(int $idInventarioEntrante, array $data): bool
+    public function actualizarEntrada(int $idInventarioEntrante, array $data, array $asignacionesSilo = []): bool
     {
+        $this->db->beginTransaction();
+        try {
         $statement = $this->db->prepare(
             'SELECT ie.idProducto, ie.sector, ie.CantidadEntrante,
                     EXISTS(SELECT 1 FROM silo_asignaciones sa WHERE sa.idInventarioEntrante = ie.idInventarioEntrante) AS tieneAsignaciones
              FROM inventarioentrante ie
-             WHERE ie.idInventarioEntrante = :idInventarioEntrante'
+             WHERE ie.idInventarioEntrante = :idInventarioEntrante
+             FOR UPDATE'
         );
         $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
         $actual = $statement->fetch();
@@ -309,10 +334,8 @@ class EntradaInventario extends BaseModel
             throw new DomainException('No puede mover una entrada existente a Sector3 sin distribuirla entre silos. Registre una nueva entrada o use el módulo de silos.');
         }
         if ((int) $actual['tieneAsignaciones'] === 1
-            && (!$seraSector3
-                || (int) $actual['idProducto'] !== (int) $data['idProducto']
-                || abs((float) $actual['CantidadEntrante'] - (float) $data['CantidadEntrante']) > 0.0005)) {
-            throw new DomainException('Una entrada distribuida en silos no permite cambiar producto, sector ni cantidad.');
+            && (!$seraSector3 || (int) $actual['idProducto'] !== (int) $data['idProducto'])) {
+            throw new DomainException('Una entrada distribuida en silos no permite cambiar el producto ni salir de Sector3.');
         }
 
         $statement = $this->db->prepare(
@@ -334,7 +357,7 @@ class EntradaInventario extends BaseModel
              WHERE idInventarioEntrante = :idInventarioEntrante'
         );
 
-        return $statement->execute([
+        $updated = $statement->execute([
             'numLote' => $data['NumLote'],
             'idProducto' => $data['idProducto'],
             'idPresentacion' => $data['idPresentacion'],
@@ -351,6 +374,31 @@ class EntradaInventario extends BaseModel
             'observaciones' => $data['observaciones'],
             'idInventarioEntrante' => $idInventarioEntrante,
         ]);
+
+        if ($seraSector3) {
+            $statement = $this->db->prepare(
+                'SELECT COALESCE(SUM(cantidadSaliente), 0)
+                 FROM inventariosaliente
+                 WHERE idInventarioEntrante = :idInventarioEntrante'
+            );
+            $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
+            $saldoFisico = (float) $data['CantidadEntrante'] - (float) $statement->fetchColumn();
+            (new SiloStockService($this->db))->redistribuirSaldoEntrada(
+                $idInventarioEntrante,
+                (int) $data['idProducto'],
+                $saldoFisico,
+                $asignacionesSilo
+            );
+        }
+
+        $this->db->commit();
+        return $updated;
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function eliminarEntrada(int $idInventarioEntrante): bool

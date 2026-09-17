@@ -24,7 +24,11 @@ function initCorrectionPage(page) {
     const deleteEndpoint = page.dataset.deleteEndpoint;
     const emailResendEndpoint = page.dataset.emailResendEndpoint;
     const documentDownloadEndpoint = page.dataset.documentDownloadEndpoint;
+    const siloEndpoint = page.dataset.siloEndpoint;
     const csrfToken = page.dataset.csrfToken;
+    const editSiloSection = editForm.querySelector('[data-edit-silo-allocation]');
+    const editSiloRows = editForm.querySelector('[data-edit-silo-rows]');
+    let editAvailableSilos = [];
 
     document.body.appendChild(editModal);
     document.body.appendChild(deleteModal);
@@ -251,6 +255,7 @@ function initCorrectionPage(page) {
             editForm.querySelector('[data-summary-salidas]').textContent = formatNumber(row.dataset.salidas);
             editForm.querySelector('[data-summary-salidas]').dataset.raw = row.dataset.salidas;
             editForm.querySelector('[data-summary-disponible]').textContent = formatNumber(row.dataset.disponible);
+            loadEditSilos(row);
         } else {
             setFormValue(editForm, 'idInventarioSaliente', row.dataset.id);
             setFormValue(editForm, 'idInventarioEntrante', row.dataset.entradaId);
@@ -321,6 +326,7 @@ function initCorrectionPage(page) {
         if (pageType === 'entrada') {
             const exits = Number(editForm.querySelector('[data-summary-salidas]').dataset.raw) || 0;
             availableField.textContent = formatNumber(quantity - exits);
+            updateEditSiloTotals();
             return;
         }
 
@@ -340,7 +346,141 @@ function initCorrectionPage(page) {
             }
         });
 
-        return isValid;
+        return isValid && isEditSiloDistributionValid();
+    }
+
+    function isEditSector3() {
+        return pageType === 'entrada'
+            && String(editForm.elements.Sector?.value || '').replace(/\s+/g, '').toLowerCase() === 'sector3';
+    }
+
+    function editSiloRowsList() {
+        return Array.from(editSiloRows?.querySelectorAll('.silo-assignment-row') || []);
+    }
+
+    function editSiloBalance() {
+        const quantity = Number(editForm.elements.CantidadEntrante?.value) || 0;
+        const outputs = Number(editForm.querySelector('[data-summary-salidas]')?.dataset.raw) || 0;
+        return Math.max(0, quantity - outputs);
+    }
+
+    function isEditSiloDistributionValid() {
+        if (!editSiloSection || !isEditSector3()) return true;
+        if (editSiloSection.dataset.loading === 'true') return false;
+        const required = editSiloBalance();
+        const rows = editSiloRowsList();
+        if (required <= 0.0005) return rows.length === 0;
+        if (!rows.length) return false;
+        const ids = rows.map((row) => row.querySelector('[name="idSilo[]"]').value).filter(Boolean);
+        const assigned = rows.reduce((sum, row) => sum + (Number(row.querySelector('[name="cantidadSilo[]"]').value) || 0), 0);
+        return ids.length === rows.length && new Set(ids).size === ids.length && rows.every((row) => {
+            const select = row.querySelector('[name="idSilo[]"]');
+            const quantity = Number(row.querySelector('[name="cantidadSilo[]"]').value) || 0;
+            const available = Number(select.selectedOptions[0]?.dataset.available || 0);
+            return quantity > 0 && quantity <= available + 0.0005;
+        }) && Math.abs(assigned - required) < 0.0005;
+    }
+
+    function updateEditSiloOptions() {
+        if (!editSiloRows) return;
+        const selects = editSiloRowsList().map((row) => row.querySelector('[name="idSilo[]"]'));
+        const selected = new Set(selects.map((select) => select.value).filter(Boolean));
+        selects.forEach((select) => {
+            Array.from(select.options).forEach((option) => {
+                option.disabled = option.value !== '' && option.value !== select.value && selected.has(option.value);
+            });
+        });
+    }
+
+    function updateEditSiloTotals() {
+        if (!editSiloSection || editSiloSection.hidden) return;
+        const required = editSiloBalance();
+        const assigned = editSiloRowsList().reduce((sum, row) => sum + (Number(row.querySelector('[name="cantidadSilo[]"]').value) || 0), 0);
+        const pending = required - assigned;
+        editSiloSection.querySelector('[data-edit-silo-required]').textContent = `${required.toFixed(3)} kg`;
+        editSiloSection.querySelector('[data-edit-silo-assigned]').textContent = `${assigned.toFixed(3)} kg`;
+        const status = editSiloSection.querySelector('[data-edit-silo-status]');
+        const complete = Math.abs(pending) < 0.0005;
+        status.textContent = complete ? 'Distribución completa' : `${pending >= 0 ? 'Faltan' : 'Exceden'} ${Math.abs(pending).toFixed(3)} kg`;
+        status.classList.toggle('is-complete', complete);
+    }
+
+    function addEditSiloRow(values = {}) {
+        const row = document.createElement('div');
+        row.className = 'silo-assignment-row';
+        const select = document.createElement('select');
+        select.name = 'idSilo[]';
+        select.required = true;
+        select.appendChild(new Option('Seleccione un silo', ''));
+        editAvailableSilos.forEach((silo) => {
+            const option = new Option(`${silo.codigo} - ${silo.nombre} (${Number(silo.capacidadDisponible).toFixed(3)} kg disponibles)`, silo.idSilo);
+            option.dataset.available = silo.capacidadDisponible;
+            select.appendChild(option);
+        });
+        select.value = String(values.idSilo || '');
+
+        const quantity = document.createElement('input');
+        quantity.name = 'cantidadSilo[]';
+        quantity.type = 'number';
+        quantity.min = '0.001';
+        quantity.step = '0.001';
+        quantity.inputMode = 'decimal';
+        quantity.placeholder = 'Cantidad en kg';
+        quantity.required = true;
+        quantity.value = values.cantidadDisponible || values.cantidad || '';
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.title = 'Quitar silo';
+        remove.setAttribute('aria-label', 'Quitar silo');
+        remove.innerHTML = '&times;';
+        remove.addEventListener('click', () => {
+            row.remove();
+            updateEditSiloOptions();
+            updateEditSiloTotals();
+        });
+        [select, quantity].forEach((field) => field.addEventListener('input', () => {
+            updateEditSiloOptions();
+            updateEditSiloTotals();
+        }));
+        row.append(select, quantity, remove);
+        editSiloRows.appendChild(row);
+        updateEditSiloOptions();
+    }
+
+    async function loadEditSilos(row) {
+        if (!editSiloSection) return;
+        const enabled = String(row.dataset.sector || '').replace(/\s+/g, '').toLowerCase() === 'sector3';
+        editSiloSection.hidden = !enabled;
+        editSiloRows.replaceChildren();
+        if (!enabled) return;
+
+        editSiloSection.dataset.loading = 'true';
+        const assignments = JSON.parse(row.dataset.siloAssignments || '[]');
+        const history = assignments.filter((item) => Number(item.cantidadConsumida) > 0.0005);
+        const historyElement = editSiloSection.querySelector('[data-edit-silo-history]');
+        historyElement.hidden = history.length === 0;
+        historyElement.textContent = history.length
+            ? `Historial consumido: ${history.map((item) => `${item.codigo}: ${Number(item.cantidadConsumida).toFixed(3)} kg`).join(' · ')}`
+            : '';
+
+        try {
+            const query = new URLSearchParams({
+                idProducto: row.dataset.productId,
+                idInventarioEntrante: row.dataset.id,
+            });
+            const response = await fetch(`${siloEndpoint}?${query}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los silos.');
+            editAvailableSilos = data;
+            assignments.filter((item) => Number(item.cantidadDisponible) > 0.0005).forEach(addEditSiloRow);
+            if (editSiloBalance() > 0.0005 && !editSiloRows.children.length) addEditSiloRow();
+        } catch (error) {
+            showToast(error.message, 'error');
+        } finally {
+            editSiloSection.dataset.loading = 'false';
+            updateEditSiloTotals();
+        }
     }
 
     function showToast(message, type = 'success') {
@@ -435,6 +575,10 @@ function initCorrectionPage(page) {
     });
 
     editForm.querySelector('[data-modal-quantity]')?.addEventListener('input', updateCalculatedAvailability);
+    editForm.querySelector('[data-add-edit-silo]')?.addEventListener('click', () => {
+        addEditSiloRow();
+        updateEditSiloTotals();
+    });
 
     editForm.elements.idInventarioEntrante?.addEventListener('change', (event) => {
         if (pageType !== 'salida') {

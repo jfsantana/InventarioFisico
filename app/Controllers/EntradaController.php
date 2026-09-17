@@ -207,6 +207,7 @@ class EntradaController extends Controller
         $proveedores = [];
         $paises = [];
         $documentosPorEntrada = [];
+        $asignacionesSiloPorEntrada = [];
         $loadError = null;
 
         try {
@@ -218,6 +219,7 @@ class EntradaController extends Controller
             $proveedores = $model->obtenerProveedores();
             $paises = $model->obtenerPaises();
             $documentosPorEntrada = $model->obtenerTodosDocumentos();
+            $asignacionesSiloPorEntrada = $model->obtenerAsignacionesSiloPorEntradas();
         } catch (PDOException $exception) {
             $loadError = $exception->getMessage();
         }
@@ -232,6 +234,7 @@ class EntradaController extends Controller
             'proveedores' => $proveedores,
             'paises' => $paises,
             'documentosPorEntrada' => $documentosPorEntrada,
+            'asignacionesSiloPorEntrada' => $asignacionesSiloPorEntrada,
             'sectores' => self::SECTORES,
             'message' => $message,
             'messageType' => $messageType,
@@ -266,6 +269,7 @@ class EntradaController extends Controller
             'peso_romana' => trim($_POST['peso_romana'] ?? ''),
             'nro_factura' => trim($_POST['nro_factura'] ?? ''),
             'observaciones' => trim($_POST['observaciones'] ?? ''),
+            'asignacionesSilo' => $this->normalizarAsignacionesSilo($_POST),
         ];
 
         if (!$idInventarioEntrante) {
@@ -314,7 +318,7 @@ class EntradaController extends Controller
                 'peso_romana' => (float) $formData['peso_romana'],
                 'nro_factura' => $formData['nro_factura'],
                 'observaciones' => $formData['observaciones'],
-            ]);
+            ], $formData['asignacionesSilo']);
             $this->guardarDocumentos($model, $idInventarioEntrante, $documentosExistentes);
             $correoEnviado = $this->notificarEntrada($model, $idInventarioEntrante, 'edicion');
 
@@ -370,6 +374,7 @@ class EntradaController extends Controller
         }
 
         $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);
+        $idInventarioEntrante = filter_input(INPUT_GET, 'idInventarioEntrante', FILTER_VALIDATE_INT) ?: null;
         if (!$idProducto) {
             http_response_code(400);
             echo json_encode(['error' => 'Seleccione un producto válido.'], JSON_UNESCAPED_UNICODE);
@@ -377,7 +382,10 @@ class EntradaController extends Controller
         }
 
         try {
-            echo json_encode($this->model('Silo')->disponiblesParaProducto($idProducto), JSON_UNESCAPED_UNICODE);
+            echo json_encode(
+                $this->model('Silo')->disponiblesParaProducto($idProducto, $idInventarioEntrante),
+                JSON_UNESCAPED_UNICODE
+            );
         } catch (Throwable $exception) {
             http_response_code(500);
             echo json_encode(['error' => $exception->getMessage()], JSON_UNESCAPED_UNICODE);

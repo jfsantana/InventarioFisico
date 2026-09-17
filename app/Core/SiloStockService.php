@@ -111,6 +111,111 @@ class SiloStockService
         return true;
     }
 
+    public function redistribuirSaldoEntrada(int $idEntrada, int $idProducto, float $saldoFisico, array $asignaciones): void
+    {
+        $normalizadas = $saldoFisico > 0.0005 ? $this->normalizarAsignaciones($asignaciones) : [];
+        $total = array_sum(array_column($normalizadas, 'cantidad'));
+        if (abs($total - $saldoFisico) > 0.0005) {
+            throw new DomainException('La distribución entre silos debe sumar exactamente el saldo físico: ' . number_format($saldoFisico, 3) . ' kg.');
+        }
+
+        $statement = $this->db->prepare(
+            'SELECT a.idAsignacion, a.idSilo, a.cantidadAsignada,
+                    COALESCE(SUM(ss.cantidad), 0) AS cantidadConsumida
+             FROM silo_asignaciones a
+             LEFT JOIN silo_salidas ss ON ss.idAsignacion = a.idAsignacion
+             WHERE a.idInventarioEntrante = :idInventarioEntrante
+             GROUP BY a.idAsignacion, a.idSilo, a.cantidadAsignada
+             ORDER BY a.idSilo
+             FOR UPDATE'
+        );
+        $statement->execute(['idInventarioEntrante' => $idEntrada]);
+        $existentes = [];
+        foreach ($statement->fetchAll() as $asignacion) {
+            $existentes[(int) $asignacion['idSilo']] = $asignacion;
+        }
+
+        $deseadas = [];
+        foreach ($normalizadas as $asignacion) {
+            $deseadas[$asignacion['idSilo']] = $asignacion['cantidad'];
+        }
+
+        $idsSilo = array_values(array_unique(array_merge(array_keys($existentes), array_keys($deseadas))));
+        sort($idsSilo);
+        $bloquearSilo = $this->db->prepare('SELECT idSilo, codigo, capacidad, activo FROM silos WHERE idSilo = :idSilo FOR UPDATE');
+        $estadoExterno = $this->db->prepare(
+            'SELECT COALESCE(SUM(GREATEST(a.cantidadAsignada - COALESCE(x.cantidadSaliente, 0), 0)), 0) AS ocupado,
+                    MAX(CASE WHEN a.cantidadAsignada - COALESCE(x.cantidadSaliente, 0) > 0.0005 THEN ie.idProducto END) AS idProducto,
+                    COUNT(DISTINCT CASE WHEN a.cantidadAsignada - COALESCE(x.cantidadSaliente, 0) > 0.0005 THEN ie.idProducto END) AS productos
+             FROM silo_asignaciones a
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = a.idInventarioEntrante
+             LEFT JOIN (SELECT idAsignacion, SUM(cantidad) AS cantidadSaliente FROM silo_salidas GROUP BY idAsignacion) x
+                    ON x.idAsignacion = a.idAsignacion
+             WHERE a.idSilo = :idSilo
+               AND a.idInventarioEntrante <> :idInventarioEntrante'
+        );
+
+        foreach ($idsSilo as $idSilo) {
+            $bloquearSilo->execute(['idSilo' => $idSilo]);
+            $silo = $bloquearSilo->fetch();
+            if (!$silo) {
+                throw new DomainException('Uno de los silos seleccionados no existe.');
+            }
+
+            $cantidadDeseada = (float) ($deseadas[$idSilo] ?? 0);
+            if ($cantidadDeseada <= 0.0005) {
+                continue;
+            }
+            if ((int) $silo['activo'] !== 1) {
+                throw new DomainException('El silo ' . $silo['codigo'] . ' está inactivo.');
+            }
+
+            $estadoExterno->execute([
+                'idSilo' => $idSilo,
+                'idInventarioEntrante' => $idEntrada,
+            ]);
+            $externo = $estadoExterno->fetch();
+            if ((int) $externo['productos'] > 1
+                || ((float) $externo['ocupado'] > 0.0005 && (int) $externo['idProducto'] !== $idProducto)) {
+                throw new DomainException('El silo ' . $silo['codigo'] . ' contiene otro producto.');
+            }
+            if ($cantidadDeseada + (float) $externo['ocupado'] - (float) $silo['capacidad'] > 0.0005) {
+                throw new DomainException('La cantidad supera el espacio disponible del silo ' . $silo['codigo'] . '.');
+            }
+        }
+
+        $update = $this->db->prepare('UPDATE silo_asignaciones SET cantidadAsignada = :cantidadAsignada WHERE idAsignacion = :idAsignacion');
+        $delete = $this->db->prepare('DELETE FROM silo_asignaciones WHERE idAsignacion = :idAsignacion');
+        $insert = $this->db->prepare(
+            'INSERT INTO silo_asignaciones (idSilo, idInventarioEntrante, cantidadAsignada)
+             VALUES (:idSilo, :idInventarioEntrante, :cantidadAsignada)'
+        );
+
+        foreach ($existentes as $idSilo => $existente) {
+            $consumida = (float) $existente['cantidadConsumida'];
+            $deseada = (float) ($deseadas[$idSilo] ?? 0);
+            if ($consumida <= 0.0005 && $deseada <= 0.0005) {
+                $delete->execute(['idAsignacion' => (int) $existente['idAsignacion']]);
+                continue;
+            }
+            $update->execute([
+                'cantidadAsignada' => $consumida + $deseada,
+                'idAsignacion' => (int) $existente['idAsignacion'],
+            ]);
+        }
+
+        foreach ($deseadas as $idSilo => $cantidadDeseada) {
+            if (isset($existentes[$idSilo])) {
+                continue;
+            }
+            $insert->execute([
+                'idSilo' => $idSilo,
+                'idInventarioEntrante' => $idEntrada,
+                'cantidadAsignada' => $cantidadDeseada,
+            ]);
+        }
+    }
+
     private function normalizarAsignaciones(array $asignaciones): array
     {
         $agrupadas = [];
