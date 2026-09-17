@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const addItemError = addItemModal.querySelector('[data-add-item-error]');
     const cantidadInput = addItemForm.elements.cantidadSolicitada;
     const addItemButton = addItemModal.querySelector('[data-add-item-button]');
+    const openAddItemButton = page.querySelector('[data-open-add-item-modal]');
     let detalle = null;
     let selectedLote = null;
     let searchTimer = 0;
@@ -60,6 +61,10 @@ document.addEventListener('DOMContentLoaded', () => {
     function formatDecimal(value) {
         const number = Number(value || 0);
         return Number.isFinite(number) ? number.toFixed(2) : '0.00';
+    }
+
+    function formatSector(value) {
+        return String(value || '').replace(/([A-Za-zÁÉÍÓÚáéíóú])([0-9])/g, '$1 $2');
     }
 
     function statusClass(status) {
@@ -145,6 +150,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         if (printButton) {
             printButton.hidden = !qrDisponible;
+        }
+        if (openAddItemButton) {
+            openAddItemButton.hidden = qrDisponible;
         }
         if (qrDisponible) {
             renderQr(closeQrCanvas);
@@ -266,7 +274,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         productResults.innerHTML = productos.map((producto) => `
             <button type="button" class="searchable-select-option" data-select-product data-id-producto="${escapeHtml(producto.idProducto)}" data-sector="${escapeHtml(producto.sector)}">
-                ${formatValue(producto.nombreProducto)} | Producto ${formatValue(producto.idProducto)} | ${formatValue(producto.codigoInterno)} | Presentacion ${formatValue(producto.idPresentacion)} | Sector ${formatValue(producto.sector)}
+                (${formatValue(producto.codigoInterno)}) - ${formatValue(producto.nombreProducto)} | Presentación '${formatValue(producto.nombrePresentacion)}' | Sector: ${formatValue(formatSector(producto.sector))}
             </button>
         `).join('');
         productResults.hidden = false;
@@ -490,7 +498,10 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('click', () => closeModal(button.closest('.correction-modal')));
     });
 
-    page.querySelector('[data-open-add-item-modal]').addEventListener('click', () => {
+    openAddItemButton?.addEventListener('click', () => {
+        if (['embarcado', 'cerrado'].includes(detalle?.statusGeneralPredespacho)) {
+            return;
+        }
         clearAddPanel();
         openModal(addItemModal);
     });

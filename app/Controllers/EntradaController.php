@@ -74,7 +74,7 @@ class EntradaController extends Controller
             'idPresentacion' => $_POST['idPresentacion'] ?? '',
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
             'Sector' => trim($_POST['Sector'] ?? ''),
-            'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
+            'CantidadEntrante' => str_replace(',', '.', trim($_POST['CantidadEntrante'] ?? '')),
             'idTipoCompra' => $_POST['idTipoCompra'] ?? '',
             'CardCode' => trim($_POST['CardCode'] ?? ''),
             'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
@@ -104,7 +104,7 @@ class EntradaController extends Controller
                 'idPresentacion' => (int) $formData['idPresentacion'],
                 'idUbicacion' => (int) $formData['idUbicacion'],
                 'Sector' => $formData['Sector'],
-                'CantidadEntrante' => (int) $formData['CantidadEntrante'],
+                'CantidadEntrante' => (float) $formData['CantidadEntrante'],
                 'idTipoCompra' => (int) $formData['idTipoCompra'],
                 'CardCode' => $formData['CardCode'],
                 'FabricanteCode' => $formData['FabricanteCode'],
@@ -128,6 +128,68 @@ class EntradaController extends Controller
                 $model->eliminarEntrada($idNuevaEntrada);
             }
             $this->index($formData, ['general' => $exception->getMessage()]);
+        }
+    }
+
+    public function crearProveedor(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Metodo HTTP no permitido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (!Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Debe iniciar sesion.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        if (!Auth::can('entrada', 'editar')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'No tiene permiso para crear proveedores.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $payload = json_decode((string) file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'El cuerpo JSON no es valido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $csrfToken = is_array($payload) ? ($payload['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) : '';
+        if (!is_string($csrfToken) || !hash_equals(Auth::csrfToken(), $csrfToken)) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'error' => 'Token CSRF invalido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $proveedor = $this->model('Proveedor')->crear(is_array($payload) ? $payload : []);
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'entrada',
+                'crear_proveedor',
+                'exitoso',
+                $proveedor['CardCode']
+            );
+            http_response_code(201);
+            echo json_encode([
+                'success' => true,
+                'mensaje' => 'Proveedor o fabricante creado correctamente.',
+                'proveedor' => [
+                    'CardCode' => $proveedor['CardCode'],
+                    'CardName' => $proveedor['CardName'],
+                ],
+            ], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $exception) {
+            http_response_code(422);
+            echo json_encode(['success' => false, 'error' => $exception->getMessage()], JSON_UNESCAPED_UNICODE);
         }
     }
 
@@ -194,7 +256,7 @@ class EntradaController extends Controller
             'idPresentacion' => $_POST['idPresentacion'] ?? '',
             'idUbicacion' => $_POST['idUbicacion'] ?? '',
             'Sector' => trim($_POST['Sector'] ?? ''),
-            'CantidadEntrante' => trim($_POST['CantidadEntrante'] ?? ''),
+            'CantidadEntrante' => str_replace(',', '.', trim($_POST['CantidadEntrante'] ?? '')),
             'idTipoCompra' => $_POST['idTipoCompra'] ?? '',
             'CardCode' => trim($_POST['CardCode'] ?? ''),
             'FabricanteCode' => trim($_POST['FabricanteCode'] ?? ''),
@@ -224,7 +286,7 @@ class EntradaController extends Controller
         try {
             $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
 
-            if ((int) $formData['CantidadEntrante'] < $salidaTotal) {
+            if ((float) $formData['CantidadEntrante'] < $salidaTotal) {
                 $this->detalle('La cantidad entrante no puede ser menor que las salidas ya registradas: ' . number_format($salidaTotal, 2), 'error');
                 return;
             }
@@ -235,7 +297,7 @@ class EntradaController extends Controller
                 'idPresentacion' => (int) $formData['idPresentacion'],
                 'idUbicacion' => (int) $formData['idUbicacion'],
                 'Sector' => $formData['Sector'],
-                'CantidadEntrante' => (int) $formData['CantidadEntrante'],
+                'CantidadEntrante' => (float) $formData['CantidadEntrante'],
                 'idTipoCompra' => (int) $formData['idTipoCompra'],
                 'CardCode' => $formData['CardCode'],
                 'FabricanteCode' => $formData['FabricanteCode'],
@@ -384,8 +446,8 @@ class EntradaController extends Controller
             $errors['Sector'] = 'Seleccione un sector.';
         }
 
-        if (!ctype_digit($formData['CantidadEntrante']) || (int) $formData['CantidadEntrante'] <= 0) {
-            $errors['CantidadEntrante'] = 'Escriba una cantidad mayor que cero.';
+        if (!preg_match('/^\d+(?:\.\d{1,3})?$/', $formData['CantidadEntrante']) || (float) $formData['CantidadEntrante'] <= 0) {
+            $errors['CantidadEntrante'] = 'Escriba una cantidad mayor que cero con maximo 3 decimales.';
         }
 
         if (filter_var($formData['idTipoCompra'], FILTER_VALIDATE_INT) === false) {
@@ -413,8 +475,8 @@ class EntradaController extends Controller
             $errors['peso_romana'] = 'Escriba un peso de romana mayor que cero.';
         }
 
-        if (!preg_match('/^[A-Za-z0-9]+$/', $formData['nro_factura']) || strlen($formData['nro_factura']) > 50) {
-            $errors['nro_factura'] = 'El numero de factura debe contener solo letras y numeros (maximo 50).';
+        if (!preg_match('/^[A-Za-z0-9 \-]+$/', $formData['nro_factura']) || strlen($formData['nro_factura']) > 50) {
+            $errors['nro_factura'] = 'El numero de factura admite letras, numeros, guiones y espacios (maximo 50).';
         }
 
         return $errors;

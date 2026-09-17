@@ -98,6 +98,12 @@ $requiresAuthentication = $requiresAuthentication ?? false;
                     <div>
                         <h2>Productos del predespacho</h2>
                         <p class="quiet-text"><?= $text($predespachoSeleccionado['codigoInterno']) ?> | <?= $text($predespachoSeleccionado['nombreCliente']) ?></p>
+                        <?php if (trim((string) ($predespachoSeleccionado['observaciones'] ?? '')) !== '') : ?>
+                            <p class="predespacho-selected-observation">
+                                <strong>Observación:</strong>
+                                <?= nl2br($text($predespachoSeleccionado['observaciones'])) ?>
+                            </p>
+                        <?php endif; ?>
                     </div>
                 </div>
                 <form class="entry-form predespacho-sector-filter" method="get" action="<?= APP_URL ?>/salida">

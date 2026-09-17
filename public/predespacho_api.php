@@ -15,7 +15,7 @@ if (empty($_SESSION['usuario']) && !empty($_SESSION['username'])) {
     $_SESSION['usuario'] = $_SESSION['username'];
 }
 
-function responderJson(array $payload, int $statusCode = 200): never
+function responderJson(array $payload, int $statusCode = 200): void
 {
     http_response_code($statusCode);
     echo json_encode($payload, JSON_UNESCAPED_UNICODE);
@@ -133,6 +133,42 @@ try {
                     'idCabeceraPredespacho' => $idCabeceraPredespacho,
                     'mensaje' => $idCabeceraPredespacho !== false ? 'Predespacho creado correctamente.' : 'No se pudo crear el predespacho.',
                 ]);
+
+            case 'actualizarCabecera':
+                if (!Auth::validateCsrf()) {
+                    responderJson(['success' => false, 'mensaje' => 'Token CSRF invalido.'], 419);
+                }
+
+                $fechaRetiro = valorRequerido($_POST, 'fechaRetiro');
+                $fecha = DateTimeImmutable::createFromFormat('!Y-m-d', $fechaRetiro);
+                if (!$fecha || $fecha->format('Y-m-d') !== $fechaRetiro) {
+                    throw new InvalidArgumentException('La fecha de retiro no es valida.');
+                }
+
+                $success = predespachoModel()->actualizarCabeceraPredespacho(
+                    enteroRequerido($_POST, 'idCabeceraPredespacho'),
+                    enteroRequerido($_POST, 'idCliente'),
+                    $fechaRetiro,
+                    valorOpcional($_POST, 'codigoNotaEntregaSAP'),
+                    valorOpcional($_POST, 'observaciones')
+                );
+
+                responderJson([
+                    'success' => $success,
+                    'mensaje' => $success
+                        ? 'Cabecera actualizada correctamente.'
+                        : 'No se pudo actualizar la cabecera.',
+                ], $success ? 200 : 404);
+
+            case 'eliminarCabecera':
+                if (!Auth::validateCsrf()) {
+                    responderJson(['success' => false, 'mensaje' => 'Token CSRF invalido.'], 419);
+                }
+
+                $resultado = predespachoModel()->eliminarCabeceraSinItems(
+                    enteroRequerido($_POST, 'idCabeceraPredespacho')
+                );
+                responderJson($resultado, !empty($resultado['success']) ? 200 : 409);
 
             case 'actualizarCodigoSAP':
                 $success = actualizarCodigoSAP(

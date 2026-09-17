@@ -36,7 +36,7 @@ Columnas relevantes:
   - idProducto (int) [FK lógica, NOT NULL]
   - idPresentacion (int) [FK lógica, NOT NULL]
   - idUbicación (int) [FK lógica, NOT NULL]
-  - CantidadEntrante (int) [NOT NULL]
+  - CantidadEntrante (decimal(14,3)) [NOT NULL]
   - fecha (date) [NOT NULL]
   - sector (varchar(50)) [NOT NULL]
 Se relaciona con:

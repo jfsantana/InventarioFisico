@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS `inventarioentrante` (
   `idProducto` int NOT NULL,
   `idPresentacion` int NOT NULL,
   `idUbicación` int NOT NULL,
-  `CantidadEntrante` int NOT NULL,
+  `CantidadEntrante` decimal(14,3) NOT NULL,
   `fecha` date NOT NULL,
   `sector` varchar(50) NOT NULL,
   PRIMARY KEY (`idInventarioEntrante`)

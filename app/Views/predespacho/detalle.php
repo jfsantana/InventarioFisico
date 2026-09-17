@@ -2,6 +2,7 @@
 <?php
 $idCabeceraPredespacho = (int) ($idCabeceraPredespacho ?? 0);
 $urlCierre = (string) ($urlCierre ?? '');
+$puedeAgregarItems = (bool) ($puedeAgregarItems ?? false);
 ?>
 
 <section class="panel report-panel admin-page" data-predespacho-detalle data-api-url="<?= APP_URL ?>/public/predespacho_api.php" data-id="<?= (int) $idCabeceraPredespacho ?>" data-close-url="<?= htmlspecialchars($urlCierre, ENT_QUOTES, 'UTF-8') ?>">
@@ -56,7 +57,7 @@ $urlCierre = (string) ($urlCierre ?? '');
                 <p class="quiet-text">Cantidades solicitadas, despacho registrado y cierre por item.</p>
             </div>
             <div class="form-actions">
-                <button class="button-link button-link--submit" type="button" data-open-add-item-modal>Agregar item</button>
+                <button class="button-link button-link--submit" type="button" data-open-add-item-modal <?= $puedeAgregarItems ? '' : 'hidden' ?>>Agregar item</button>
                 <button class="button-link button-link--secondary" type="button" data-refresh-items>Actualizar items</button>
             </div>
         </div>

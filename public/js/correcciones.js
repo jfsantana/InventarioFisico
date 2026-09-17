@@ -355,7 +355,7 @@ function initCorrectionPage(page) {
     }
 
     function formatNumber(value) {
-        return Number(value || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return Number(value || 0).toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 3 });
     }
 
     page.querySelectorAll('[data-sort]').forEach((button) => {

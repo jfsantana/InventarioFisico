@@ -87,7 +87,10 @@ class Predespacho extends BaseModel
                     cp.fechaCierre,
                     cp.observaciones,
                     cp.fechaCreacion,
-                    cp.fechaActualizacion
+                    cp.fechaActualizacion,
+                    (SELECT COUNT(*)
+                     FROM tbl_items_predespacho ip
+                     WHERE ip.idCabeceraPredespacho = cp.idCabeceraPredespacho) AS cantidadItems
              FROM tbl_cabecera_predespacho cp
              INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
              ORDER BY cp.fechaCreacion DESC'
@@ -292,6 +295,90 @@ class Predespacho extends BaseModel
         }
     }
 
+    public function actualizarCabeceraPredespacho(
+        int $idCabeceraPredespacho,
+        int $idCliente,
+        string $fechaRetiro,
+        ?string $codigoNotaEntregaSAP,
+        ?string $observaciones
+    ): bool {
+        $statement = $this->db->prepare(
+            'UPDATE tbl_cabecera_predespacho
+             SET idCliente = :idCliente,
+                 fechaRetiro = :fechaRetiro,
+                 codigoNotaEntregaSAP = :codigoNotaEntregaSAP,
+                 observaciones = :observaciones
+             WHERE idCabeceraPredespacho = :idCabeceraPredespacho'
+        );
+        $statement->execute([
+            'idCliente' => $idCliente,
+            'fechaRetiro' => $fechaRetiro,
+            'codigoNotaEntregaSAP' => $codigoNotaEntregaSAP,
+            'observaciones' => $observaciones,
+            'idCabeceraPredespacho' => $idCabeceraPredespacho,
+        ]);
+
+        return $statement->rowCount() > 0 || $this->obtenerPredespachoPorId($idCabeceraPredespacho) !== null;
+    }
+
+    public function eliminarCabeceraSinItems(int $idCabeceraPredespacho): array
+    {
+        try {
+            $this->db->beginTransaction();
+
+            $cabeceraStatement = $this->db->prepare(
+                'SELECT codigoInterno
+                 FROM tbl_cabecera_predespacho
+                 WHERE idCabeceraPredespacho = :idCabeceraPredespacho
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $cabeceraStatement->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+            $codigoInterno = $cabeceraStatement->fetchColumn();
+
+            if ($codigoInterno === false) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El predespacho no existe.'];
+            }
+
+            $itemsStatement = $this->db->prepare(
+                'SELECT COUNT(*)
+                 FROM tbl_items_predespacho
+                 WHERE idCabeceraPredespacho = :idCabeceraPredespacho'
+            );
+            $itemsStatement->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+
+            if ((int) $itemsStatement->fetchColumn() > 0) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'mensaje' => 'No se puede eliminar la cabecera porque tiene items asociados.',
+                ];
+            }
+
+            $delete = $this->db->prepare(
+                'DELETE FROM tbl_cabecera_predespacho
+                 WHERE idCabeceraPredespacho = :idCabeceraPredespacho'
+            );
+            $delete->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+            $this->db->commit();
+
+            return [
+                'success' => $delete->rowCount() === 1,
+                'mensaje' => $delete->rowCount() === 1
+                    ? 'Predespacho eliminado correctamente.'
+                    : 'No se pudo eliminar el predespacho.',
+                'codigoInterno' => $codigoInterno,
+            ];
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
+            return ['success' => false, 'mensaje' => 'No se pudo eliminar el predespacho.'];
+        }
+    }
+
     public function actualizarStatusCabecera(int $idCabeceraPredespacho, string $nuevoStatus): bool
     {
         if (!in_array($nuevoStatus, self::STATUS_VALIDOS, true)) {
@@ -376,6 +463,36 @@ class Predespacho extends BaseModel
         ?string $tipo = null
     ): array {
         try {
+            $this->db->beginTransaction();
+
+            $cabeceraStatement = $this->db->prepare(
+                'SELECT statusGeneralPredespacho
+                 FROM tbl_cabecera_predespacho
+                 WHERE idCabeceraPredespacho = :idCabeceraPredespacho
+                 LIMIT 1
+                 FOR UPDATE'
+            );
+            $cabeceraStatement->execute(['idCabeceraPredespacho' => $idCabeceraPredespacho]);
+            $estadoCabecera = $cabeceraStatement->fetchColumn();
+
+            if ($estadoCabecera === false) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El predespacho no existe.'];
+            }
+
+            if (in_array($estadoCabecera, ['embarcado', 'cerrado'], true)) {
+                $this->db->rollBack();
+                return [
+                    'success' => false,
+                    'mensaje' => 'No se pueden agregar items porque el predespacho ya tiene disponible el codigo QR de cierre.',
+                ];
+            }
+
+            if ($cantidadSolicitada <= 0) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'La cantidad solicitada debe ser mayor que cero.'];
+            }
+
             $statement = $this->db->prepare(
                 'SELECT cantidad_disponible
                  FROM v_disponibilidad_lotes
@@ -386,6 +503,7 @@ class Predespacho extends BaseModel
             $disponible = (float) ($statement->fetchColumn() ?: 0);
 
             if ($cantidadSolicitada > $disponible) {
+                $this->db->rollBack();
                 return [
                     'success' => false,
                     'mensaje' => 'Cantidad excede el disponible. Disponible: ' . number_format($disponible, 2, '.', ''),
@@ -404,6 +522,7 @@ class Predespacho extends BaseModel
             ]);
 
             if ((int) $statement->fetchColumn() > 0) {
+                $this->db->rollBack();
                 return [
                     'success' => false,
                     'mensaje' => 'Este lote ya esta agregado al predespacho.',
@@ -425,11 +544,18 @@ class Predespacho extends BaseModel
                 'estatusItemPredespacho' => 'abierto',
             ]);
 
+            $idItem = (int) $this->db->lastInsertId();
+            $this->db->commit();
+
             return [
                 'success' => true,
-                'idItem' => (int) $this->db->lastInsertId(),
+                'idItem' => $idItem,
             ];
         } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+
             return [
                 'success' => false,
                 'mensaje' => 'No se pudo agregar el item al predespacho.',
@@ -626,9 +752,11 @@ class Predespacho extends BaseModel
                                         p.codigoInterno,
                                         p.nombre AS nombreProducto,
                                         dl.idPresentacion,
+                                        pr.nombre AS nombrePresentacion,
                                         dl.sector
                          FROM v_disponibilidad_lotes dl
                          INNER JOIN Producto p ON p.idProducto = dl.idProducto
+                         INNER JOIN presentacion pr ON pr.idPresentacion = dl.idPresentacion
                          WHERE dl.cantidad_disponible > 0
                              AND (
                                     CAST(dl.idProducto AS CHAR) LIKE :terminoId
@@ -644,7 +772,18 @@ class Predespacho extends BaseModel
                             'terminoNombre' => $termino,
                         ]);
 
-        return $statement->fetchAll();
+        $productos = $statement->fetchAll();
+        foreach ($productos as &$producto) {
+            $codigo = preg_quote((string) $producto['codigoInterno'], '/');
+            $producto['nombreProducto'] = trim((string) preg_replace(
+                '/^\(' . $codigo . '\)\s*-\s*/iu',
+                '',
+                (string) $producto['nombreProducto']
+            ));
+        }
+        unset($producto);
+
+        return $productos;
     }
 
     public function obtenerLotesPorProducto(int $idProducto): array
@@ -712,6 +851,11 @@ class Predespacho extends BaseModel
              FROM tbl_cabecera_predespacho cp
              INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
              WHERE cp.statusGeneralPredespacho IN (:estatusAbierto, :estatusPendiente)
+                             AND EXISTS (
+                                     SELECT 1
+                                     FROM tbl_items_predespacho ip
+                                     WHERE ip.idCabeceraPredespacho = cp.idCabeceraPredespacho
+                             )
              ORDER BY cp.fechaCreacion DESC'
         );
         $statement->execute([

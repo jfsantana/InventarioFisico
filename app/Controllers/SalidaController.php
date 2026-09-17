@@ -40,10 +40,11 @@ class SalidaController extends Controller
             $predespachos = $model->obtenerPredespachosPendientesEntrega();
 
             if ($codigoPredespachoSeleccionado !== '') {
-                $predespachoSeleccionado = $model->obtenerPredespachoPorCodigo($codigoPredespachoSeleccionado);
-
-                if ($predespachoSeleccionado && !in_array($predespachoSeleccionado['statusGeneralPredespacho'], ['abierto', 'pendiente'], true)) {
-                    $predespachoSeleccionado = null;
+                foreach ($predespachos as $predespachoDisponible) {
+                    if ((string) $predespachoDisponible['codigoInterno'] === $codigoPredespachoSeleccionado) {
+                        $predespachoSeleccionado = $predespachoDisponible;
+                        break;
+                    }
                 }
 
                 if ($predespachoSeleccionado) {

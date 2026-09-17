@@ -5,6 +5,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const apiUrl = page.dataset.apiUrl;
+    const csrfToken = page.dataset.csrfToken;
     const rowsBody = page.querySelector('[data-predespacho-rows]');
     const searchInput = page.querySelector('[data-search-predespacho]');
     const statusFilter = page.querySelector('[data-status-filter]');
@@ -14,6 +15,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const clienteModal = document.querySelector('[data-cliente-modal]');
     const sapModal = document.querySelector('[data-sap-modal]');
     const detalleModal = document.querySelector('[data-detalle-modal]');
+    const deleteModal = document.querySelector('[data-predespacho-delete-modal]');
     const predespachoForm = predespachoModal.querySelector('[data-predespacho-form]');
     const clienteForm = clienteModal.querySelector('[data-cliente-form]');
     const sapForm = sapModal.querySelector('[data-sap-form]');
@@ -22,6 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalleSummary = detalleModal.querySelector('[data-detalle-summary]');
     let predespachos = [];
     let clientes = [];
+    let predespachoAEliminar = null;
 
     function openModal(modal) {
         modal.removeAttribute('hidden');
@@ -92,6 +95,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function apiPost(action, formData) {
         formData.set('accion', action);
+        if (['actualizarCabecera', 'eliminarCabecera'].includes(action)) {
+            formData.set('csrf_token', csrfToken);
+        }
 
         return fetch(apiUrl, {
             method: 'POST',
@@ -127,9 +133,19 @@ document.addEventListener('DOMContentLoaded', () => {
                 <td data-label="Codigo SAP">${formatValue(item.codigoNotaEntregaSAP)}</td>
                 <td data-label="Status"><span class="status-pill ${statusClass(item.statusGeneralPredespacho)}">${formatValue(item.statusGeneralPredespacho)}</span></td>
                 <td data-label="Fecha Creacion">${formatValue(item.fechaCreacion)}</td>
-                <td class="table-actions" data-label="Acciones">
-                    <button type="button" data-ver-detalle>Ver Detalle</button>
-                    <button type="button" data-editar-sap>Editar SAP</button>
+                <td class="table-actions predespacho-header-actions" data-label="Acciones">
+                    <button class="predespacho-header-action predespacho-header-action--edit" type="button" data-editar-cabecera title="Editar cabecera" aria-label="Editar cabecera">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h9l3 3v5"/><path d="M14 3v4h4"/><path d="M6 3v18h7"/><path d="m13 17 5.5-5.5a2.1 2.1 0 0 1 3 3L16 20l-4 1 1-4Z"/><path d="m17.5 12.5 3 3"/></svg>
+                    </button>
+                    <button class="predespacho-header-action predespacho-header-action--view" type="button" data-ver-detalle title="Ver detalles" aria-label="Ver detalles">
+                        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m15.5 15.5 5 5"/></svg>
+                    </button>
+                    <button class="predespacho-header-action predespacho-header-action--sap" type="button" data-editar-sap title="Editar código SAP" aria-label="Editar código SAP">Cod-SAP</button>
+                    <button type="button" data-eliminar-cabecera
+                        class="predespacho-header-action predespacho-header-action--delete ${Number(item.cantidadItems || 0) > 0 ? 'is-disabled-action' : ''}"
+                        ${Number(item.cantidadItems || 0) > 0 ? 'disabled' : ''}
+                        aria-label="${Number(item.cantidadItems || 0) > 0 ? 'No se puede eliminar porque tiene items' : 'Eliminar cabecera'}"
+                        title="${Number(item.cantidadItems || 0) > 0 ? 'No se puede eliminar porque tiene items' : 'Eliminar cabecera'}">&#128465;</button>
                 </td>
             </tr>
         `).join('');
@@ -181,6 +197,33 @@ document.addEventListener('DOMContentLoaded', () => {
         openModal(sapModal);
     }
 
+    function openHeaderModal(predespacho = null) {
+        predespachoForm.reset();
+        const isEdit = Boolean(predespacho);
+        predespachoForm.elements.idCabeceraPredespacho.value = isEdit
+            ? predespacho.idCabeceraPredespacho
+            : '';
+        predespachoModal.querySelector('[data-predespacho-modal-title]').textContent = isEdit
+            ? 'Editar cabecera'
+            : 'Nuevo Predespacho';
+
+        loadClientes(isEdit ? predespacho.idCliente : '').finally(() => {
+            if (isEdit) {
+                predespachoForm.elements.fechaRetiro.value = predespacho.fechaRetiro || '';
+                predespachoForm.elements.codigoNotaEntregaSAP.value = predespacho.codigoNotaEntregaSAP || '';
+                predespachoForm.elements.observaciones.value = predespacho.observaciones || '';
+            }
+            openModal(predespachoModal);
+        });
+    }
+
+    function openDeleteModal(predespacho) {
+        predespachoAEliminar = predespacho;
+        deleteModal.querySelector('[data-predespacho-delete-message]').textContent =
+            `Se eliminará la cabecera ${predespacho.codigoInterno}. Esta acción no se puede deshacer.`;
+        openModal(deleteModal);
+    }
+
     function openDetalleModal(predespacho) {
         detalleItems.innerHTML = '<tr><td colspan="7">Cargando items...</td></tr>';
         detalleSummary.textContent = `${predespacho.codigoInterno || 'Sin codigo'} - ${predespacho.nombreCliente || 'Sin cliente'}`;
@@ -216,8 +259,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     page.querySelector('[data-open-predespacho-modal]').addEventListener('click', () => {
-        predespachoForm.reset();
-        loadClientes().finally(() => openModal(predespachoModal));
+        openHeaderModal();
     });
 
     predespachoModal.querySelector('[data-open-cliente-modal]').addEventListener('click', () => {
@@ -248,16 +290,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.target.closest('[data-editar-sap]')) {
             openSapModal(predespacho);
         }
+
+        if (event.target.closest('[data-editar-cabecera]')) {
+            openHeaderModal(predespacho);
+        }
+
+        if (event.target.closest('[data-eliminar-cabecera]')) {
+            openDeleteModal(predespacho);
+        }
     });
 
     predespachoForm.addEventListener('submit', (event) => {
         event.preventDefault();
         clearMessages();
 
-        apiPost('crearPredespacho', new FormData(predespachoForm))
+        const isEdit = Boolean(predespachoForm.elements.idCabeceraPredespacho.value);
+        apiPost(isEdit ? 'actualizarCabecera' : 'crearPredespacho', new FormData(predespachoForm))
             .then((data) => {
                 closeModal(predespachoModal);
-                showMessage(data.mensaje || 'Predespacho creado correctamente.');
+                showMessage(data.mensaje || (isEdit ? 'Cabecera actualizada correctamente.' : 'Predespacho creado correctamente.'));
+                loadPredespachos();
+            })
+            .catch((error) => showMessage(error.message, true));
+    });
+
+    deleteModal.querySelector('[data-confirm-delete-header]').addEventListener('click', () => {
+        if (!predespachoAEliminar) {
+            return;
+        }
+
+        const formData = new FormData();
+        formData.set('idCabeceraPredespacho', predespachoAEliminar.idCabeceraPredespacho);
+        apiPost('eliminarCabecera', formData)
+            .then((data) => {
+                closeModal(deleteModal);
+                predespachoAEliminar = null;
+                showMessage(data.mensaje || 'Predespacho eliminado correctamente.');
                 loadPredespachos();
             })
             .catch((error) => showMessage(error.message, true));

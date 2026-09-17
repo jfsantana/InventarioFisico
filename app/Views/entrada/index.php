@@ -21,9 +21,10 @@ $isEntradaCompleta = !empty($formData['idProducto'])
     && !empty($formData['fecha_factura'])
     && is_numeric($formData['peso_romana'] ?? null)
     && (float) ($formData['peso_romana'] ?? 0) > 0
-    && !empty($formData['nro_factura'])
-    && ctype_digit((string) ($formData['CantidadEntrante'] ?? ''))
-    && (int) ($formData['CantidadEntrante'] ?? 0) > 0;
+    && preg_match('/^[A-Za-z0-9 \-]+$/', (string) ($formData['nro_factura'] ?? ''))
+    && strlen((string) ($formData['nro_factura'] ?? '')) <= 50
+    && preg_match('/^\d+(?:\.\d{1,3})?$/', (string) ($formData['CantidadEntrante'] ?? ''))
+    && (float) ($formData['CantidadEntrante'] ?? 0) > 0;
 ?>
 
 <section class="panel form-panel">
@@ -52,7 +53,19 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         <div class="message" role="status">Tu rol permite consultar esta pantalla, pero no registrar entradas.</div>
     <?php endif; ?>
 
-    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form>
+    <?php if ($canCreateEntry) : ?>
+        <aside class="entry-progress" data-entry-progress aria-live="polite">
+            <div class="entry-progress-heading">
+                <strong data-entry-progress-title>Campos pendientes</strong>
+                <span data-entry-progress-count></span>
+            </div>
+            <div class="entry-progress-track" aria-hidden="true"><span data-entry-progress-bar></span></div>
+            <p data-entry-progress-message>Completa los campos resaltados para habilitar Guardar entrada.</p>
+            <ul data-entry-progress-list></ul>
+        </aside>
+    <?php endif; ?>
+
+    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form data-provider-endpoint="<?= APP_URL ?>/entrada/crearProveedor" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
         <?= Auth::csrfField() ?>
         <fieldset class="entry-form-fieldset" <?= $canCreateEntry ? '' : 'disabled' ?>>
         <div class="form-field">
@@ -71,7 +84,12 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="CardCode">2. Proveedor</label>
+            <div class="form-field-heading">
+                <label for="CardCode">2. Proveedor</label>
+                <?php if ($canCreateEntry) : ?>
+                    <button class="field-add-button" type="button" data-open-provider-quick data-target-select="CardCode" aria-label="Crear proveedor" title="Crear proveedor">+</button>
+                <?php endif; ?>
+            </div>
             <select id="CardCode" name="CardCode" required data-searchable-select data-search-placeholder="Escriba codigo o nombre del proveedor" data-search-result-label="proveedor">
                 <option value="">Seleccione un proveedor</option>
                 <?php foreach ($proveedores as $proveedor) : ?>
@@ -86,7 +104,12 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="FabricanteCode">3. Fabricante</label>
+            <div class="form-field-heading">
+                <label for="FabricanteCode">3. Fabricante</label>
+                <?php if ($canCreateEntry) : ?>
+                    <button class="field-add-button" type="button" data-open-provider-quick data-target-select="FabricanteCode" aria-label="Crear fabricante" title="Crear fabricante">+</button>
+                <?php endif; ?>
+            </div>
             <select id="FabricanteCode" name="FabricanteCode" required data-searchable-select data-search-placeholder="Escriba codigo o nombre del fabricante" data-search-result-label="fabricante">
                 <option value="">Seleccione un fabricante</option>
                 <?php foreach ($proveedores as $proveedor) : ?>
@@ -185,7 +208,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <div class="form-field">
             <label for="CantidadEntrante">10. Cantidad entrante (OBLIGATORIAMENTE SE DEBE CARGAR EN KILOS)</label>
-            <input id="CantidadEntrante" name="CantidadEntrante" type="number" min="1" step="1" value="<?= htmlspecialchars($formData['CantidadEntrante'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required placeholder="0">
+            <input id="CantidadEntrante" name="CantidadEntrante" type="number" min="0.001" step="0.001" inputmode="decimal" value="<?= htmlspecialchars($formData['CantidadEntrante'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required placeholder="0.000">
             <?php if (!empty($errors['CantidadEntrante'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['CantidadEntrante'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
@@ -209,7 +232,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <div class="form-field">
             <label for="nro_factura">13. Numero de factura</label>
-            <input id="nro_factura" name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9]+" value="<?= htmlspecialchars($formData['nro_factura'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required autocomplete="off">
+            <input id="nro_factura" name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9 \-]+" value="<?= htmlspecialchars($formData['nro_factura'] ?? '', ENT_QUOTES, 'UTF-8') ?>" required autocomplete="off" placeholder="Ejemplo: FAC-2026 001">
             <?php if (!empty($errors['nro_factura'])) : ?>
                 <small class="field-error"><?= htmlspecialchars($errors['nro_factura'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
@@ -252,6 +275,37 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </fieldset>
     </form>
 </section>
+
+<?php if ($canCreateEntry) : ?>
+<div class="correction-modal provider-quick-modal" data-provider-quick-modal hidden role="dialog" aria-modal="true" aria-labelledby="provider-quick-title">
+    <form class="correction-modal-card provider-quick-card" data-provider-quick-form novalidate>
+        <header>
+            <div>
+                <h2 id="provider-quick-title" data-provider-quick-title>Nuevo proveedor</h2>
+                <p>El registro estará disponible como proveedor y fabricante.</p>
+            </div>
+            <button type="button" class="modal-close" data-provider-quick-close aria-label="Cerrar modal">×</button>
+        </header>
+
+        <div class="provider-quick-grid">
+            <label>Código<input name="CardCode" type="text" maxlength="15" required autocomplete="off"></label>
+            <label>Nombre<input name="CardName" type="text" maxlength="100" required autocomplete="organization"></label>
+            <label>RIF<input name="LicTradNum" type="text" maxlength="32"></label>
+            <label>Persona de contacto<input name="CntctPrsn" type="text" maxlength="90"></label>
+            <label>Correo electrónico<input name="E_Mail" type="email" maxlength="100"></label>
+            <label>País<input name="Country" type="text" maxlength="100"></label>
+            <label class="provider-quick-wide">Dirección<textarea name="MailAddres" maxlength="254" rows="3"></textarea></label>
+        </div>
+
+        <div class="message" data-provider-quick-message role="alert" hidden></div>
+
+        <footer class="modal-actions">
+            <button type="button" class="button-link button-link--secondary" data-provider-quick-close>Cancelar</button>
+            <button type="submit" class="button-link button-link--submit">Crear registro</button>
+        </footer>
+    </form>
+</div>
+<?php endif; ?>
 
 <script src="<?= APP_URL ?>/public/js/entrada.js?v=<?= filemtime(__DIR__ . '/../../../public/js/entrada.js') ?>"></script>
 <script src="<?= APP_URL ?>/public/js/searchable-select.js?v=<?= filemtime(__DIR__ . '/../../../public/js/searchable-select.js') ?>"></script>

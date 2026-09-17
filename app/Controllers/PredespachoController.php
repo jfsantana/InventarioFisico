@@ -32,6 +32,7 @@ class PredespachoController extends Controller
             'title' => 'Detalle de Predespacho',
             'idCabeceraPredespacho' => $idCabeceraPredespacho,
             'urlCierre' => $urlCierre,
+            'puedeAgregarItems' => (bool) $predespacho && !$estadoAdmiteQr,
         ]);
     }
 

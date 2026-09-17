@@ -224,6 +224,79 @@ class AdminController extends Controller
         $this->redirect('/admin/contactosEmail?msg=Contacto eliminado correctamente.');
     }
 
+    public function proveedores(): void
+    {
+        $this->requiereAdmin();
+        $model = $this->model('Proveedor');
+
+        $this->view('admin/proveedores', [
+            'title' => 'Proveedores y fabricantes',
+            'proveedores' => $model->listar($_GET),
+            'filters' => $_GET,
+            'message' => $_GET['msg'] ?? null,
+            'messageType' => ($_GET['tipo'] ?? '') === 'error' ? 'error' : 'success',
+        ]);
+    }
+
+    public function guardarProveedor(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $model = $this->model('Proveedor');
+        $originalCardCode = trim((string) ($_POST['originalCardCode'] ?? ''));
+
+        try {
+            if ($originalCardCode !== '') {
+                $model->actualizar($originalCardCode, $_POST);
+                $accion = 'editar_proveedor';
+                $cardCode = $originalCardCode;
+            } else {
+                $proveedor = $model->crear($_POST);
+                $accion = 'crear_proveedor';
+                $cardCode = $proveedor['CardCode'];
+            }
+
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                $accion,
+                'exitoso',
+                $cardCode
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/proveedores?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/proveedores?msg=Proveedor o fabricante guardado correctamente.');
+    }
+
+    public function eliminarProveedor(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $cardCode = trim((string) ($_POST['CardCode'] ?? ''));
+
+        try {
+            if ($cardCode === '' || !$this->model('Proveedor')->eliminar($cardCode)) {
+                throw new InvalidArgumentException('El proveedor o fabricante no existe.');
+            }
+
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                'eliminar_proveedor',
+                'exitoso',
+                $cardCode
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/proveedores?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/proveedores?msg=Proveedor o fabricante eliminado correctamente.');
+    }
+
     private function normalizarUsuario(array $data): array
     {
         $username = trim($data['username'] ?? '');

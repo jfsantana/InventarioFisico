@@ -155,3 +155,24 @@ function cerrarItemConMerma(int $idItem, int $idCabeceraPredespacho): array
 {
     return predespachoModel()->cerrarItemConMerma($idItem, $idCabeceraPredespacho);
 }
+
+function actualizarCabeceraPredespacho(
+    int $idCabeceraPredespacho,
+    int $idCliente,
+    string $fechaRetiro,
+    ?string $codigoNotaEntregaSAP,
+    ?string $observaciones
+): bool {
+    return predespachoModel()->actualizarCabeceraPredespacho(
+        $idCabeceraPredespacho,
+        $idCliente,
+        $fechaRetiro,
+        $codigoNotaEntregaSAP,
+        $observaciones
+    );
+}
+
+function eliminarCabeceraPredespacho(int $idCabeceraPredespacho): array
+{
+    return predespachoModel()->eliminarCabeceraSinItems($idCabeceraPredespacho);
+}

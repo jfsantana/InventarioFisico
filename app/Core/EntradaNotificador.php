@@ -76,7 +76,7 @@ class EntradaNotificador
             'Fabricante' => $entrada['fabricante'] ?? '',
             'País de origen' => $entrada['pais'] ?? '',
             'Lote' => $entrada['NumLote'] ?? '',
-            'Cantidad' => number_format((float) ($entrada['CantidadEntrante'] ?? 0), 2, ',', '.'),
+            'Cantidad' => number_format((float) ($entrada['CantidadEntrante'] ?? 0), 3, ',', '.'),
             'Fecha de factura' => $this->formatearFecha($entrada['fecha_factura'] ?? ''),
             'Peso de romana' => isset($entrada['peso_romana']) ? number_format((float) $entrada['peso_romana'], 2, ',', '.') : '',
             'Número de factura' => $entrada['nro_factura'] ?? '',
@@ -114,7 +114,7 @@ class EntradaNotificador
             . 'Fabricante: ' . ($entrada['fabricante'] ?? 'No indicado') . "\n"
             . 'País de origen: ' . ($entrada['pais'] ?? 'No indicado') . "\n"
             . 'Lote: ' . ($entrada['NumLote'] ?? 'No indicado') . "\n"
-            . 'Cantidad: ' . number_format((float) ($entrada['CantidadEntrante'] ?? 0), 2, ',', '.') . "\n"
+            . 'Cantidad: ' . number_format((float) ($entrada['CantidadEntrante'] ?? 0), 3, ',', '.') . "\n"
             . 'Fecha de factura: ' . ($this->formatearFecha($entrada['fecha_factura'] ?? '') ?: 'No indicada') . "\n"
             . 'Peso de romana: ' . (isset($entrada['peso_romana']) ? number_format((float) $entrada['peso_romana'], 2, ',', '.') : 'No indicado') . "\n"
             . 'Número de factura: ' . ($entrada['nro_factura'] ?? 'No indicado') . "\n"

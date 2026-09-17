@@ -1,6 +1,6 @@
 <?php require_once __DIR__ . '/../layouts/header.php'; ?>
 
-<section class="panel report-panel admin-page" data-predespacho-page data-api-url="<?= APP_URL ?>/public/predespacho_api.php">
+<section class="panel report-panel admin-page" data-predespacho-page data-api-url="<?= APP_URL ?>/public/predespacho_api.php" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
     <div class="admin-heading">
         <div>
             <p class="eyebrow">Predespacho</p>
@@ -54,11 +54,12 @@
     <form class="correction-modal-card admin-modal-card" data-predespacho-form novalidate>
         <header>
             <div>
-                <h2 id="predespacho-modal-title">Nuevo Predespacho</h2>
+                <h2 id="predespacho-modal-title" data-predespacho-modal-title>Nuevo Predespacho</h2>
                 <p>Cabecera del retiro y datos de control SAP.</p>
             </div>
             <button type="button" class="modal-close" data-modal-close aria-label="Cerrar modal">×</button>
         </header>
+        <input type="hidden" name="idCabeceraPredespacho">
         <div class="correction-modal-grid">
             <label class="predespacho-client-field">Cliente
                 <span class="predespacho-inline-control">
@@ -77,6 +78,18 @@
             <button type="submit" class="button-link button-link--submit">Guardar</button>
         </footer>
     </form>
+</div>
+
+<div class="correction-modal correction-modal--confirm" data-predespacho-delete-modal hidden role="dialog" aria-modal="true" aria-labelledby="predespacho-delete-title">
+    <div class="correction-modal-card correction-confirm-card">
+        <div class="warning-icon" aria-hidden="true">!</div>
+        <h2 id="predespacho-delete-title">¿Eliminar cabecera?</h2>
+        <p data-predespacho-delete-message></p>
+        <footer class="modal-actions">
+            <button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button>
+            <button type="button" class="button-link button-link--danger" data-confirm-delete-header>Sí, eliminar</button>
+        </footer>
+    </div>
 </div>
 
 <div class="correction-modal" data-cliente-modal hidden role="dialog" aria-modal="true" aria-labelledby="cliente-modal-title">

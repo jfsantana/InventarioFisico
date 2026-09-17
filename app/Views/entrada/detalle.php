@@ -3,6 +3,7 @@
 $formatDate = static fn ($date) => htmlspecialchars(date('d/m/Y', strtotime((string) $date)), ENT_QUOTES, 'UTF-8');
 $dateValue = static fn ($date) => htmlspecialchars(date('Y-m-d', strtotime((string) $date)), ENT_QUOTES, 'UTF-8');
 $money = static fn ($value) => htmlspecialchars(number_format((float) $value, 2), ENT_QUOTES, 'UTF-8');
+$quantity = static fn ($value) => htmlspecialchars(number_format((float) $value, 3), ENT_QUOTES, 'UTF-8');
 $text = static fn ($value) => htmlspecialchars((string) $value, ENT_QUOTES, 'UTF-8');
 $messageType = $messageType ?? 'success';
 $entradas = $entradas ?? [];
@@ -138,7 +139,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             <td data-label="Presentacion"><?= $text($entrada['presentacion']) ?></td>
                             <td data-label="Ubicacion"><?= $text($entrada['ubicacion']) ?></td>
                             <td data-label="Sector"><?= $text($entrada['Sector'] ?? '') ?></td>
-                            <td data-label="Cantidad"><?= $money($entrada['CantidadEntrante']) ?></td>
+                            <td data-label="Cantidad"><?= $quantity($entrada['CantidadEntrante']) ?></td>
                             <td data-label="Fecha factura"><?= !empty($entrada['fecha_factura']) ? $formatDate($entrada['fecha_factura']) : 'No indicada' ?></td>
                             <td data-label="Peso romana"><?= $entrada['peso_romana'] !== null ? $money($entrada['peso_romana']) : 'No indicado' ?></td>
                             <td data-label="Nro. factura"><?= $text($entrada['nro_factura'] ?? 'No indicado') ?></td>
@@ -258,7 +259,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                 </label>
                 <label>
                     Cantidad
-                    <input name="CantidadEntrante" data-modal-quantity type="number" min="1" step="1" required>
+                    <input name="CantidadEntrante" data-modal-quantity type="number" min="0.001" step="0.001" inputmode="decimal" required>
                 </label>
                 <label>
                     Fecha de factura (dd/mm/aaaa)
@@ -270,7 +271,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                 </label>
                 <label>
                     Numero de factura
-                    <input name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9]+" required>
+                    <input name="nro_factura" type="text" maxlength="50" pattern="[A-Za-z0-9 \-]+" required>
                 </label>
                 <div class="document-fields">
                     <label data-document-field="ticketRomana">
