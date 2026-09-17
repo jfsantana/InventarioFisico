@@ -5,7 +5,7 @@ class Cliente extends BaseModel
     public function obtenerTodosLosClientes(): array
     {
         $statement = $this->db->prepare(
-            'SELECT idCliente, rif, nombre, direccion, tipo, activo
+            'SELECT idCliente, rif, nombre, direccion, email, telefono, tipo, activo
              FROM tbl_cliente
              WHERE activo = :activo
              ORDER BY nombre ASC'
@@ -18,7 +18,7 @@ class Cliente extends BaseModel
     public function obtenerClientePorId(int $idCliente): ?array
     {
         $statement = $this->db->prepare(
-            'SELECT idCliente, rif, nombre, direccion, tipo, activo
+            'SELECT idCliente, rif, nombre, direccion, email, telefono, tipo, activo
              FROM tbl_cliente
              WHERE idCliente = :idCliente
              LIMIT 1'
@@ -68,6 +68,31 @@ class Cliente extends BaseModel
                 'tipo' => $tipo,
                 'idCliente' => $idCliente,
             ]);
+        } catch (Throwable $exception) {
+            return false;
+        }
+    }
+
+    public function actualizarEmailSiVacio(int $idCliente, string $email): bool
+    {
+        $email = trim($email);
+        if ($email === '') {
+            return false;
+        }
+
+        try {
+            $statement = $this->db->prepare(
+                'UPDATE tbl_cliente
+                 SET email = :email
+                 WHERE idCliente = :idCliente
+                   AND (email IS NULL OR TRIM(email) = "")'
+            );
+            $statement->execute([
+                'email' => $email,
+                'idCliente' => $idCliente,
+            ]);
+
+            return $statement->rowCount() === 1;
         } catch (Throwable $exception) {
             return false;
         }

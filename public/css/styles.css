@@ -4459,3 +4459,1011 @@ body:has(.auth-topbar) {
         border-radius: 10px;
     }
 }
+
+/* Cotizaciones */
+.cotizacion-page {
+    max-width: 1320px;
+}
+
+.cotizacion-heading,
+.cotizacion-products > header,
+.cotizacion-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.cotizacion-heading {
+    margin-bottom: 22px;
+}
+
+.cotizacion-heading h1,
+.cotizacion-products h2 {
+    margin: 0;
+}
+
+.cotizacion-form {
+    display: grid;
+    gap: 24px;
+}
+
+.cotizacion-dependent-fields {
+    display: grid;
+    gap: 24px;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    transition: opacity 160ms ease;
+}
+
+.cotizacion-dependent-fields:disabled {
+    opacity: 0.48;
+}
+
+.cotizacion-fields {
+    display: grid;
+    grid-template-columns: 170px 110px 170px minmax(280px, 340px);
+    gap: 16px;
+    align-items: end;
+}
+
+.cotizacion-field--client {
+    width: min(100%, 620px);
+}
+
+.cotizacion-field--days,
+.cotizacion-field--days input {
+    width: 8ch;
+}
+
+.cotizacion-field--payment,
+.cotizacion-field--payment select {
+    width: min(100%, 30ch);
+}
+
+.cotizacion-field,
+.cotizacion-email-card > label {
+    display: grid;
+    grid-template-rows: minmax(2.1em, auto) auto;
+    gap: 7px;
+    min-width: 0;
+    color: #4c2826;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizacion-date-value {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(96, 67, 143, 0.18);
+    border-radius: 8px;
+    background: #f5f3f7;
+    color: #3e285f;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-transform: none;
+}
+
+.cotizacion-field input,
+.cotizacion-field select,
+.cotizacion-field textarea,
+.cotizacion-table input,
+.cotizacion-table select,
+.cotizacion-email-card input {
+    width: 100%;
+    min-height: 44px;
+    padding: 10px 12px;
+    border: 1px solid rgba(96, 67, 143, 0.28);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.cotizacion-field input:focus,
+.cotizacion-field select:focus,
+.cotizacion-field textarea:focus,
+.cotizacion-table input:focus,
+.cotizacion-table select:focus,
+.cotizacion-email-card input:focus {
+    border-color: #60438f;
+    outline: 3px solid rgba(96, 67, 143, 0.14);
+}
+
+.cotizacion-field textarea {
+    min-height: 112px;
+    resize: vertical;
+}
+
+.cotizacion-products {
+    display: grid;
+    gap: 14px;
+}
+
+.cotizacion-add-product,
+.cotizacion-add-product:hover {
+    min-height: 38px;
+    padding: 0 14px;
+    border-color: #18705f;
+    background: #18705f;
+    color: #ffffff;
+    font-size: 0.86rem;
+    box-shadow: 0 8px 18px rgba(24, 112, 95, 0.2);
+}
+
+.cotizacion-add-product:hover {
+    background: #125747;
+}
+
+.cotizacion-table-wrap {
+    width: 100%;
+    overflow: visible;
+    border: 1px solid rgba(96, 67, 143, 0.18);
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.cotizacion-table {
+    width: 100%;
+    min-width: 980px;
+    border-collapse: collapse;
+}
+
+.cotizacion-table th,
+.cotizacion-table td {
+    padding: 12px;
+    border-bottom: 1px solid #e8e2ef;
+    text-align: left;
+    vertical-align: top;
+}
+
+.cotizacion-table thead th {
+    background: #60438f;
+    color: #ffffff;
+    font-size: 0.8rem;
+}
+
+.cotizacion-table th:first-child {
+    border-top-left-radius: 7px;
+}
+
+.cotizacion-table th:last-child {
+    border-top-right-radius: 7px;
+}
+
+.cotizacion-table td:nth-child(1) {
+    width: 34%;
+}
+
+.cotizacion-table td:nth-child(2) {
+    width: 22%;
+}
+
+.cotizacion-table td:nth-child(3),
+.cotizacion-table td:nth-child(4) {
+    width: 14%;
+}
+
+.cotizacion-table td:nth-child(5) {
+    width: 12%;
+}
+
+.cotizacion-table tfoot th,
+.cotizacion-table tfoot td {
+    border-bottom: 0;
+    background: #f4f0f8;
+    color: #3e285f;
+    font-size: 1.05rem;
+    font-weight: 800;
+    text-align: right;
+}
+
+.cotizacion-row-subtotal {
+    color: #3e285f;
+    font-weight: 800;
+    text-align: right !important;
+    white-space: nowrap;
+}
+
+.cotizacion-remove-row {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    border: 0;
+    border-radius: 8px;
+    background: #fbe8e7;
+    color: #9d1c16;
+    font-size: 1.45rem;
+    cursor: pointer;
+}
+
+.cotizacion-product-cell .searchable-select {
+    min-width: 250px;
+}
+
+.cotizacion-table .searchable-select-list {
+    z-index: 20;
+}
+
+.cotizacion-products-empty {
+    padding: 22px 16px;
+    border: 1px dashed rgba(96, 67, 143, 0.32);
+    border-radius: 8px;
+    background: #faf9fc;
+    color: #675a73;
+    text-align: center;
+}
+
+.cotizacion-products-empty[hidden] {
+    display: none;
+}
+
+.cotizacion-product-list {
+    display: grid;
+    gap: 10px;
+}
+
+.cotizacion-product-item {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.6fr) minmax(340px, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    padding: 14px 16px;
+    border: 1px solid rgba(96, 67, 143, 0.18);
+    border-left: 4px solid #60438f;
+    border-radius: 8px;
+    background: #ffffff;
+}
+
+.cotizacion-product-summary {
+    display: grid;
+    gap: 3px;
+    min-width: 0;
+}
+
+.cotizacion-product-summary > span,
+.cotizacion-product-values dt,
+.cotizacion-product-preview span {
+    color: #675a73;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizacion-product-summary strong {
+    overflow-wrap: anywhere;
+    color: #3e285f;
+}
+
+.cotizacion-product-summary small {
+    color: #675a73;
+    font-size: 0.84rem;
+}
+
+.cotizacion-product-values {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(90px, 1fr));
+    gap: 10px;
+    margin: 0;
+}
+
+.cotizacion-product-values div {
+    display: grid;
+    gap: 3px;
+}
+
+.cotizacion-product-values dd {
+    margin: 0;
+    color: #2f2534;
+    font-weight: 800;
+}
+
+.cotizacion-product-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.cotizacion-product-actions button {
+    display: grid;
+    place-items: center;
+    width: 42px;
+    min-height: 40px;
+    padding: 0;
+    border: 1px solid rgba(96, 67, 143, 0.24);
+    border-radius: 8px;
+    background: #f4f0f8;
+    color: #3e285f;
+    font: inherit;
+    font-size: 1.2rem;
+    font-weight: 800;
+    cursor: pointer;
+}
+
+.cotizacion-product-actions [data-remove-detail] {
+    border-color: rgba(157, 28, 22, 0.22);
+    background: #fbe8e7;
+    color: #9d1c16;
+}
+
+.cotizacion-total-bar {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    padding: 14px 16px;
+    border-radius: 8px;
+    background: #3e285f;
+    color: #ffffff;
+    font-weight: 800;
+}
+
+.cotizacion-total-bar dl {
+    display: grid;
+    gap: 5px;
+    width: min(100%, 300px);
+    margin: 0;
+}
+
+.cotizacion-total-bar dl div {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 22px;
+}
+
+.cotizacion-total-bar dt,
+.cotizacion-total-bar dd {
+    margin: 0;
+}
+
+.cotizacion-total-bar dd {
+    min-width: 100px;
+    text-align: right;
+}
+
+.cotizacion-total-bar dl div:last-child {
+    padding-top: 5px;
+    border-top: 1px solid rgba(255, 255, 255, 0.35);
+    font-size: 1.2rem;
+}
+
+.cotizacion-product-card {
+    width: min(680px, 100%);
+}
+
+.cotizacion-product-form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.cotizacion-product-form-field {
+    display: grid;
+    gap: 7px;
+    min-width: 0;
+    color: #4c2826;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizacion-product-form-field--wide {
+    grid-column: 1 / -1;
+}
+
+.cotizacion-product-form-field input,
+.cotizacion-product-form-field select,
+.cotizacion-product-form-field .searchable-select-input {
+    width: 100%;
+    min-height: 48px;
+    padding: 10px 12px;
+    border: 1px solid rgba(96, 67, 143, 0.28);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--ink);
+    font: inherit;
+}
+
+.cotizacion-product-preview {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 13px 15px;
+    border-radius: 8px;
+    background: #f4f0f8;
+}
+
+.cotizacion-product-preview strong {
+    color: #3e285f;
+    font-size: 1.25rem;
+}
+
+.cotizacion-generation-card {
+    width: min(720px, 100%);
+}
+
+.cotizacion-generation-options {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.cotizacion-generation-options > button {
+    display: grid;
+    grid-template-rows: 42px auto 1fr;
+    gap: 8px;
+    min-height: 176px;
+    padding: 16px;
+    border: 1px solid rgba(96, 67, 143, 0.24);
+    border-radius: 8px;
+    background: #ffffff;
+    color: #2f2534;
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cotizacion-generation-options > button:hover,
+.cotizacion-generation-options > button:focus-visible {
+    border-color: #60438f;
+    background: #f7f4fa;
+    outline: 3px solid rgba(96, 67, 143, 0.12);
+}
+
+.cotizacion-generation-options > button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+.cotizacion-generation-icon {
+    color: #60438f;
+    font-size: 1.8rem;
+    line-height: 1;
+}
+
+.cotizacion-generation-options strong {
+    color: #3e285f;
+    line-height: 1.25;
+}
+
+.cotizacion-generation-options small {
+    color: #675a73;
+    line-height: 1.4;
+}
+
+.cotizacion-heading-actions,
+.cotizacion-history-heading,
+.cotizacion-history-heading-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.cotizacion-history {
+    max-width: 1320px;
+}
+
+.cotizacion-history-heading {
+    justify-content: space-between;
+    margin-bottom: 22px;
+}
+
+.cotizacion-history-heading h1 {
+    margin-bottom: 6px;
+}
+
+.cotizacion-history-search {
+    display: grid;
+    gap: 7px;
+    width: min(100%, 480px);
+    margin-bottom: 18px;
+    color: #4c2826;
+    font-size: 0.82rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizacion-history-search input {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 13px;
+    border: 1px solid rgba(96, 67, 143, 0.28);
+    border-radius: 8px;
+    background: #ffffff;
+    color: var(--ink);
+    font: inherit;
+    font-size: 16px;
+    text-transform: none;
+}
+
+.cotizacion-history-search input:focus {
+    border-color: #60438f;
+    outline: 3px solid rgba(96, 67, 143, 0.14);
+}
+
+.cotizacion-history-list {
+    display: grid;
+    gap: 12px;
+}
+
+.cotizacion-history-item {
+    display: grid;
+    grid-template-columns: minmax(230px, 1.35fr) minmax(410px, 1fr) auto;
+    gap: 18px;
+    align-items: center;
+    padding: 16px;
+    border: 1px solid rgba(96, 67, 143, 0.18);
+    border-left: 5px solid #60438f;
+    border-radius: 8px;
+    background: #ffffff;
+    box-shadow: 0 10px 26px rgba(62, 40, 95, 0.08);
+}
+
+.cotizacion-history-item[hidden] {
+    display: none;
+}
+
+.cotizacion-history-main {
+    min-width: 0;
+}
+
+.cotizacion-history-number {
+    display: block;
+    margin-bottom: 4px;
+    color: #801d35;
+    font-size: 0.78rem;
+    font-weight: 800;
+}
+
+.cotizacion-history-main h2 {
+    margin: 0;
+    color: #2f2534;
+    font-size: 1rem;
+    overflow-wrap: anywhere;
+}
+
+.cotizacion-history-main p {
+    margin: 4px 0 0;
+    color: #675a73;
+    font-size: 0.82rem;
+}
+
+.cotizacion-history-meta {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(80px, 1fr));
+    gap: 12px;
+    margin: 0;
+}
+
+.cotizacion-history-meta div {
+    display: grid;
+    gap: 3px;
+}
+
+.cotizacion-history-meta dt {
+    color: #675a73;
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+}
+
+.cotizacion-history-meta dd {
+    margin: 0;
+    color: #2f2534;
+    font-size: 0.86rem;
+    font-weight: 800;
+}
+
+.cotizacion-history-meta dd.is-expired {
+    color: #a21a16;
+}
+
+.cotizacion-history-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(100px, 1fr));
+    gap: 8px;
+}
+
+.cotizacion-history-actions a,
+.cotizacion-history-actions button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 0 11px;
+    border: 1px solid rgba(96, 67, 143, 0.24);
+    border-radius: 8px;
+    background: #f4f0f8;
+    color: #3e285f;
+    font: inherit;
+    font-size: 0.76rem;
+    font-weight: 800;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+}
+
+.cotizacion-history-actions a:first-child {
+    border-color: #18705f;
+    background: #18705f;
+    color: #ffffff;
+}
+
+.cotizacion-history-actions .is-danger {
+    border-color: rgba(157, 28, 22, 0.22);
+    background: #fbe8e7;
+    color: #9d1c16;
+}
+
+.cotizacion-history-actions button:disabled {
+    cursor: wait;
+    opacity: 0.55;
+}
+
+.cotizacion-history-empty {
+    padding: 28px 16px;
+    border: 1px dashed rgba(96, 67, 143, 0.32);
+    border-radius: 8px;
+    color: #675a73;
+    text-align: center;
+}
+
+.cotizacion-history-empty[hidden] {
+    display: none;
+}
+
+@media (max-width: 1120px) {
+    .cotizacion-history-item {
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-history-actions {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+}
+
+.cotizacion-observation {
+    max-width: 780px;
+}
+
+.cotizacion-actions {
+    justify-content: flex-end;
+}
+
+.cotizacion-email-card {
+    width: min(520px, 100%);
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+@media (max-width: 980px) {
+    .cotizacion-fields {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cotizacion-table-wrap {
+        overflow-x: auto;
+    }
+
+    .cotizacion-product-item {
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-product-actions {
+        justify-content: flex-end;
+    }
+}
+
+@media (max-width: 720px) {
+    .page-shell:has(.cotizacion-page) {
+        padding-right: 10px;
+        padding-left: 10px;
+    }
+
+    .cotizacion-page {
+        padding: 16px 12px;
+    }
+
+    .cotizacion-heading,
+    .cotizacion-products > header,
+    .cotizacion-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .cotizacion-heading-actions,
+    .cotizacion-history-heading,
+    .cotizacion-history-heading-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .cotizacion-heading-actions .button-link,
+    .cotizacion-history-heading-actions .button-link {
+        width: 100%;
+    }
+
+    .cotizacion-history {
+        padding: 16px 12px;
+    }
+
+    .cotizacion-history-item {
+        gap: 14px;
+        padding: 14px;
+        border-left-width: 1px;
+        border-top: 4px solid #60438f;
+    }
+
+    .cotizacion-history-meta {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        padding: 12px;
+        border-radius: 8px;
+        background: #f7f4fa;
+    }
+
+    .cotizacion-history-actions {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cotizacion-history-actions a,
+    .cotizacion-history-actions button {
+        min-height: 46px;
+    }
+
+    .cotizacion-fields {
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-heading {
+        gap: 12px;
+    }
+
+    .cotizacion-heading .button-link {
+        width: 100%;
+        min-height: 44px;
+    }
+
+    .cotizacion-field,
+    .cotizacion-email-card > label {
+        grid-template-rows: auto auto;
+    }
+
+    .cotizacion-field--days,
+    .cotizacion-field--days input,
+    .cotizacion-field--payment,
+    .cotizacion-field--payment select {
+        width: 100%;
+    }
+
+    .cotizacion-products > header .button-link,
+    .cotizacion-actions .button-link {
+        width: 100%;
+    }
+
+    .cotizacion-add-product,
+    .cotizacion-add-product:hover {
+        min-height: 44px;
+    }
+
+    .cotizacion-products-empty {
+        padding: 18px 12px;
+    }
+
+    .cotizacion-product-item {
+        gap: 14px;
+        padding: 14px;
+        border-left-width: 1px;
+        border-top: 4px solid #60438f;
+    }
+
+    .cotizacion-product-values {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .cotizacion-product-values div:last-child {
+        grid-column: 1 / -1;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: #f4f0f8;
+    }
+
+    .cotizacion-product-actions {
+        display: flex;
+        justify-content: flex-end;
+    }
+
+    .cotizacion-product-actions button {
+        width: 48px;
+        min-height: 46px;
+    }
+
+    .cotizacion-total-bar {
+        justify-content: space-between;
+    }
+
+    .cotizacion-product-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-product-form-field--wide {
+        grid-column: auto;
+    }
+
+    .cotizacion-product-card .modal-actions {
+        display: grid;
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-product-card .modal-actions .button-link {
+        width: 100%;
+        min-height: 46px;
+    }
+
+    .cotizacion-product-card .searchable-select-list {
+        max-height: min(34vh, 240px);
+    }
+
+    .cotizacion-generation-options {
+        grid-template-columns: 1fr;
+    }
+
+    .cotizacion-generation-options > button {
+        grid-template-columns: 56px minmax(0, 1fr);
+        grid-template-rows: auto auto;
+        min-height: 0;
+        padding: 14px;
+    }
+
+    .cotizacion-generation-icon {
+        grid-row: 1 / 3;
+        align-self: center;
+        font-size: 1.45rem;
+        white-space: nowrap;
+    }
+
+    .cotizacion-table-wrap {
+        overflow: visible;
+        border: 0;
+        background: transparent;
+    }
+
+    .cotizacion-table {
+        display: block;
+        min-width: 0;
+    }
+
+    .cotizacion-table thead {
+        display: none;
+    }
+
+    .cotizacion-table tbody {
+        display: grid;
+        gap: 14px;
+        counter-reset: cotizacion-product;
+    }
+
+    .cotizacion-table tbody tr {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 14px 10px;
+        padding: 14px;
+        border: 1px solid rgba(96, 67, 143, 0.2);
+        border-top: 4px solid #60438f;
+        border-radius: 8px;
+        background: #ffffff;
+        box-shadow: 0 8px 22px rgba(62, 40, 95, 0.08);
+        counter-increment: cotizacion-product;
+    }
+
+    .cotizacion-table tbody tr::before {
+        grid-column: 1 / -1;
+        content: "Producto " counter(cotizacion-product);
+        color: #60438f;
+        font-size: 0.85rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .cotizacion-table tbody td {
+        display: grid;
+        gap: 6px;
+        width: auto !important;
+        padding: 0;
+        border: 0;
+    }
+
+    .cotizacion-table tbody td::before {
+        content: attr(data-label);
+        color: #4c2826;
+        font-size: 0.74rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .cotizacion-table .cotizacion-product-cell,
+    .cotizacion-table tbody td:nth-child(2) {
+        grid-column: 1 / -1;
+    }
+
+    .cotizacion-product-cell .searchable-select {
+        min-width: 0;
+    }
+
+    .cotizacion-table input,
+    .cotizacion-table select,
+    .cotizacion-table .searchable-select-input {
+        min-height: 48px;
+        font-size: 16px;
+    }
+
+    .cotizacion-row-subtotal {
+        align-content: center;
+        min-height: 48px;
+        padding: 8px 12px !important;
+        border-radius: 8px !important;
+        background: #f4f0f8;
+        text-align: left !important;
+    }
+
+    .cotizacion-row-actions {
+        align-content: end;
+        justify-items: end;
+    }
+
+    .cotizacion-remove-row {
+        width: 48px;
+        height: 48px;
+    }
+
+    .cotizacion-table tfoot,
+    .cotizacion-table tfoot tr {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        align-items: center;
+        margin-top: 14px;
+        padding: 14px;
+        border-radius: 8px;
+        background: #3e285f;
+    }
+
+    .cotizacion-table tfoot th,
+    .cotizacion-table tfoot td {
+        display: none;
+        padding: 0;
+        background: transparent;
+        color: #ffffff;
+    }
+
+    .cotizacion-table tfoot th:first-child,
+    .cotizacion-table tfoot td[data-grand-total] {
+        display: block;
+    }
+
+    .cotizacion-table tfoot th:first-child {
+        grid-column: 1;
+        text-align: left;
+    }
+
+    .cotizacion-table tfoot td[data-grand-total] {
+        grid-column: 2;
+        font-size: 1.2rem;
+        text-align: right;
+    }
+
+    .cotizacion-observation {
+        max-width: none;
+    }
+}

@@ -4,7 +4,7 @@ class EntradaInventario extends BaseModel
 {
     public function obtenerProductos(): array
     {
-        $statement = $this->db->query('SELECT idProducto, nombre FROM Producto ORDER BY nombre ASC');
+        $statement = $this->db->query('SELECT idProducto, codigoInterno, nombre FROM Producto ORDER BY nombre ASC');
 
         return $statement->fetchAll();
     }

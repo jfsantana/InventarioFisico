@@ -39,6 +39,23 @@ class ContactoInternoEmail extends BaseModel
         return $contacto ?: null;
     }
 
+    public function obtenerPorProceso(string $proceso): array
+    {
+        $statement = $this->db->prepare(
+            'SELECT nombre, email
+             FROM contactosinternosemail
+             WHERE UPPER(TRIM(proceso)) = UPPER(:proceso)
+               AND TRIM(email) <> ""
+             ORDER BY nombre ASC'
+        );
+        $statement->execute(['proceso' => trim($proceso)]);
+
+        return array_values(array_filter(
+            $statement->fetchAll(),
+            static fn (array $contacto): bool => filter_var($contacto['email'], FILTER_VALIDATE_EMAIL) !== false
+        ));
+    }
+
     public function crear(array $data): bool
     {
         $statement = $this->db->prepare(

@@ -42,6 +42,7 @@ define('SESSION_REMEMBER_SECONDS', 28800);
 define('SALIDA_REAUTH_SECONDS', 900);
 define('LOGIN_MAX_ATTEMPTS', 5);
 define('LOGIN_LOCK_SECONDS', 300);
+define('COTIZACION_DIAS_VIGENCIA', max(1, (int) (getenv('COTIZACION_DIAS_VIGENCIA') ?: 1)));
 
 //**************COTIZACIOENS****************** */
 define('DIAS_VIGENCIA_COTIZACION', 1);

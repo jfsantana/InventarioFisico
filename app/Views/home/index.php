@@ -130,6 +130,22 @@ $authUser = Auth::user();
                     <strong>Asistente IA de Inventario</strong>
                     <i aria-hidden="true">→</i>
                 </a>
+                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/cotizacion/crear">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z" /><path d="M9 8h6M9 12h6M9 16h3" /><path d="M8 3v2M16 3v2" /></svg>
+                    </span>
+                    <span>Gestión comercial</span>
+                    <strong>Nueva cotización</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
+                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/cotizacion">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /><path d="M16 16h2v2" /></svg>
+                    </span>
+                    <span>Gestión comercial</span>
+                    <strong>Historial de cotizaciones</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
             </div>
         </section>
         <?php endif; ?>
