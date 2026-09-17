@@ -939,6 +939,7 @@ class Predespacho extends BaseModel
                     ip.cantidadSolicitada,
                     COALESCE(salidas.cantidadDespachada, 0) AS cantidadDespachada,
                     GREATEST(ip.cantidadSolicitada - COALESCE(salidas.cantidadDespachada, 0), 0) AS cantidadPendiente,
+                    silos.silosDisponibles,
                     ip.estatusItemPredespacho,
                     CASE WHEN COALESCE(salidas.cantidadDespachada, 0) >= ip.cantidadSolicitada THEN 1 ELSE 0 END AS coincide
              FROM tbl_items_predespacho ip
@@ -952,6 +953,24 @@ class Predespacho extends BaseModel
                  GROUP BY idInventarioEntrante, NE
              ) salidas ON salidas.idInventarioEntrante = ip.idInventarioEntrante
                  AND salidas.NE COLLATE utf8mb4_unicode_ci = cp.codigoInterno
+             LEFT JOIN (
+                 SELECT a.idInventarioEntrante,
+                        GROUP_CONCAT(
+                            CASE WHEN a.cantidadAsignada - COALESCE(ss.cantidadSaliente, 0) > 0.0005
+                                 THEN CONCAT(s.codigo, \' (\', CAST(a.cantidadAsignada - COALESCE(ss.cantidadSaliente, 0) AS DECIMAL(14,3)), \' kg)\')
+                            END
+                            ORDER BY a.fechaAsignacion ASC, a.idAsignacion ASC
+                            SEPARATOR \', \'
+                        ) AS silosDisponibles
+                 FROM silo_asignaciones a
+                 INNER JOIN silos s ON s.idSilo = a.idSilo
+                 LEFT JOIN (
+                     SELECT idAsignacion, SUM(cantidad) AS cantidadSaliente
+                     FROM silo_salidas
+                     GROUP BY idAsignacion
+                 ) ss ON ss.idAsignacion = a.idAsignacion
+                 GROUP BY a.idInventarioEntrante
+             ) silos ON silos.idInventarioEntrante = ie.idInventarioEntrante
              WHERE ip.idCabeceraPredespacho = :idCabeceraPredespacho' . $whereSector . '
              ORDER BY ie.sector ASC, ip.fechaCreacion ASC, ip.idItem ASC'
         );
@@ -1198,6 +1217,14 @@ class Predespacho extends BaseModel
                 'ne' => (string) $item['codigoInterno'],
                 'cantidadSaliente' => $cantidadDespachada,
             ]);
+            $idInventarioSaliente = (int) $this->db->lastInsertId();
+            if (str_replace(' ', '', strtolower((string) $item['sector'])) === 'sector3') {
+                (new SiloStockService($this->db))->descontarSalida(
+                    (int) $item['idInventarioEntrante'],
+                    $idInventarioSaliente,
+                    $cantidadDespachada
+                );
+            }
 
             $statement = $this->db->prepare(
                 'UPDATE tbl_items_predespacho

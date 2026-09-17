@@ -126,6 +126,7 @@ $requiresAuthentication = $requiresAuthentication ?? false;
                                 <th>Producto</th>
                                 <th>Lote</th>
                                 <th>Sector</th>
+                                <th>Silos disponibles</th>
                                 <th>Presentacion</th>
                                 <th>Unidad</th>
                                 <th>Inicial</th>
@@ -136,7 +137,7 @@ $requiresAuthentication = $requiresAuthentication ?? false;
                         </thead>
                         <tbody>
                             <?php if (empty($items)) : ?>
-                                <tr><td colspan="9">Este predespacho no tiene productos para el sector seleccionado.</td></tr>
+                                <tr><td colspan="10">Este predespacho no tiene productos para el sector seleccionado.</td></tr>
                             <?php else : ?>
                                 <?php foreach ($items as $item) : ?>
                                     <?php
@@ -151,6 +152,7 @@ $requiresAuthentication = $requiresAuthentication ?? false;
                                         <td><strong><?= $text($item['nombreProducto']) ?></strong></td>
                                         <td><?= $text($item['NumLote']) ?></td>
                                         <td><?= $text($item['sector']) ?></td>
+                                        <td><?= $text($item['silosDisponibles'] ?: (str_replace(' ', '', strtolower((string) $item['sector'])) === 'sector3' ? 'Pendiente de distribuir' : 'No aplica')) ?></td>
                                         <td><?= $text($item['presentacion'] ?? '') ?></td>
                                         <td><?= $unidad === null ? 'N/D' : $money($unidad) ?></td>
                                         <td><?= $money($solicitada) ?></td>

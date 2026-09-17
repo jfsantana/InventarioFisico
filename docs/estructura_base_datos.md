@@ -60,6 +60,43 @@ Se relaciona con:
   - inventarioentrante a través de idInventarioEntrante → idInventarioEntrante [muchos a 1]
   - tbl_cabecera_predespacho mediante NE → codigoInterno y el lote indicado por tbl_items_predespacho.idInventarioEntrante [relación lógica, muchos a 1]
 
+TABLA: silos
+Propósito: Catálogo administrativo de silos de Sector3 y su capacidad máxima en kilogramos.
+Columnas relevantes:
+  - idSilo (int unsigned) [PK, NOT NULL]
+  - codigo (varchar(30)) [NOT NULL, UNIQUE]
+  - nombre (varchar(100)) [NOT NULL]
+  - capacidad (decimal(14,3)) [NOT NULL]
+  - activo (tinyint(1)) [NOT NULL]
+Se relaciona con:
+  - silo_asignaciones a través de idSilo [1 a muchos]
+
+TABLA: silo_asignaciones
+Propósito: Distribuye el saldo físico de una entrada/lote de Sector3 entre uno o varios silos.
+Columnas relevantes:
+  - idAsignacion (bigint unsigned) [PK, NOT NULL]
+  - idSilo (int unsigned) [FK física, NOT NULL]
+  - idInventarioEntrante (int) [FK física, NOT NULL]
+  - cantidadAsignada (decimal(14,3)) [NOT NULL]
+Se relaciona con:
+  - silos a través de idSilo [muchos a 1]
+  - inventarioentrante a través de idInventarioEntrante [muchos a 1]
+  - silo_salidas a través de idAsignacion [1 a muchos]
+
+TABLA: silo_salidas
+Propósito: Traza cuánto inventario fue retirado de cada silo para una salida física. El consumo se asigna FIFO dentro del lote.
+Columnas relevantes:
+  - idSiloSalida (bigint unsigned) [PK, NOT NULL]
+  - idAsignacion (bigint unsigned) [FK física, NOT NULL]
+  - idInventarioSaliente (int unsigned) [FK física, NOT NULL]
+  - cantidad (decimal(14,3)) [NOT NULL]
+Se relaciona con:
+  - silo_asignaciones a través de idAsignacion [muchos a 1]
+  - inventariosaliente a través de idInventarioSaliente [muchos a 1]
+
+VISTA: v_estado_silos
+Propósito: Calcula ocupación, capacidad disponible y producto actual de cada silo a partir de asignaciones y salidas. Un silo ocupado solo acepta nuevas entradas del mismo producto.
+
 TABLA: tbl_cliente
 Propósito: Catálogo de clientes utilizados como destinatarios de los predespachos.
 Columnas relevantes:

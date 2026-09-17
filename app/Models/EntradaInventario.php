@@ -92,32 +92,56 @@ class EntradaInventario extends BaseModel
         return $entrada ?: null;
     }
 
-    public function registrarEntrada(array $data): int
+    public function registrarEntrada(array $data, array $asignacionesSilo = []): int
     {
-        $statement = $this->db->prepare(
-            'INSERT INTO inventarioentrante
-                (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector, idTipoCompra, CardCode, FabricanteCode, PaisCode, fecha_factura, peso_romana, nro_factura)
-             VALUES
-                (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode, :fechaFactura, :pesoRomana, :nroFactura)'
-        );
+        $this->db->beginTransaction();
+        try {
+            $statement = $this->db->prepare(
+                'INSERT INTO inventarioentrante
+                    (NumLote, idProducto, idPresentacion, `idUbicación`, CantidadEntrante, fecha, sector, idTipoCompra, CardCode, FabricanteCode, PaisCode, fecha_factura, peso_romana, nro_factura)
+                 VALUES
+                    (:numLote, :idProducto, :idPresentacion, :idUbicacion, :cantidadEntrante, CURDATE(), :sector, :idTipoCompra, :cardCode, :fabricanteCode, :paisCode, :fechaFactura, :pesoRomana, :nroFactura)'
+            );
 
-        $statement->execute([
-            'numLote' => $data['NumLote'],
-            'idProducto' => $data['idProducto'],
-            'idPresentacion' => $data['idPresentacion'],
-            'idUbicacion' => $data['idUbicacion'],
-            'cantidadEntrante' => $data['CantidadEntrante'],
-            'sector' => $data['Sector'],
-            'idTipoCompra' => $data['idTipoCompra'],
-            'cardCode' => $data['CardCode'],
-            'fabricanteCode' => $data['FabricanteCode'],
-            'paisCode' => $data['PaisCode'],
-            'fechaFactura' => $data['fecha_factura'],
-            'pesoRomana' => $data['peso_romana'],
-            'nroFactura' => $data['nro_factura'],
-        ]);
+            $statement->execute([
+                'numLote' => $data['NumLote'],
+                'idProducto' => $data['idProducto'],
+                'idPresentacion' => $data['idPresentacion'],
+                'idUbicacion' => $data['idUbicacion'],
+                'cantidadEntrante' => $data['CantidadEntrante'],
+                'sector' => $data['Sector'],
+                'idTipoCompra' => $data['idTipoCompra'],
+                'cardCode' => $data['CardCode'],
+                'fabricanteCode' => $data['FabricanteCode'],
+                'paisCode' => $data['PaisCode'],
+                'fechaFactura' => $data['fecha_factura'],
+                'pesoRomana' => $data['peso_romana'],
+                'nroFactura' => $data['nro_factura'],
+            ]);
 
-        return (int) $this->db->lastInsertId();
+            $idEntrada = (int) $this->db->lastInsertId();
+            if ($this->esSector3((string) $data['Sector'])) {
+                (new SiloStockService($this->db))->asignarEntrada(
+                    $idEntrada,
+                    (int) $data['idProducto'],
+                    (float) $data['CantidadEntrante'],
+                    $asignacionesSilo
+                );
+            }
+            $this->db->commit();
+
+            return $idEntrada;
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function esSector3(string $sector): bool
+    {
+        return str_replace(' ', '', strtolower(trim($sector))) === 'sector3';
     }
 
     public function obtenerDocumentosEntrada(int $idInventarioEntrante): array
@@ -267,6 +291,30 @@ class EntradaInventario extends BaseModel
 
     public function actualizarEntrada(int $idInventarioEntrante, array $data): bool
     {
+        $statement = $this->db->prepare(
+            'SELECT ie.idProducto, ie.sector, ie.CantidadEntrante,
+                    EXISTS(SELECT 1 FROM silo_asignaciones sa WHERE sa.idInventarioEntrante = ie.idInventarioEntrante) AS tieneAsignaciones
+             FROM inventarioentrante ie
+             WHERE ie.idInventarioEntrante = :idInventarioEntrante'
+        );
+        $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
+        $actual = $statement->fetch();
+        if (!$actual) {
+            throw new InvalidArgumentException('La entrada no existe.');
+        }
+
+        $eraSector3 = $this->esSector3((string) $actual['sector']);
+        $seraSector3 = $this->esSector3((string) $data['Sector']);
+        if (!$eraSector3 && $seraSector3) {
+            throw new DomainException('No puede mover una entrada existente a Sector3 sin distribuirla entre silos. Registre una nueva entrada o use el módulo de silos.');
+        }
+        if ((int) $actual['tieneAsignaciones'] === 1
+            && (!$seraSector3
+                || (int) $actual['idProducto'] !== (int) $data['idProducto']
+                || abs((float) $actual['CantidadEntrante'] - (float) $data['CantidadEntrante']) > 0.0005)) {
+            throw new DomainException('Una entrada distribuida en silos no permite cambiar producto, sector ni cantidad.');
+        }
+
         $statement = $this->db->prepare(
             'UPDATE inventarioentrante
              SET NumLote = :numLote,

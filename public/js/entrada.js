@@ -28,6 +28,11 @@ if (entradaForm) {
     const providerForm = providerModal?.querySelector('[data-provider-quick-form]');
     const providerMessage = providerModal?.querySelector('[data-provider-quick-message]');
     const providerTitle = providerModal?.querySelector('[data-provider-quick-title]');
+    const siloSection = entradaForm.querySelector('[data-silo-allocation]');
+    const siloRows = entradaForm.querySelector('[data-silo-rows]');
+    const initialSiloAssignments = JSON.parse(entradaForm.querySelector('[data-initial-silo-assignments]')?.textContent || '[]');
+    let availableSilos = [];
+    let initialSilosRestored = false;
     let providerTarget = null;
 
     function isValidEntryQuantity(value) {
@@ -66,7 +71,144 @@ if (entradaForm) {
     }
 
     function isFormComplete() {
-        return requiredFields.every((field) => validateField(field).valid);
+        return requiredFields.every((field) => validateField(field).valid) && isSiloDistributionValid();
+    }
+
+    function isSector3() {
+        return String(entradaForm.elements.Sector.value).replace(/\s+/g, '').toLowerCase() === 'sector3';
+    }
+
+    function siloQuantityFields() {
+        return Array.from(siloRows?.querySelectorAll('[name="cantidadSilo[]"]') || []);
+    }
+
+    function isSiloDistributionValid() {
+        if (!isSector3()) return true;
+        const required = Number(entradaForm.elements.CantidadEntrante.value) || 0;
+        const rows = Array.from(siloRows.querySelectorAll('.silo-assignment-row'));
+        if (required <= 0 || rows.length === 0) return false;
+        const ids = rows.map((row) => row.querySelector('[name="idSilo[]"]').value).filter(Boolean);
+        const assigned = siloQuantityFields().reduce((sum, field) => sum + (Number(field.value) || 0), 0);
+        return ids.length === rows.length && new Set(ids).size === ids.length && rows.every((row) => {
+            const select = row.querySelector('[name="idSilo[]"]');
+            const quantity = Number(row.querySelector('[name="cantidadSilo[]"]').value) || 0;
+            const available = Number(select.selectedOptions[0]?.dataset.available || 0);
+            return quantity > 0 && quantity <= available + 0.0005;
+        }) && Math.abs(assigned - required) < 0.0005;
+    }
+
+    function updateSiloTotals() {
+        if (!siloSection) return;
+        const required = Number(entradaForm.elements.CantidadEntrante.value) || 0;
+        const assigned = siloQuantityFields().reduce((sum, field) => sum + (Number(field.value) || 0), 0);
+        const pending = required - assigned;
+        siloSection.querySelector('[data-silo-required]').textContent = `${required.toFixed(3)} kg`;
+        siloSection.querySelector('[data-silo-assigned]').textContent = `${assigned.toFixed(3)} kg`;
+        const status = siloSection.querySelector('[data-silo-status]');
+        status.textContent = Math.abs(pending) < 0.0005 && required > 0
+            ? 'Distribución completa'
+            : `${pending >= 0 ? 'Faltan' : 'Exceden'} ${Math.abs(pending).toFixed(3)} kg`;
+        status.classList.toggle('is-complete', Math.abs(pending) < 0.0005 && required > 0);
+    }
+
+    function updateSiloOptionStates() {
+        const selected = new Set(Array.from(siloRows.querySelectorAll('[name="idSilo[]"]')).map((field) => field.value).filter(Boolean));
+        siloRows.querySelectorAll('[name="idSilo[]"]').forEach((select) => {
+            Array.from(select.options).forEach((option) => {
+                option.disabled = option.value !== '' && option.value !== select.value && selected.has(option.value);
+            });
+        });
+    }
+
+    function addSiloRow(values = {}) {
+        const row = document.createElement('div');
+        row.className = 'silo-assignment-row';
+        const select = document.createElement('select');
+        select.name = 'idSilo[]';
+        select.required = true;
+        select.appendChild(new Option('Seleccione un silo', ''));
+        availableSilos.forEach((silo) => {
+            const option = new Option(`${silo.codigo} - ${silo.nombre} (${Number(silo.capacidadDisponible).toFixed(3)} kg disponibles)`, silo.idSilo);
+            option.dataset.available = silo.capacidadDisponible;
+            select.appendChild(option);
+        });
+        select.value = String(values.idSilo || '');
+
+        const quantity = document.createElement('input');
+        quantity.name = 'cantidadSilo[]';
+        quantity.type = 'number';
+        quantity.min = '0.001';
+        quantity.step = '0.001';
+        quantity.inputMode = 'decimal';
+        quantity.placeholder = 'Cantidad en kg';
+        quantity.required = true;
+        quantity.value = values.cantidad || '';
+
+        const remove = document.createElement('button');
+        remove.type = 'button';
+        remove.title = 'Quitar silo';
+        remove.setAttribute('aria-label', 'Quitar silo');
+        remove.innerHTML = '&times;';
+        remove.addEventListener('click', () => {
+            row.remove();
+            updateSiloOptionStates();
+            updateSubmitState();
+        });
+        [select, quantity].forEach((field) => field.addEventListener('input', () => {
+            updateSiloOptionStates();
+            updateSubmitState();
+        }));
+        row.append(select, quantity, remove);
+        siloRows.appendChild(row);
+        updateSiloOptionStates();
+        updateSiloTotals();
+    }
+
+    async function updateSiloSection(resetRows = false) {
+        if (!siloSection) return;
+        const enabled = isSector3();
+        siloSection.hidden = !enabled;
+        siloRows.querySelectorAll('select,input').forEach((field) => { field.disabled = !enabled; });
+        if (!enabled) {
+            updateSubmitState();
+            return;
+        }
+
+        const productId = entradaForm.elements.idProducto.value;
+        if (!productId) {
+            availableSilos = [];
+            siloRows.replaceChildren();
+            updateSiloTotals();
+            updateSubmitState();
+            return;
+        }
+
+        try {
+            const response = await fetch(`${entradaForm.dataset.siloEndpoint}?idProducto=${encodeURIComponent(productId)}`);
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los silos.');
+            availableSilos = data;
+            if (resetRows) siloRows.replaceChildren();
+            if (!initialSilosRestored && initialSiloAssignments.length) {
+                initialSiloAssignments.forEach(addSiloRow);
+                initialSilosRestored = true;
+            } else if (!siloRows.children.length) {
+                addSiloRow();
+            } else {
+                const current = Array.from(siloRows.querySelectorAll('.silo-assignment-row')).map((row) => ({
+                    idSilo: row.querySelector('[name="idSilo[]"]').value,
+                    cantidad: row.querySelector('[name="cantidadSilo[]"]').value,
+                }));
+                siloRows.replaceChildren();
+                current.forEach(addSiloRow);
+            }
+        } catch (error) {
+            availableSilos = [];
+            siloRows.replaceChildren();
+            message.textContent = error.message;
+        }
+        updateSiloTotals();
+        updateSubmitState();
     }
 
     function fieldLabel(field) {
@@ -113,13 +255,16 @@ if (entradaForm) {
         }
 
         const pendingFields = requiredFields.filter((field) => !updateFieldFeedback(field).valid);
-        const completed = requiredFields.length - pendingFields.length;
-        const percentage = Math.round((completed / requiredFields.length) * 100);
+        const siloPending = isSector3() && !isSiloDistributionValid();
+        const totalFields = requiredFields.length + (isSector3() ? 1 : 0);
+        const completed = totalFields - pendingFields.length - (siloPending ? 1 : 0);
+        const percentage = Math.round((completed / totalFields) * 100);
         progress.querySelector('[data-entry-progress-bar]').style.width = `${percentage}%`;
-        progress.querySelector('[data-entry-progress-count]').textContent = `${completed} de ${requiredFields.length}`;
-        progress.querySelector('[data-entry-progress-title]').textContent = pendingFields.length ? 'Campos pendientes' : 'Entrada lista para guardar';
-        progress.querySelector('[data-entry-progress-message]').textContent = pendingFields.length
-            ? `Faltan ${pendingFields.length} campo${pendingFields.length === 1 ? '' : 's'}. Toca uno para completarlo.`
+        const pendingCount = pendingFields.length + (siloPending ? 1 : 0);
+        progress.querySelector('[data-entry-progress-count]').textContent = `${completed} de ${totalFields}`;
+        progress.querySelector('[data-entry-progress-title]').textContent = pendingCount ? 'Campos pendientes' : 'Entrada lista para guardar';
+        progress.querySelector('[data-entry-progress-message]').textContent = pendingCount
+            ? `Faltan ${pendingCount} campo${pendingCount === 1 ? '' : 's'}. Toca uno para completarlo.`
             : 'Todos los campos obligatorios están completos.';
 
         const list = progress.querySelector('[data-entry-progress-list]');
@@ -134,7 +279,17 @@ if (entradaForm) {
             list.appendChild(item);
         });
 
-        progress.classList.toggle('is-complete', pendingFields.length === 0);
+        if (siloPending) {
+            const item = document.createElement('li');
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.textContent = 'Distribución en silos';
+            button.addEventListener('click', () => siloSection.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+            item.appendChild(button);
+            list.appendChild(item);
+        }
+
+        progress.classList.toggle('is-complete', pendingCount === 0);
     }
 
     function documentsWithinLimit() {
@@ -150,6 +305,7 @@ if (entradaForm) {
         message.textContent = !documentsWithinLimit()
             ? 'Los tres documentos no pueden superar 10 MB en total.'
             : (formComplete ? 'Todos los campos obligatorios están completos.' : 'Revisa los campos pendientes indicados arriba.');
+        updateSiloTotals();
     }
 
     function openProviderModal(targetName) {
@@ -196,6 +352,13 @@ if (entradaForm) {
 
         field.addEventListener('input', updateSubmitState);
         field.addEventListener('change', updateSubmitState);
+    });
+
+    entradaForm.elements.Sector.addEventListener('change', () => updateSiloSection(false));
+    entradaForm.elements.idProducto.addEventListener('change', () => updateSiloSection(true));
+    entradaForm.querySelector('[data-add-silo]')?.addEventListener('click', () => {
+        addSiloRow();
+        updateSubmitState();
     });
 
     entradaForm.addEventListener('submit', (event) => {
@@ -268,5 +431,5 @@ if (entradaForm) {
         }
     });
 
-    updateSubmitState();
+    updateSiloSection(false);
 }

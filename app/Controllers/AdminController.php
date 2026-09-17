@@ -297,6 +297,131 @@ class AdminController extends Controller
         $this->redirect('/admin/proveedores?msg=Proveedor o fabricante eliminado correctamente.');
     }
 
+    public function silos(): void
+    {
+        $this->requiereAdmin();
+        $model = $this->model('Silo');
+
+        $this->view('admin/silos', [
+            'title' => 'Control de silos',
+            'silos' => $model->listar($_GET),
+            'entradasPendientes' => $model->entradasPendientes(),
+            'filters' => $_GET,
+            'message' => $_GET['msg'] ?? null,
+            'messageType' => ($_GET['tipo'] ?? '') === 'error' ? 'error' : 'success',
+        ]);
+    }
+
+    public function guardarSilo(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $idSilo = filter_input(INPUT_POST, 'idSilo', FILTER_VALIDATE_INT) ?: null;
+
+        try {
+            $model = $this->model('Silo');
+            if ($idSilo) {
+                $model->actualizar($idSilo, $_POST);
+                $accion = 'editar_silo';
+            } else {
+                $idSilo = $model->crear($_POST);
+                $accion = 'crear_silo';
+            }
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                $accion,
+                'exitoso',
+                trim((string) ($_POST['codigo'] ?? ''))
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/silos?msg=Silo guardado correctamente.');
+    }
+
+    public function eliminarSilo(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $idSilo = filter_input(INPUT_POST, 'idSilo', FILTER_VALIDATE_INT);
+
+        try {
+            if (!$idSilo || !$this->model('Silo')->eliminar($idSilo)) {
+                throw new InvalidArgumentException('El silo no existe.');
+            }
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                'eliminar_silo',
+                'exitoso',
+                'Silo #' . $idSilo
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/silos?msg=Silo eliminado correctamente.');
+    }
+
+    public function asignarEntradaSilos(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $idEntrada = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
+
+        try {
+            if (!$idEntrada) {
+                throw new InvalidArgumentException('Seleccione una entrada válida.');
+            }
+            $this->model('Silo')->asignarEntradaPendiente($idEntrada, $this->normalizarAsignacionesSilo($_POST));
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                'asignar_entrada_silos',
+                'exitoso',
+                'Entrada #' . $idEntrada
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/silos?msg=Entrada distribuida correctamente entre los silos.');
+    }
+
+    public function silosDisponibles(): void
+    {
+        $this->requiereAdmin();
+        header('Content-Type: application/json; charset=utf-8');
+        $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);
+        if (!$idProducto) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Producto inválido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        echo json_encode($this->model('Silo')->disponiblesParaProducto($idProducto), JSON_UNESCAPED_UNICODE);
+    }
+
+    private function normalizarAsignacionesSilo(array $data): array
+    {
+        $ids = is_array($data['idSilo'] ?? null) ? $data['idSilo'] : [];
+        $cantidades = is_array($data['cantidadSilo'] ?? null) ? $data['cantidadSilo'] : [];
+        $asignaciones = [];
+        foreach ($ids as $index => $idSilo) {
+            $asignaciones[] = [
+                'idSilo' => $idSilo,
+                'cantidad' => $cantidades[$index] ?? '',
+            ];
+        }
+
+        return $asignaciones;
+    }
+
     private function normalizarUsuario(array $data): array
     {
         $username = trim($data['username'] ?? '');

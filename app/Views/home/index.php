@@ -195,6 +195,14 @@ $authUser = Auth::user();
                         <strong>Proveedores y fabricantes</strong>
                         <i aria-hidden="true">→</i>
                     </a>
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/silos">
+                        <span class="menu-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M6 5c0-2 12-2 12 0v14c0 2-12 2-12 0Z" /><path d="M6 5c0 2 12 2 12 0M6 12c0 2 12 2 12 0" /></svg>
+                        </span>
+                        <span>Almacenamiento Sector3</span>
+                        <strong>Control de silos</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
                     <a class="menu-card menu-card--conexion" href="<?= APP_URL ?>/conexion">
                         <span class="menu-card-icon" aria-hidden="true">
                             <svg viewBox="0 0 24 24"><path d="M12 4c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3Z" /><path d="M4 7v5c0 1.7 3.6 3 8 3s8-1.3 8-3V7" /><path d="M4 12v5c0 1.7 3.6 3 8 3s8-1.3 8-3v-5" /></svg>

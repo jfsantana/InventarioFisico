@@ -65,7 +65,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </aside>
     <?php endif; ?>
 
-    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form data-provider-endpoint="<?= APP_URL ?>/entrada/crearProveedor" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form data-provider-endpoint="<?= APP_URL ?>/entrada/crearProveedor" data-silo-endpoint="<?= APP_URL ?>/entrada/silosDisponibles" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
         <?= Auth::csrfField() ?>
         <fieldset class="entry-form-fieldset" <?= $canCreateEntry ? '' : 'disabled' ?>>
         <div class="form-field">
@@ -213,6 +213,22 @@ $isEntradaCompleta = !empty($formData['idProducto'])
                 <small class="field-error"><?= htmlspecialchars($errors['CantidadEntrante'], ENT_QUOTES, 'UTF-8') ?></small>
             <?php endif; ?>
         </div>
+
+        <section class="entry-silo-allocation" data-silo-allocation hidden>
+            <div class="entry-silo-heading">
+                <div><span>Distribución obligatoria</span><h2>Asignación a silos de Sector3</h2></div>
+                <button class="button-link button-link--secondary" type="button" data-add-silo>+ Agregar silo</button>
+            </div>
+            <p>Distribuya toda la cantidad entrante. Solo aparecen silos vacíos o que contienen el mismo producto.</p>
+            <div class="silo-assignment-rows" data-silo-rows></div>
+            <div class="silo-entry-totals">
+                <span>Entrada: <strong data-silo-required>0.000 kg</strong></span>
+                <span>Asignado: <strong data-silo-assigned>0.000 kg</strong></span>
+                <span data-silo-status>Pendiente</span>
+            </div>
+            <?php if (!empty($errors['silos'])) : ?><small class="field-error"><?= htmlspecialchars($errors['silos'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
+        </section>
+        <script type="application/json" data-initial-silo-assignments><?= json_encode($formData['asignacionesSilo'] ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
 
         <div class="form-field">
             <label for="fecha_factura">11. Fecha de factura (dd/mm/aaaa)</label>

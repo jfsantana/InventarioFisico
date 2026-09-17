@@ -82,7 +82,7 @@ class EntradaController extends Controller
             'fecha_factura' => trim($_POST['fecha_factura'] ?? ''),
             'peso_romana' => trim($_POST['peso_romana'] ?? ''),
             'nro_factura' => trim($_POST['nro_factura'] ?? ''),
-            'observaciones' => trim($_POST['observaciones'] ?? ''),
+            'asignacionesSilo' => $this->normalizarAsignacionesSilo($_POST),
         ];
 
         $errors = array_merge(
@@ -113,7 +113,7 @@ class EntradaController extends Controller
                 'fecha_factura' => $formData['fecha_factura'],
                 'peso_romana' => (float) $formData['peso_romana'],
                 'nro_factura' => $formData['nro_factura'],
-            ]);
+            ], $formData['asignacionesSilo']);
             $this->guardarDocumentos($model, $idNuevaEntrada, []);
             $correoEnviado = $this->notificarEntrada($model, $idNuevaEntrada, 'creacion');
 
@@ -265,6 +265,7 @@ class EntradaController extends Controller
             'fecha_factura' => trim($_POST['fecha_factura'] ?? ''),
             'peso_romana' => trim($_POST['peso_romana'] ?? ''),
             'nro_factura' => trim($_POST['nro_factura'] ?? ''),
+            'observaciones' => trim($_POST['observaciones'] ?? ''),
         ];
 
         if (!$idInventarioEntrante) {
@@ -357,6 +358,30 @@ class EntradaController extends Controller
         header('Content-Disposition: attachment; filename="' . $nombreAscii . '"; filename*=UTF-8\'\'' . rawurlencode($documento['nombreOriginal']));
         readfile($filePath);
         exit;
+    }
+
+    public function silosDisponibles(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+        if (!Auth::check() || !Auth::can('entrada', 'editar')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'No tiene permiso para consultar silos.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);
+        if (!$idProducto) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Seleccione un producto válido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            echo json_encode($this->model('Silo')->disponiblesParaProducto($idProducto), JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $exception) {
+            http_response_code(500);
+            echo json_encode(['error' => $exception->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     public function reenviarCorreo(): void
@@ -488,6 +513,21 @@ class EntradaController extends Controller
         }
 
         return $errors;
+    }
+
+    private function normalizarAsignacionesSilo(array $data): array
+    {
+        $ids = is_array($data['idSilo'] ?? null) ? $data['idSilo'] : [];
+        $cantidades = is_array($data['cantidadSilo'] ?? null) ? $data['cantidadSilo'] : [];
+        $asignaciones = [];
+        foreach ($ids as $index => $idSilo) {
+            $asignaciones[] = [
+                'idSilo' => $idSilo,
+                'cantidad' => $cantidades[$index] ?? '',
+            ];
+        }
+
+        return $asignaciones;
     }
 
     private function validarDocumentos(array $existentes, bool $requeridos): array

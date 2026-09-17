@@ -177,35 +177,115 @@ class SalidaInventario extends BaseModel
     public function actualizarSalida(int $idInventarioSaliente, int $idInventarioEntrante, string $ne, float $cantidadSaliente): bool
     {
         $this->asegurarTablaInventarioSaliente();
+        $this->db->beginTransaction();
+        try {
+            $statement = $this->db->prepare(
+                'SELECT idInventarioEntrante,
+                        EXISTS(SELECT 1 FROM silo_salidas WHERE idInventarioSaliente = :idSalidaSilo) AS controladaPorSilos
+                 FROM inventariosaliente
+                 WHERE idInventarioSaliente = :idInventarioSaliente
+                 FOR UPDATE'
+            );
+            $statement->execute([
+                'idSalidaSilo' => $idInventarioSaliente,
+                'idInventarioSaliente' => $idInventarioSaliente,
+            ]);
+            $salidaActual = $statement->fetch();
+            if (!$salidaActual) {
+                throw new InvalidArgumentException('La salida no existe.');
+            }
 
-        $statement = $this->db->prepare(
-            'UPDATE inventariosaliente
-             SET idInventarioEntrante = :idInventarioEntrante,
-                 NE = :ne,
-                 cantidadSaliente = :cantidadSaliente
-             WHERE idInventarioSaliente = :idInventarioSaliente'
-        );
+            $statement = $this->db->prepare('DELETE FROM silo_salidas WHERE idInventarioSaliente = :idInventarioSaliente');
+            $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
 
-        return $statement->execute([
-            'idInventarioEntrante' => $idInventarioEntrante,
-            'ne' => $ne,
-            'cantidadSaliente' => $cantidadSaliente,
-            'idInventarioSaliente' => $idInventarioSaliente,
-        ]);
+            $statement = $this->db->prepare(
+                'UPDATE inventariosaliente
+                 SET idInventarioEntrante = :idInventarioEntrante,
+                     NE = :ne,
+                     cantidadSaliente = :cantidadSaliente
+                 WHERE idInventarioSaliente = :idInventarioSaliente'
+            );
+            $statement->execute([
+                'idInventarioEntrante' => $idInventarioEntrante,
+                'ne' => $ne,
+                'cantidadSaliente' => $cantidadSaliente,
+                'idInventarioSaliente' => $idInventarioSaliente,
+            ]);
+
+            $cambioDeLote = (int) $salidaActual['idInventarioEntrante'] !== $idInventarioEntrante;
+            if ((int) $salidaActual['controladaPorSilos'] === 1 || ($cambioDeLote && $this->entradaTieneAsignacionesSilo($idInventarioEntrante))) {
+                $controlada = (new SiloStockService($this->db))->descontarSalida(
+                    $idInventarioEntrante,
+                    $idInventarioSaliente,
+                    $cantidadSaliente
+                );
+                if (!$controlada && (int) $salidaActual['controladaPorSilos'] === 1) {
+                    throw new DomainException('No puede mover una salida controlada hacia un lote de Sector3 pendiente de distribuir.');
+                }
+            }
+            $this->db->commit();
+
+            return true;
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function eliminarSalida(int $idInventarioSaliente): bool
     {
         $this->asegurarTablaInventarioSaliente();
+        $this->db->beginTransaction();
+        try {
+            $statement = $this->db->prepare(
+                'SELECT ss.cantidad, a.idSilo, ie.idProducto,
+                        es.idProductoActual, es.capacidadDisponible, s.codigo
+                 FROM silo_salidas ss
+                 INNER JOIN silo_asignaciones a ON a.idAsignacion = ss.idAsignacion
+                 INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = a.idInventarioEntrante
+                 INNER JOIN silos s ON s.idSilo = a.idSilo
+                 INNER JOIN v_estado_silos es ON es.idSilo = s.idSilo
+                 WHERE ss.idInventarioSaliente = :idInventarioSaliente
+                 FOR UPDATE'
+            );
+            $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
+            foreach ($statement->fetchAll() as $movimiento) {
+                if ($movimiento['idProductoActual'] !== null
+                    && (int) $movimiento['idProductoActual'] !== (int) $movimiento['idProducto']) {
+                    throw new DomainException('No se puede eliminar la salida porque el silo ' . $movimiento['codigo'] . ' ya contiene otro producto.');
+                }
+                if ((float) $movimiento['cantidad'] - (float) $movimiento['capacidadDisponible'] > 0.0005) {
+                    throw new DomainException('No se puede eliminar la salida porque el silo ' . $movimiento['codigo'] . ' no tiene capacidad para devolver la cantidad.');
+                }
+            }
 
+            $statement = $this->db->prepare(
+                'DELETE FROM inventariosaliente
+                 WHERE idInventarioSaliente = :idInventarioSaliente'
+            );
+            $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
+            $deleted = $statement->rowCount() > 0;
+            $this->db->commit();
+
+            return $deleted;
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
+    }
+
+    private function entradaTieneAsignacionesSilo(int $idInventarioEntrante): bool
+    {
         $statement = $this->db->prepare(
-            'DELETE FROM inventariosaliente
-             WHERE idInventarioSaliente = :idInventarioSaliente'
+            'SELECT COUNT(*) FROM silo_asignaciones WHERE idInventarioEntrante = :idInventarioEntrante'
         );
+        $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
 
-        $statement->execute(['idInventarioSaliente' => $idInventarioSaliente]);
-
-        return $statement->rowCount() > 0;
+        return (int) $statement->fetchColumn() > 0;
     }
 
     public function sincronizarPredespachoPorCodigo(string $codigoInterno): bool
