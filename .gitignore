@@ -2,3 +2,4 @@
 /config/config.php
 /config/smtp.local.php
 /vendor/
+/storage/
