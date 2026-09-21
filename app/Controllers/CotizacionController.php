@@ -22,7 +22,7 @@ class CotizacionController extends Controller
             $model = $this->model('Cotizacion');
             $this->view('cotizacion/index', [
                 'title' => 'Cotizaciones',
-                'cotizaciones' => $model->obtenerCotizacionesActivas(),
+                'cotizaciones' => $model->obtenerCotizacionesActivas(isset($_GET['cliente']) ? (string) $_GET['cliente'] : null),
                 'csrfToken' => Auth::csrfToken(),
             ]);
         } catch (Throwable $exception) {
@@ -36,7 +36,7 @@ class CotizacionController extends Controller
         Auth::requireDirector();
 
         try {
-            $clienteModel = $this->model('Cliente');
+            $clienteModel = $this->model('ClienteCotizacion');
             $inventarioModel = $this->model('EntradaInventario');
             $diasVigencia = $this->diasVigenciaConfigurados();
 
@@ -49,6 +49,7 @@ class CotizacionController extends Controller
                 'diasVigencia' => $diasVigencia,
                 'fechaEmision' => date('Y-m-d'),
                 'fechaVencimiento' => date('Y-m-d', strtotime('+' . $diasVigencia . ' days')),
+                'clienteSeleccionado' => trim((string) ($_GET['idCliente'] ?? '')),
                 'csrfToken' => Auth::csrfToken(),
             ]);
         } catch (Throwable $exception) {
@@ -165,15 +166,15 @@ class CotizacionController extends Controller
             return;
         }
 
-        $idCliente = filter_var($payload['idCliente'] ?? null, FILTER_VALIDATE_INT);
+        $idCliente = trim((string) ($payload['idCliente'] ?? ''));
         $email = trim((string) ($payload['email'] ?? ''));
-        if (!$idCliente || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
+        if ($idCliente === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $this->responderJson(422, false, 'El cliente y un email valido son obligatorios.');
             return;
         }
 
-        $clienteModel = $this->model('Cliente');
-        $cliente = $clienteModel->obtenerClientePorId((int) $idCliente);
+        $clienteModel = $this->model('ClienteCotizacion');
+        $cliente = $clienteModel->obtenerClientePorId($idCliente);
         if (!$cliente) {
             $this->responderJson(404, false, 'Cliente no encontrado.');
             return;
@@ -184,12 +185,36 @@ class CotizacionController extends Controller
             return;
         }
 
-        if (!$clienteModel->actualizarEmailSiVacio((int) $idCliente, $email)) {
+        if (!$clienteModel->actualizarEmailSiVacio($idCliente, $email)) {
             $this->responderJson(409, false, 'El email no pudo actualizarse porque ya fue registrado.');
             return;
         }
 
         $this->responderJson(200, true, 'Email del cliente actualizado correctamente.');
+    }
+
+    public function crearCliente(): void
+    {
+        $payload = $this->iniciarPeticionJson();
+        if ($payload === null) {
+            return;
+        }
+
+        try {
+            $clienteModel = $this->model('ClienteCotizacion');
+            $idCliente = $clienteModel->crear($payload);
+            $cliente = $clienteModel->obtenerClientePorId($idCliente);
+            $this->responderJson(201, true, 'Cliente creado correctamente.', ['cliente' => $cliente]);
+        } catch (PDOException $exception) {
+            $message = ((int) $exception->errorInfo[1] === 1062)
+                ? 'Ya existe un cliente de Cotizaciones con ese RIF.'
+                : 'No se pudo crear el cliente.';
+            $this->responderJson(422, false, $message);
+        } catch (InvalidArgumentException $exception) {
+            $this->responderJson(422, false, $exception->getMessage());
+        } catch (Throwable $exception) {
+            $this->responderJson(500, false, 'No se pudo crear el cliente.');
+        }
     }
 
     public function desactivar(): void
@@ -248,11 +273,11 @@ class CotizacionController extends Controller
 
     private function validarCotizacion(array $cabecera, array $detalles): array
     {
-        $idCliente = filter_var($cabecera['idCliente'] ?? null, FILTER_VALIDATE_INT);
+        $idCliente = trim((string) ($cabecera['idCliente'] ?? ''));
         $diasVigencia = filter_var($cabecera['diasVigencia'] ?? $this->diasVigenciaConfigurados(), FILTER_VALIDATE_INT);
         $condicionPago = strtoupper(trim((string) ($cabecera['condicionPago'] ?? '')));
 
-        if (!$idCliente || !$diasVigencia || $diasVigencia < 1 || $diasVigencia > 999) {
+        if ($idCliente === '' || !$diasVigencia || $diasVigencia < 1 || $diasVigencia > 999) {
             throw new InvalidArgumentException('El cliente y los dias de vigencia son obligatorios.');
         }
 
@@ -260,8 +285,8 @@ class CotizacionController extends Controller
             throw new InvalidArgumentException('La condicion de pago no es valida.');
         }
 
-        $clienteModel = $this->model('Cliente');
-        $cliente = $clienteModel->obtenerClientePorId((int) $idCliente);
+        $clienteModel = $this->model('ClienteCotizacion');
+        $cliente = $clienteModel->obtenerClientePorId($idCliente);
         if (!$cliente || (int) $cliente['activo'] !== 1) {
             throw new InvalidArgumentException('El cliente seleccionado no esta activo.');
         }
@@ -327,7 +352,7 @@ class CotizacionController extends Controller
         }
 
         return [[
-            'idCliente' => (int) $idCliente,
+            'idCliente' => $idCliente,
             'diasVigencia' => (int) $diasVigencia,
             'condicionPago' => $condicionPago,
             'observacion' => trim((string) ($cabecera['observacion'] ?? '')) ?: null,

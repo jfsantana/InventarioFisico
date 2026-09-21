@@ -18,6 +18,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const grandTotal = page.querySelector('[data-grand-total]');
     const pageMessage = page.querySelector('[data-cotizacion-message]');
     const saveButton = page.querySelector('[data-save-quotation]');
+    const clientModal = document.querySelector('[data-client-modal]');
+    const clientForm = clientModal.querySelector('[data-client-form]');
+    const clientMessage = clientModal.querySelector('[data-client-message]');
     const productModal = document.querySelector('[data-product-modal]');
     const productForm = productModal.querySelector('[data-product-form]');
     const productInput = productModal.querySelector('[data-product-input]');
@@ -41,6 +44,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let editingIndex = null;
 
     document.body.appendChild(productModal);
+    document.body.appendChild(clientModal);
     document.body.appendChild(generationModal);
     document.body.appendChild(emailModal);
 
@@ -161,6 +165,21 @@ document.addEventListener('DOMContentLoaded', () => {
         editingIndex = null;
     }
 
+    function openClientModal() {
+        hideMessage(clientMessage);
+        clientForm.reset();
+        clientModal.hidden = false;
+        clientModal.classList.add('is-open');
+        document.body.classList.add('modal-is-open');
+        clientForm.elements.rif.focus();
+    }
+
+    function closeClientModal() {
+        clientModal.classList.remove('is-open');
+        clientModal.hidden = true;
+        document.body.classList.remove('modal-is-open');
+    }
+
     function openGenerationModal() {
         hideMessage(generationMessage);
         generationModal.hidden = false;
@@ -229,6 +248,11 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     page.querySelector('[data-add-detail]').addEventListener('click', () => openProductModal());
+    page.querySelector('[data-open-client-modal]').addEventListener('click', openClientModal);
+
+    clientModal.querySelectorAll('[data-client-close]').forEach((button) => {
+        button.addEventListener('click', closeClientModal);
+    });
 
     productModal.querySelectorAll('[data-product-close]').forEach((button) => {
         button.addEventListener('click', closeProductModal);
@@ -324,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const email = emailForm.elements.email.value.trim();
             await sendJson(page.dataset.emailEndpoint, {
-                idCliente: Number(clientSelect.value),
+                idCliente: clientSelect.value,
                 email,
                 emailFaltante: true,
             });
@@ -334,6 +358,40 @@ document.addEventListener('DOMContentLoaded', () => {
             showMessage(pageMessage, 'Email del cliente actualizado correctamente.', 'success');
         } catch (error) {
             showMessage(emailMessage, error.message, 'error');
+        } finally {
+            submitButton.disabled = false;
+        }
+    });
+
+    clientForm.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        hideMessage(clientMessage);
+
+        if (!clientForm.reportValidity()) {
+            return;
+        }
+
+        const submitButton = clientForm.querySelector('[type="submit"]');
+        submitButton.disabled = true;
+
+        try {
+            const response = await sendJson(page.dataset.clientCreateEndpoint, {
+                rif: clientForm.elements.rif.value.trim(),
+                nombre: clientForm.elements.nombre.value.trim(),
+                email: clientForm.elements.email.value.trim(),
+                telefono: clientForm.elements.telefono.value.trim(),
+                direccion: clientForm.elements.direccion.value.trim(),
+            });
+            const cliente = response.cliente;
+            const option = new Option(`${cliente.rif} - ${cliente.nombre}`, cliente.idCliente);
+            option.dataset.email = cliente.email || '';
+            clientSelect.add(option);
+            clientSelect.value = String(cliente.idCliente);
+            clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
+            closeClientModal();
+            showMessage(pageMessage, 'Cliente creado y seleccionado correctamente.', 'success');
+        } catch (error) {
+            showMessage(clientMessage, error.message, 'error');
         } finally {
             submitButton.disabled = false;
         }
@@ -372,7 +430,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await sendJson(page.dataset.saveEndpoint, {
                 modo,
                 cabecera: {
-                    idCliente: Number(clientSelect.value),
+                    idCliente: clientSelect.value,
                     diasVigencia: Number(form.elements.diasVigencia.value),
                     condicionPago: form.elements.condicionPago.value,
                     observacion: form.elements.observacion.value.trim(),

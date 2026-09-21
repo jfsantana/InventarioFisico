@@ -297,6 +297,100 @@ class AdminController extends Controller
         $this->redirect('/admin/proveedores?msg=Proveedor o fabricante eliminado correctamente.');
     }
 
+    public function clientesCotizaciones(): void
+    {
+        $this->requiereAdmin();
+        $model = $this->model('ClienteCotizacion');
+        $filters = $_GET;
+        $filters['status'] = $filters['status'] ?? 'all';
+
+        $page = max(1, (int) ($_GET['page'] ?? 1));
+        $listing = $model->listarPaginado($filters, $page, 25);
+
+        $this->view('admin/clientes-cotizaciones', [
+            'title' => 'Clientes de Cotizaciones',
+            'clientes' => $listing['clientes'],
+            'pagination' => $listing,
+            'filters' => $filters,
+            'message' => $_GET['msg'] ?? null,
+            'messageType' => ($_GET['tipo'] ?? '') === 'error' ? 'error' : 'success',
+        ]);
+    }
+
+    public function guardarClienteCotizacion(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $model = $this->model('ClienteCotizacion');
+        $idCliente = trim((string) ($_POST['idCliente'] ?? '')) ?: null;
+
+        try {
+            if ($idCliente) {
+                $model->actualizar($idCliente, $_POST);
+                $accion = 'editar_cliente_cotizacion';
+            } else {
+                $idCliente = $model->crear($_POST);
+                $accion = 'crear_cliente_cotizacion';
+            }
+
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                $accion,
+                'exitoso',
+                trim((string) ($_POST['rif'] ?? ''))
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/clientesCotizaciones?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/clientesCotizaciones?msg=Cliente de Cotizaciones guardado correctamente.');
+    }
+
+    public function eliminarClienteCotizacion(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $idCliente = trim((string) ($_POST['idCliente'] ?? ''));
+
+        try {
+            if ($idCliente === '' || !$this->model('ClienteCotizacion')->desactivar($idCliente)) {
+                throw new InvalidArgumentException('El cliente de Cotizaciones no existe o ya fue desactivado.');
+            }
+
+            Auth::log(
+                (int) ($_SESSION['id_usuario'] ?? 0),
+                $_SESSION['username'] ?? null,
+                'administracion',
+                'desactivar_cliente_cotizacion',
+                'exitoso',
+                'Cliente #' . $idCliente
+            );
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/clientesCotizaciones?tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/clientesCotizaciones?msg=Cliente de Cotizaciones desactivado correctamente.');
+    }
+
+    public function activarClienteCotizacion(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+        $idCliente = trim((string) ($_POST['idCliente'] ?? ''));
+
+        try {
+            if ($idCliente === '' || !$this->model('ClienteCotizacion')->activar($idCliente)) {
+                throw new InvalidArgumentException('El cliente de Cotizaciones no existe o ya está disponible.');
+            }
+        } catch (Throwable $exception) {
+            $this->redirect('/admin/clientesCotizaciones?status=inactive&tipo=error&msg=' . urlencode($exception->getMessage()));
+        }
+
+        $this->redirect('/admin/clientesCotizaciones?status=inactive&msg=Cliente de Cotizaciones activado correctamente.');
+    }
+
     public function silos(): void
     {
         $this->requiereAdmin();

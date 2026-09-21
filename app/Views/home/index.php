@@ -178,6 +178,12 @@ $authUser = Auth::user();
                             <strong>Proveedores y fabricantes</strong>
                             <i aria-hidden="true">→</i>
                         </a>
+                        <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/clientesCotizaciones">
+                            <span class="menu-card-icon" aria-hidden="true">&#128100;</span>
+                            <span>Catálogo comercial</span>
+                            <strong>Clientes de Cotizaciones</strong>
+                            <i aria-hidden="true">→</i>
+                        </a>
                         <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/silos">
                             <span class="menu-card-icon" aria-hidden="true">
                                 <svg viewBox="0 0 24 24"><path d="M6 5c0-2 12-2 12 0v14c0 2-12 2-12 0Z" /><path d="M6 5c0 2 12 2 12 0M6 12c0 2 12 2 12 0" /></svg>

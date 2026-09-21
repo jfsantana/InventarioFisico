@@ -70,14 +70,15 @@ class Cotizacion extends BaseModel
         }
     }
 
-    public function obtenerCotizacionesActivas(): array
+    public function obtenerCotizacionesActivas(?string $idCliente = null): array
     {
+        $filtroCliente = $idCliente !== null && trim($idCliente) !== '' ? ' AND cotizacion.idCliente = :idCliente' : '';
         $statement = $this->db->prepare(
             'SELECT cotizacion.idCotizacion,
                     cotizacion.idCliente,
-                    cliente.rif AS rifCliente,
-                    cliente.nombre AS nombreCliente,
-                    cliente.email AS emailCliente,
+                    cliente.LicTradNum AS rifCliente,
+                    cliente.CardName AS nombreCliente,
+                    cliente.E_Mail AS emailCliente,
                     cotizacion.fechaEmision,
                     cotizacion.diasVigencia,
                     cotizacion.condicionPago,
@@ -90,11 +91,15 @@ class Cotizacion extends BaseModel
                      FROM tbl_cotizacion_detalle detalle
                      WHERE detalle.idCotizacion = cotizacion.idCotizacion) AS cantidadProductos
              FROM tbl_cotizacion_cabecera cotizacion
-             INNER JOIN tbl_cliente cliente ON cliente.idCliente = cotizacion.idCliente
-             WHERE cotizacion.activo = :activo
+             INNER JOIN tbl_clientes_cotizacion cliente ON cliente.CardCode = cotizacion.idCliente
+               WHERE cotizacion.activo = :activo' . $filtroCliente . '
              ORDER BY cotizacion.fechaEmision DESC, cotizacion.idCotizacion DESC'
         );
-        $statement->execute(['activo' => 1]);
+           $params = ['activo' => 1];
+           if ($filtroCliente !== '') {
+              $params['idCliente'] = trim($idCliente);
+           }
+           $statement->execute($params);
 
         return $statement->fetchAll();
     }
@@ -104,11 +109,11 @@ class Cotizacion extends BaseModel
         $statement = $this->db->prepare(
             'SELECT cotizacion.idCotizacion,
                     cotizacion.idCliente,
-                    cliente.rif AS rifCliente,
-                    cliente.nombre AS nombreCliente,
-                    cliente.direccion AS direccionCliente,
-                    cliente.email AS emailCliente,
-                    cliente.telefono AS telefonoCliente,
+                    cliente.LicTradNum AS rifCliente,
+                    cliente.CardName AS nombreCliente,
+                    COALESCE(cliente.MailAddres, cliente.Address) AS direccionCliente,
+                    cliente.E_Mail AS emailCliente,
+                    cliente.Phone1 AS telefonoCliente,
                     cotizacion.fechaEmision,
                     cotizacion.fechaCreacion,
                     cotizacion.diasVigencia,
@@ -117,7 +122,7 @@ class Cotizacion extends BaseModel
                     cotizacion.subtotal,
                     cotizacion.total
              FROM tbl_cotizacion_cabecera cotizacion
-             INNER JOIN tbl_cliente cliente ON cliente.idCliente = cotizacion.idCliente
+             INNER JOIN tbl_clientes_cotizacion cliente ON cliente.CardCode = cotizacion.idCliente
              WHERE cotizacion.idCotizacion = :idCotizacion
                AND cotizacion.activo = :activo
              LIMIT 1'

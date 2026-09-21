@@ -4634,6 +4634,89 @@ body:has(.auth-topbar) {
     cursor: pointer;
 }
 
+.table-actions a {
+    display: inline-grid;
+    min-width: 34px;
+    min-height: 34px;
+    place-items: center;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    background: #ffffff;
+    color: var(--accent-strong);
+    font-weight: 700;
+    text-decoration: none;
+}
+
+.clientes-cotizaciones-page .admin-table {
+    min-width: 860px;
+}
+
+.clientes-cotizaciones-page .admin-table tbody tr.is-client-inactive {
+    background: #fff8f7;
+    color: #7a6a68;
+}
+
+.client-status-badge {
+    display: inline-flex;
+    align-items: center;
+    min-height: 28px;
+    padding: 4px 9px;
+    border-radius: 999px;
+    font-size: 0.72rem;
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.client-status-badge--active {
+    background: #e8f6ee;
+    color: #17643a;
+}
+
+.client-status-badge--inactive {
+    background: #fff0ef;
+    color: #a21a16;
+}
+
+.client-code {
+    display: block;
+    margin-top: 4px;
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.clientes-cotizaciones-filters {
+    grid-template-columns: minmax(220px, 1fr) minmax(170px, 220px) auto auto;
+}
+
+.clientes-cotizaciones-page .client-active-field {
+    display: flex;
+    grid-template-rows: none;
+    align-items: center;
+    gap: 9px;
+    text-transform: none;
+}
+
+.clientes-cotizaciones-page .client-active-field input[type="checkbox"] {
+    width: 18px;
+    min-height: 18px;
+    accent-color: var(--accent);
+}
+
+.admin-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    color: var(--accent-strong);
+    font-size: 0.86rem;
+    font-weight: 700;
+}
+
+.admin-pagination .button-link {
+    min-height: 38px;
+}
+
 .predespacho-header-actions {
     flex-wrap: nowrap;
     align-items: center;
@@ -5382,6 +5465,89 @@ body:has(.auth-topbar) {
         min-height: 42px;
     }
 
+    .clientes-cotizaciones-page .admin-table-wrap {
+        overflow: visible;
+        border: 0;
+        border-radius: 0;
+        background: transparent;
+    }
+
+    .clientes-cotizaciones-page .admin-table,
+    .clientes-cotizaciones-page .admin-table tbody {
+        display: grid;
+        gap: 12px;
+        width: 100%;
+        min-width: 0;
+    }
+
+    .clientes-cotizaciones-page .admin-table thead {
+        display: none;
+    }
+
+    .clientes-cotizaciones-page .admin-table tr {
+        display: grid;
+        gap: 0;
+        padding: 12px;
+        border: 1px solid var(--line);
+        border-radius: 10px;
+        background: #ffffff;
+        box-shadow: 0 10px 26px rgba(76, 40, 38, 0.08);
+    }
+
+    .clientes-cotizaciones-page .admin-table tr.is-client-inactive {
+        background: #fff8f7;
+    }
+
+    .clientes-cotizaciones-page .admin-table td {
+        display: grid;
+        grid-template-columns: minmax(92px, 34%) minmax(0, 1fr);
+        gap: 10px;
+        align-items: center;
+        min-width: 0;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0dfdf;
+        font-size: 0.92rem;
+        overflow-wrap: anywhere;
+    }
+
+    .clientes-cotizaciones-page .admin-table td::before {
+        content: attr(data-label);
+        color: var(--accent-strong);
+        font-size: 0.76rem;
+        font-weight: 800;
+        text-transform: uppercase;
+    }
+
+    .clientes-cotizaciones-page .admin-table td:last-child {
+        border-bottom: 0;
+    }
+
+    .clientes-cotizaciones-page .admin-table td[colspan] {
+        display: block;
+        text-align: center;
+    }
+
+    .clientes-cotizaciones-page .admin-table td[colspan]::before {
+        content: none;
+    }
+
+    .clientes-cotizaciones-page .table-actions {
+        justify-content: flex-start;
+    }
+
+    .clientes-cotizaciones-page .table-actions button {
+        min-width: 44px;
+        min-height: 42px;
+    }
+
+    .clientes-cotizaciones-filters {
+        grid-template-columns: 1fr;
+    }
+
+    .clientes-cotizaciones-filters .button-link {
+        width: 100%;
+    }
+
     .correction-modal {
         place-items: start center;
         padding: 10px;
@@ -5601,6 +5767,27 @@ body:has(.auth-topbar) {
 .cotizacion-form {
     display: grid;
     gap: 24px;
+}
+
+.cotizacion-client-picker {
+    display: flex;
+    align-items: end;
+    gap: 12px;
+    max-width: 760px;
+}
+
+.cotizacion-client-picker .cotizacion-field--client {
+    flex: 1 1 auto;
+}
+
+.cotizacion-new-client {
+    flex: 0 0 auto;
+    min-height: 44px;
+    white-space: nowrap;
+}
+
+.cotizacion-client-card {
+    width: min(680px, calc(100vw - 32px));
 }
 
 .cotizacion-dependent-fields {

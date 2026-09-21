@@ -7,6 +7,7 @@ $presentaciones = $presentaciones ?? [];
 $condicionesPago = $condicionesPago ?? [];
 $fechaEmisionVista = (string) ($fechaEmision ?? date('Y-m-d'));
 $fechaVencimientoVista = (string) ($fechaVencimiento ?? '');
+$clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
 ?>
 
 <section
@@ -14,6 +15,7 @@ $fechaVencimientoVista = (string) ($fechaVencimiento ?? '');
     data-cotizacion-page
     data-save-endpoint="<?= APP_URL ?>/cotizacion/guardar"
     data-email-endpoint="<?= APP_URL ?>/cotizacion/actualizarEmail"
+    data-client-create-endpoint="<?= APP_URL ?>/cotizacion/crearCliente"
     data-csrf-token="<?= $text($csrfToken ?? '') ?>"
 >
     <header class="cotizacion-heading">
@@ -30,24 +32,27 @@ $fechaVencimientoVista = (string) ($fechaVencimiento ?? '');
     <div class="message" data-cotizacion-message role="status" hidden></div>
 
     <form class="cotizacion-form" data-cotizacion-form novalidate>
-        <label class="cotizacion-field cotizacion-field--client">
-            Cliente
-            <select
-                name="idCliente"
-                required
-                data-client-select
-                data-searchable-select
-                data-search-placeholder="Buscar cliente por nombre o RIF"
-                data-search-result-label="cliente"
-            >
-                <option value="">Seleccione un cliente</option>
-                <?php foreach ($clientes as $cliente) : ?>
-                    <option value="<?= (int) $cliente['idCliente'] ?>" data-email="<?= $text($cliente['email'] ?? '') ?>">
-                        <?= $text($cliente['rif'] . ' - ' . $cliente['nombre']) ?>
-                    </option>
-                <?php endforeach; ?>
-            </select>
-        </label>
+        <div class="cotizacion-client-picker">
+            <label class="cotizacion-field cotizacion-field--client">
+                Cliente
+                <select
+                    name="idCliente"
+                    required
+                    data-client-select
+                    data-searchable-select
+                    data-search-placeholder="Buscar cliente por nombre o RIF"
+                    data-search-result-label="cliente"
+                >
+                    <option value="">Seleccione un cliente</option>
+                    <?php foreach ($clientes as $cliente) : ?>
+                        <option value="<?= $text($cliente['idCliente']) ?>" data-email="<?= $text($cliente['email'] ?? '') ?>" <?= $clienteSeleccionado === (string) $cliente['idCliente'] ? 'selected' : '' ?>>
+                            <?= $text($cliente['rif'] . ' - ' . $cliente['nombre']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </label>
+            <button class="button-link button-link--secondary cotizacion-new-client" type="button" data-open-client-modal>+ Nuevo cliente</button>
+        </div>
 
         <fieldset class="cotizacion-dependent-fields" data-quotation-fields disabled>
             <section class="cotizacion-fields" aria-label="Datos de la cotización">
@@ -189,6 +194,30 @@ $fechaVencimientoVista = (string) ($fechaVencimiento ?? '');
         <footer class="modal-actions">
             <button class="button-link button-link--secondary" type="button" data-product-close>Cancelar</button>
             <button class="button-link button-link--submit" type="submit" data-product-save>Agregar producto</button>
+        </footer>
+    </form>
+</div>
+
+<div class="correction-modal cotizacion-client-modal" data-client-modal hidden role="dialog" aria-modal="true" aria-labelledby="cotizacion-client-title">
+    <form class="correction-modal-card cotizacion-client-card" data-client-form novalidate>
+        <header>
+            <div>
+                <h2 id="cotizacion-client-title">Nuevo cliente</h2>
+                <p>Regístralo una sola vez para usarlo en Cotizaciones.</p>
+            </div>
+            <button class="modal-close" type="button" data-client-close aria-label="Cerrar modal">×</button>
+        </header>
+        <div class="correction-modal-grid">
+            <label>RIF<input name="rif" type="text" maxlength="20" required autocomplete="off"></label>
+            <label>Nombre o razón social<input name="nombre" type="text" maxlength="150" required autocomplete="organization"></label>
+            <label>Correo electrónico<input name="email" type="email" maxlength="150" autocomplete="email"></label>
+            <label>Teléfono<input name="telefono" type="text" maxlength="50" autocomplete="tel"></label>
+            <label class="correction-field--full">Dirección<textarea name="direccion" maxlength="2000" rows="2"></textarea></label>
+        </div>
+        <div class="message" data-client-message role="alert" hidden></div>
+        <footer class="modal-actions">
+            <button class="button-link button-link--secondary" type="button" data-client-close>Cancelar</button>
+            <button class="button-link button-link--submit" type="submit">Crear y seleccionar</button>
         </footer>
     </form>
 </div>
