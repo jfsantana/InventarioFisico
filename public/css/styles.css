@@ -4073,6 +4073,18 @@ body.modal-is-open {
     --card-color: #60438f;
 }
 
+.dashboard-home .menu-card--directiva-ia {
+    --card-color: #21855b;
+}
+
+.dashboard-home .menu-card--directiva-cotizacion {
+    --card-color: #60438f;
+}
+
+.dashboard-home .menu-card--directiva-silos {
+    --card-color: #a21a16;
+}
+
 .dashboard-home .menu-card--conexion {
     --card-color: #747474;
 }

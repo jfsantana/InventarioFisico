@@ -130,7 +130,7 @@ $authUser = Auth::user();
             <span>Acceso exclusivo</span>
             <h2>Junta Directiva</h2>
             <div class="menu-section-grid menu-section-grid--three">
-                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/ia/View/ia_view.php">
+                <a class="menu-card menu-card--directiva menu-card--directiva-ia" href="<?= APP_URL ?>/ia/View/ia_view.php">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M5 5h14v11H9l-4 3v-14Z" /><path d="M9 9h6M9 12h4" /><path d="m17 3 .5 1.5L19 5l-1.5.5L17 7l-.5-1.5L15 5l1.5-.5L17 3Z" /></svg>
                     </span>
@@ -138,7 +138,7 @@ $authUser = Auth::user();
                     <strong>Asistente IA de Inventario</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/cotizacion/crear">
+                <a class="menu-card menu-card--directiva menu-card--directiva-cotizacion" href="<?= APP_URL ?>/cotizacion/crear">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M6 3h12v18H6z" /><path d="M9 8h6M9 12h6M9 16h3" /><path d="M8 3v2M16 3v2" /></svg>
                     </span>
@@ -146,7 +146,7 @@ $authUser = Auth::user();
                     <strong>Nueva cotización</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/cotizacion">
+                <a class="menu-card menu-card--directiva menu-card--directiva-cotizacion" href="<?= APP_URL ?>/cotizacion">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M5 4h14v16H5z" /><path d="M8 8h8M8 12h8M8 16h5" /><path d="M16 16h2v2" /></svg>
                     </span>
@@ -154,13 +154,13 @@ $authUser = Auth::user();
                     <strong>Historial de cotizaciones</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/admin/clientesCotizaciones">
+                <a class="menu-card menu-card--directiva menu-card--directiva-cotizacion" href="<?= APP_URL ?>/admin/clientesCotizaciones">
                     <span class="menu-card-icon" aria-hidden="true">&#128100;</span>
                     <span>Gestión comercial</span>
                     <strong>Clientes de Cotizaciones</strong>
                     <i aria-hidden="true">→</i>
                 </a>
-                <a class="menu-card menu-card--directiva" href="<?= APP_URL ?>/admin/silos">
+                <a class="menu-card menu-card--directiva menu-card--directiva-silos" href="<?= APP_URL ?>/admin/silos">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M6 5c0-2 12-2 12 0v14c0 2-12 2-12 0Z" /><path d="M6 5c0 2 12 2 12 0M6 12c0 2 12 2 12 0" /></svg>
                     </span>
