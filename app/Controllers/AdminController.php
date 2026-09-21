@@ -299,7 +299,7 @@ class AdminController extends Controller
 
     public function clientesCotizaciones(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $model = $this->model('ClienteCotizacion');
         $filters = $_GET;
         $filters['status'] = $filters['status'] ?? 'all';
@@ -319,7 +319,7 @@ class AdminController extends Controller
 
     public function guardarClienteCotizacion(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $model = $this->model('ClienteCotizacion');
         $idCliente = trim((string) ($_POST['idCliente'] ?? '')) ?: null;
@@ -350,7 +350,7 @@ class AdminController extends Controller
 
     public function eliminarClienteCotizacion(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $idCliente = trim((string) ($_POST['idCliente'] ?? ''));
 
@@ -376,7 +376,7 @@ class AdminController extends Controller
 
     public function activarClienteCotizacion(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $idCliente = trim((string) ($_POST['idCliente'] ?? ''));
 
@@ -393,7 +393,7 @@ class AdminController extends Controller
 
     public function silos(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $model = $this->model('Silo');
 
         $this->view('admin/silos', [
@@ -408,7 +408,7 @@ class AdminController extends Controller
 
     public function guardarSilo(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $idSilo = filter_input(INPUT_POST, 'idSilo', FILTER_VALIDATE_INT) ?: null;
 
@@ -438,7 +438,7 @@ class AdminController extends Controller
 
     public function eliminarSilo(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $idSilo = filter_input(INPUT_POST, 'idSilo', FILTER_VALIDATE_INT);
 
@@ -463,7 +463,7 @@ class AdminController extends Controller
 
     public function asignarEntradaSilos(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         $this->validarCsrf();
         $idEntrada = filter_input(INPUT_POST, 'idInventarioEntrante', FILTER_VALIDATE_INT);
 
@@ -489,7 +489,7 @@ class AdminController extends Controller
 
     public function silosDisponibles(): void
     {
-        $this->requiereAdmin();
+        Auth::requireDirector();
         header('Content-Type: application/json; charset=utf-8');
         $idProducto = filter_input(INPUT_GET, 'idProducto', FILTER_VALIDATE_INT);
         if (!$idProducto) {
