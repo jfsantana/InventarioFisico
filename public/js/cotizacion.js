@@ -123,7 +123,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateClientGate() {
         const hasClient = Boolean(clientSelect.value);
-        quotationFields.disabled = !hasClient || selectedClientNeedsEmail();
+        quotationFields.disabled = !hasClient;
     }
 
     function updateProductSubtotal() {
@@ -182,6 +182,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function openGenerationModal() {
         hideMessage(generationMessage);
+        const clientHasEmail = !selectedClientNeedsEmail();
+        generationButtons.forEach((button) => {
+            button.hidden = !clientHasEmail && button.dataset.generationMode !== 'pdf';
+        });
         generationModal.hidden = false;
         generationModal.classList.add('is-open');
         document.body.classList.add('modal-is-open');
@@ -387,8 +391,8 @@ document.addEventListener('DOMContentLoaded', () => {
             option.dataset.email = cliente.email || '';
             clientSelect.add(option);
             clientSelect.value = String(cliente.idCliente);
-            clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
             closeClientModal();
+            clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
             showMessage(pageMessage, 'Cliente creado y seleccionado correctamente.', 'success');
         } catch (error) {
             showMessage(clientMessage, error.message, 'error');
@@ -400,12 +404,6 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', (event) => {
         event.preventDefault();
         hideMessage(pageMessage);
-
-        if (selectedClientNeedsEmail()) {
-            openEmailModal();
-            showMessage(emailMessage, 'Registra el email antes de guardar la cotización.', 'error');
-            return;
-        }
 
         if (!form.reportValidity() || detalles.length === 0) {
             showMessage(pageMessage, 'Completa todos los datos de la cotización.', 'error');

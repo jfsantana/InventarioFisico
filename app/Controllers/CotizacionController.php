@@ -80,7 +80,11 @@ class CotizacionController extends Controller
         }
 
         try {
-            [$cabeceraValidada, $detallesValidados] = $this->validarCotizacion($cabecera, $detalles);
+            [$cabeceraValidada, $detallesValidados, $clienteTieneEmail] = $this->validarCotizacion($cabecera, $detalles);
+            if (in_array($modo, ['email', 'pdf_email'], true) && !$clienteTieneEmail) {
+                $this->responderJson(422, false, 'El cliente no tiene un email válido. Genere la cotización para descargarla en PDF.');
+                return;
+            }
             $model = $this->model('Cotizacion');
             $idCotizacion = $model->crearCotizacion($cabeceraValidada, $detallesValidados);
 
@@ -292,9 +296,7 @@ class CotizacionController extends Controller
             throw new InvalidArgumentException('El cliente seleccionado no esta activo.');
         }
 
-        if (filter_var($cliente['email'] ?? '', FILTER_VALIDATE_EMAIL) === false) {
-            throw new InvalidArgumentException('El cliente seleccionado no tiene un email valido.');
-        }
+        $clienteTieneEmail = filter_var($cliente['email'] ?? '', FILTER_VALIDATE_EMAIL) !== false;
 
         $inventarioModel = $this->model('EntradaInventario');
         $productosValidos = array_fill_keys(array_column($inventarioModel->obtenerProductos(), 'idProducto'), true);
@@ -359,7 +361,7 @@ class CotizacionController extends Controller
             'observacion' => trim((string) ($cabecera['observacion'] ?? '')) ?: null,
             'subtotal' => $subtotal,
             'total' => $total,
-        ], $detallesValidados];
+        ], $detallesValidados, $clienteTieneEmail];
     }
 
     private function iniciarPeticionJson(): ?array

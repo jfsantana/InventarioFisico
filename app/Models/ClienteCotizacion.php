@@ -107,10 +107,11 @@ class ClienteCotizacion extends BaseModel
     {
         $data = $this->normalizar($data);
         $data['CardCode'] = $this->siguienteCodigo();
+        $data['activo'] = 1;
         $statement = $this->db->prepare(
             'INSERT INTO tbl_clientes_cotizacion
                 (CardCode, CardName, LicTradNum, MailAddres, E_Mail, Phone1, activo)
-             VALUES (:CardCode, :CardName, :LicTradNum, :MailAddres, :E_Mail, :Phone1, 1)'
+             VALUES (:CardCode, :CardName, :LicTradNum, :MailAddres, :E_Mail, :Phone1, :activo)'
         );
         $statement->execute($data);
 
