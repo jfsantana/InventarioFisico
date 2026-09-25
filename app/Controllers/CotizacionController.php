@@ -103,12 +103,15 @@ class CotizacionController extends Controller
                 $mensaje .= ' No se pudo enviar el correo; puede reenviarlo desde el listado de cotizaciones.';
             }
 
+            $cotizacionCreada = $debeDescargarPdf ? $model->obtenerCotizacionPorId($idCotizacion) : null;
+
             $this->responderJson(201, true, $mensaje, [
                 'idCotizacion' => $idCotizacion,
                 'subtotal' => $cabeceraValidada['subtotal'],
                 'total' => $cabeceraValidada['total'],
                 'correoEnviado' => $correoEnviado,
                 'pdfUrl' => $debeDescargarPdf ? APP_URL . '/cotizacion/descargarPdf/' . $idCotizacion : null,
+                'pdfFilename' => $cotizacionCreada ? $this->nombreArchivoPdf($cotizacionCreada) : null,
             ]);
         } catch (InvalidArgumentException $exception) {
             $this->responderJson(422, false, $exception->getMessage());
@@ -146,17 +149,29 @@ class CotizacionController extends Controller
 
         try {
             $pdf = (new CotizacionPdf())->generar($cotizacion);
-            $fechaNumero = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
-            $nombre = 'cotizacion-' . $fechaNumero->format('YmdH') . '.pdf';
+            $nombre = $this->nombreArchivoPdf($cotizacion);
             header('Content-Type: application/pdf');
-            header('Content-Disposition: ' . ($descargar ? 'attachment' : 'inline') . '; filename="' . $nombre . '"');
+            header('Content-Disposition: ' . ($descargar ? 'attachment' : 'inline') . '; filename="' . $nombre . '"; filename*=UTF-8\'\'' . rawurlencode($nombre));
             header('Content-Length: ' . strlen($pdf));
             header('X-Content-Type-Options: nosniff');
             echo $pdf;
         } catch (Throwable $exception) {
             http_response_code(500);
+            header('Content-Type: text/plain; charset=utf-8');
+            error_log('Error generando PDF de cotizacion #' . $id . ': ' . $exception->getMessage());
             echo 'No se pudo generar el PDF de la cotizacion.';
         }
+    }
+
+    private function nombreArchivoPdf(array $cotizacion): string
+    {
+        $fechaNumero = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
+        $cliente = trim((string) ($cotizacion['nombreCliente'] ?? 'cliente'));
+        $clienteAscii = function_exists('iconv') ? iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $cliente) : $cliente;
+        $clienteSeguro = preg_replace('/[^A-Za-z0-9]+/', '-', $clienteAscii ?: $cliente);
+        $clienteSeguro = trim((string) $clienteSeguro, '-') ?: 'cliente';
+
+        return $clienteSeguro . '-' . $fechaNumero->format('YmdH') . '.pdf';
     }
 
     public function actualizarEmail(): void

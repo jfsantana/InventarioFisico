@@ -198,13 +198,21 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('modal-is-open');
     }
 
-    function downloadPdf(url) {
+    async function downloadPdf(url, filename) {
+        const response = await fetch(url, { credentials: 'same-origin' });
+        const contentType = response.headers.get('Content-Type') || '';
+        if (!response.ok || !contentType.toLowerCase().includes('application/pdf')) {
+            throw new Error('La cotización se guardó, pero el servidor no pudo generar el PDF.');
+        }
+
+        const blobUrl = URL.createObjectURL(await response.blob());
         const link = document.createElement('a');
-        link.href = url;
-        link.download = '';
+        link.href = blobUrl;
+        link.download = filename || 'cotizacion.pdf';
         document.body.appendChild(link);
         link.click();
         link.remove();
+        setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
     }
 
     function selectedClientNeedsEmail() {
@@ -446,7 +454,11 @@ document.addEventListener('DOMContentLoaded', () => {
             closeGenerationModal();
             showMessage(pageMessage, `${data.mensaje} Número: ${data.idCotizacion}.`, data.correoEnviado === false ? 'error' : 'success');
             if (data.pdfUrl) {
-                downloadPdf(data.pdfUrl);
+                try {
+                    await downloadPdf(data.pdfUrl, data.pdfFilename);
+                } catch (error) {
+                    showMessage(pageMessage, error.message, 'error');
+                }
             }
             form.reset();
             form.querySelectorAll('select').forEach((select) => {

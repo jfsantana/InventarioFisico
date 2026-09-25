@@ -16,6 +16,10 @@ DEALLOCATE PREPARE add_activo_column_statement;
 ALTER TABLE tbl_clientes_cotizacion
     MODIFY COLUMN activo TINYINT(1) NOT NULL DEFAULT 1;
 
+ALTER TABLE tbl_clientes_cotizacion
+    MODIFY COLUMN CardCode VARCHAR(15)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
+
 INSERT INTO tbl_clientes_cotizacion (CardCode, CardName, LicTradNum, Address, E_Mail, Phone1, activo)
 SELECT CONCAT('COT', LPAD(origen.idCliente, 5, '0')),
        origen.nombre,
@@ -37,7 +41,8 @@ ALTER TABLE tbl_cotizacion_cabecera
     DROP FOREIGN KEY tbl_cotizacion_cabecera_ibfk_1;
 
 ALTER TABLE tbl_cotizacion_cabecera
-    MODIFY COLUMN idCliente VARCHAR(15) NOT NULL;
+    MODIFY COLUMN idCliente VARCHAR(15)
+    CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL;
 
 UPDATE tbl_cotizacion_cabecera cotizacion
 INNER JOIN tbl_cliente origen ON origen.idCliente = CAST(cotizacion.idCliente AS UNSIGNED)
