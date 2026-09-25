@@ -42,6 +42,7 @@ class CotizacionController extends Controller
 
             $this->view('cotizacion/crear', [
                 'title' => 'Nueva cotizacion',
+                'bodyClass' => 'cotizacion-creation-mode',
                 'clientes' => $clienteModel->obtenerTodosLosClientes(),
                 'productos' => $inventarioModel->obtenerProductos(),
                 'presentaciones' => $inventarioModel->obtenerPresentaciones(),

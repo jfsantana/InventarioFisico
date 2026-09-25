@@ -6,7 +6,7 @@
     <title><?= htmlspecialchars($title ?? APP_NAME, ENT_QUOTES, 'UTF-8') ?> - <?= APP_NAME ?></title>
     <link rel="stylesheet" href="<?= APP_URL ?>/public/css/styles.css?v=<?= filemtime(__DIR__ . '/../../../public/css/styles.css') ?>">
 </head>
-<body>
+<body class="<?= htmlspecialchars($bodyClass ?? '', ENT_QUOTES, 'UTF-8') ?>">
     <?php if (Auth::check()) : ?>
         <?php $authUser = Auth::user(); ?>
         <header class="auth-topbar">

@@ -34,9 +34,9 @@ $messageType = $messageType ?? 'success';
                 <h2 id="silo-visual-title">Nivel de ocupación</h2>
             </div>
             <div class="silo-visual-legend" aria-label="Leyenda de ocupación">
-                <span><i class="is-available"></i> Menos de 60%</span>
-                <span><i class="is-warning"></i> Entre 60% y 84%</span>
-                <span><i class="is-critical"></i> 85% o más</span>
+                <span><i class="is-critical"></i> Menos de 20%</span>
+                <span><i class="is-warning"></i> Entre 20% y 60%</span>
+                <span><i class="is-available"></i> Más de 60%</span>
             </div>
         </div>
 
@@ -50,9 +50,9 @@ $messageType = $messageType ?? 'success';
                     $ocupado = (float) $silo['cantidadOcupada'];
                     $disponible = (float) $silo['capacidadDisponible'];
                     $porcentaje = $capacidad > 0 ? max(0, min(100, ($ocupado / $capacidad) * 100)) : 0;
-                    $nivelClase = $ocupado <= 0.0005
-                        ? 'is-empty'
-                        : ($porcentaje >= 85 ? 'is-critical' : ($porcentaje >= 60 ? 'is-warning' : 'is-available'));
+                    $nivelClase = $porcentaje < 20
+                        ? 'is-critical'
+                        : ($porcentaje <= 60 ? 'is-warning' : 'is-available');
                     ?>
                     <article class="silo-visual-card <?= (int) $silo['activo'] === 1 ? '' : 'is-inactive' ?>">
                         <div class="silo-visual-code">

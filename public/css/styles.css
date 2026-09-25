@@ -6482,13 +6482,49 @@ body:has(.auth-topbar) {
 }
 
 @media (max-width: 720px) {
+    body.cotizacion-creation-mode {
+        padding-top: 58px;
+    }
+
+    .cotizacion-creation-mode .auth-topbar {
+        grid-template-columns: minmax(0, 1fr) auto;
+        min-height: 52px;
+        padding: 5px 10px;
+    }
+
+    .cotizacion-creation-mode .auth-brand img {
+        width: 42px;
+        height: 30px;
+    }
+
+    .cotizacion-creation-mode .auth-brand strong {
+        font-size: 0.9rem;
+    }
+
+    .cotizacion-creation-mode .auth-greeting,
+    .cotizacion-creation-mode .role-badge {
+        display: none;
+    }
+
+    .cotizacion-creation-mode .auth-session form {
+        grid-column: 2 / 3;
+        grid-row: 1;
+    }
+
+    .cotizacion-creation-mode .logout-button {
+        min-height: 38px;
+    }
+
     .page-shell:has(.cotizacion-page) {
-        padding-right: 10px;
-        padding-left: 10px;
+        width: 100%;
+        padding: 0;
     }
 
     .cotizacion-page {
-        padding: 16px 12px;
+        padding: 16px 14px 28px;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .cotizacion-heading,
@@ -6543,11 +6579,49 @@ body:has(.auth-topbar) {
 
     .cotizacion-heading {
         gap: 12px;
+        margin-bottom: 18px;
+        padding-bottom: 14px;
+        border-bottom: 1px solid rgba(96, 67, 143, 0.18);
+    }
+
+    .cotizacion-heading h1 {
+        font-size: 1.55rem;
+    }
+
+    .cotizacion-heading .eyebrow {
+        margin-bottom: 5px;
     }
 
     .cotizacion-heading .button-link {
         width: 100%;
         min-height: 44px;
+    }
+
+    .cotizacion-heading-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 8px;
+    }
+
+    .cotizacion-heading-actions .button-link {
+        padding: 0 8px;
+        font-size: 0.78rem;
+    }
+
+    .cotizacion-form,
+    .cotizacion-dependent-fields {
+        gap: 18px;
+    }
+
+    .cotizacion-client-picker {
+        display: grid;
+        gap: 10px;
+        max-width: none;
+    }
+
+    .cotizacion-new-client {
+        width: 100%;
+        min-height: 46px;
     }
 
     .cotizacion-field,
@@ -6596,16 +6670,35 @@ body:has(.auth-topbar) {
 
     .cotizacion-product-actions {
         display: flex;
-        justify-content: flex-end;
+        justify-content: stretch;
     }
 
     .cotizacion-product-actions button {
-        width: 48px;
+        flex: 1 1 0;
+        width: auto;
         min-height: 46px;
     }
 
     .cotizacion-total-bar {
+        position: sticky;
+        bottom: 8px;
+        z-index: 10;
         justify-content: space-between;
+        padding: 12px 14px;
+        box-shadow: 0 10px 28px rgba(62, 40, 95, 0.26);
+    }
+
+    .cotizacion-total-bar dl {
+        width: 100%;
+    }
+
+    .cotizacion-observation {
+        max-width: none;
+    }
+
+    .cotizacion-actions .button-link {
+        min-height: 50px;
+        font-size: 1rem;
     }
 
     .cotizacion-product-form-grid {
@@ -6628,6 +6721,25 @@ body:has(.auth-topbar) {
 
     .cotizacion-product-card .searchable-select-list {
         max-height: min(34vh, 240px);
+    }
+
+    .cotizacion-product-modal,
+    .cotizacion-client-modal,
+    .cotizacion-generation-modal,
+    .cotizacion-email-modal {
+        align-items: end;
+        padding: 0;
+    }
+
+    .cotizacion-product-card,
+    .cotizacion-client-card,
+    .cotizacion-generation-card,
+    .cotizacion-email-card {
+        width: 100%;
+        max-height: calc(100dvh - 18px);
+        padding: 18px 14px;
+        overflow-y: auto;
+        border-radius: 8px 8px 0 0;
     }
 
     .cotizacion-generation-options {
