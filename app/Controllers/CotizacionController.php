@@ -44,7 +44,7 @@ class CotizacionController extends Controller
                 'title' => 'Nueva cotizacion',
                 'bodyClass' => 'cotizacion-creation-mode',
                 'clientes' => $clienteModel->obtenerTodosLosClientes(),
-                'productos' => $inventarioModel->obtenerProductos(),
+                'productos' => $this->productosUnificados($inventarioModel->obtenerProductos()),
                 'presentaciones' => $inventarioModel->obtenerPresentaciones(),
                 'condicionesPago' => self::CONDICIONES_PAGO,
                 'diasVigencia' => $diasVigencia,
@@ -326,8 +326,8 @@ class CotizacionController extends Controller
 
             $idProducto = filter_var($detalle['idProducto'] ?? null, FILTER_VALIDATE_INT);
             $idPresentacion = filter_var($detalle['idPresentacion'] ?? null, FILTER_VALIDATE_INT);
-            $cantidad = $detalle['cantidad'] ?? null;
-            $precioUnitario = $detalle['precioUnitario'] ?? null;
+            $cantidad = $this->normalizarDecimal($detalle['cantidad'] ?? null);
+            $precioUnitario = $this->normalizarDecimal($detalle['precioUnitario'] ?? null);
 
             if (!$idProducto || !isset($productosValidos[$idProducto])) {
                 throw new InvalidArgumentException('El producto del detalle ' . ($indice + 1) . ' no existe.');
@@ -337,16 +337,19 @@ class CotizacionController extends Controller
                 throw new InvalidArgumentException('La presentacion del detalle ' . ($indice + 1) . ' no existe.');
             }
 
-            if (!is_numeric($cantidad) || !is_numeric($precioUnitario) || (float) $cantidad <= 0 || (float) $precioUnitario <= 0) {
+            if ($cantidad === null || $precioUnitario === null || $cantidad <= 0 || $precioUnitario <= 0) {
                 throw new InvalidArgumentException('La cantidad y el precio del detalle ' . ($indice + 1) . ' deben ser mayores que cero.');
             }
 
-            $cantidad = round((float) $cantidad, 2);
-            $precioUnitario = round((float) $precioUnitario, 2);
+            $cantidad = round($cantidad, 2);
+            $precioUnitario = round($precioUnitario, 2);
             $subtotalDetalle = round($cantidad * $precioUnitario, 2);
 
-            if (isset($detalle['subtotal']) && (!is_numeric($detalle['subtotal']) || abs((float) $detalle['subtotal'] - $subtotalDetalle) >= 0.01)) {
-                throw new InvalidArgumentException('El subtotal del detalle ' . ($indice + 1) . ' no coincide con cantidad por precio.');
+            if (isset($detalle['subtotal'])) {
+                $subtotalEnviado = $this->normalizarDecimal($detalle['subtotal']);
+                if ($subtotalEnviado === null || abs($subtotalEnviado - $subtotalDetalle) >= 0.01) {
+                    throw new InvalidArgumentException('El subtotal del detalle ' . ($indice + 1) . ' no coincide con cantidad por precio.');
+                }
             }
 
             $subtotal = round($subtotal + $subtotalDetalle, 2);
@@ -364,8 +367,11 @@ class CotizacionController extends Controller
         $totalesEsperados = ['subtotal' => $subtotal, 'total' => $total];
 
         foreach ($totalesEsperados as $campo => $valorEsperado) {
-            if (isset($cabecera[$campo]) && (!is_numeric($cabecera[$campo]) || abs((float) $cabecera[$campo] - $valorEsperado) >= 0.01)) {
-                throw new InvalidArgumentException('El ' . $campo . ' enviado no coincide con el importe calculado.');
+            if (isset($cabecera[$campo])) {
+                $valorEnviado = $this->normalizarDecimal($cabecera[$campo]);
+                if ($valorEnviado === null || abs($valorEnviado - $valorEsperado) >= 0.01) {
+                    throw new InvalidArgumentException('El ' . $campo . ' enviado no coincide con el importe calculado.');
+                }
             }
         }
 
@@ -377,6 +383,55 @@ class CotizacionController extends Controller
             'subtotal' => $subtotal,
             'total' => $total,
         ], $detallesValidados, $clienteTieneEmail];
+    }
+
+    private function normalizarDecimal(mixed $valor): ?float
+    {
+        if (is_int($valor) || is_float($valor)) {
+            $numero = (float) $valor;
+            return is_finite($numero) ? $numero : null;
+        }
+
+        $entrada = preg_replace('/[\s\x{00A0}]+/u', '', trim((string) $valor));
+        if ($entrada === '' || !preg_match('/^\d+(?:[.,]\d+)*$/', $entrada)) {
+            return null;
+        }
+
+        $ultimaComa = strrpos($entrada, ',');
+        $ultimoPunto = strrpos($entrada, '.');
+        $posicionDecimal = max($ultimaComa === false ? -1 : $ultimaComa, $ultimoPunto === false ? -1 : $ultimoPunto);
+        if ($posicionDecimal >= 0) {
+            $entrada = str_replace([',', '.'], '', substr($entrada, 0, $posicionDecimal))
+                . '.' . substr($entrada, $posicionDecimal + 1);
+        }
+
+        $numero = (float) $entrada;
+        return is_finite($numero) ? $numero : null;
+    }
+
+    private function productosUnificados(array $productos): array
+    {
+        $unificados = [];
+        foreach ($productos as $producto) {
+            $nombre = preg_replace('/^\s*\([^)]*\)\s*-\s*/u', '', trim((string) ($producto['nombre'] ?? '')));
+            $nombre = trim((string) $nombre);
+            if ($nombre === '') {
+                continue;
+            }
+
+            $clave = mb_strtolower($nombre, 'UTF-8');
+            if (!isset($unificados[$clave]) || (int) $producto['idProducto'] < (int) $unificados[$clave]['idProducto']) {
+                $unificados[$clave] = [
+                    'idProducto' => (int) $producto['idProducto'],
+                    'nombre' => $nombre,
+                ];
+            }
+        }
+
+        $productos = array_values($unificados);
+        usort($productos, static fn (array $a, array $b): int => strcasecmp($a['nombre'], $b['nombre']));
+
+        return $productos;
     }
 
     private function iniciarPeticionJson(): ?array

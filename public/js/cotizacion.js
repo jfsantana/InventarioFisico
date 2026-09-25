@@ -55,6 +55,23 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function parseDecimal(value) {
+        const input = String(value ?? '').trim().replace(/[\s\u00a0]/g, '');
+        if (!input || !/^\d+(?:[.,]\d+)*(?:[.,]\d+)?$/.test(input)) {
+            return Number.NaN;
+        }
+
+        const lastComma = input.lastIndexOf(',');
+        const lastDot = input.lastIndexOf('.');
+        const decimalIndex = Math.max(lastComma, lastDot);
+        const normalized = decimalIndex === -1
+            ? input
+            : input.slice(0, decimalIndex).replace(/[.,]/g, '') + '.' + input.slice(decimalIndex + 1);
+        const number = Number(normalized);
+
+        return Number.isFinite(number) ? number : Number.NaN;
+    }
+
     function showMessage(element, message, type) {
         element.textContent = message;
         element.className = `message message--${type}`;
@@ -127,8 +144,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateProductSubtotal() {
-        const quantity = Number(quantityInput.value) || 0;
-        const price = Number(priceInput.value) || 0;
+        const quantity = parseDecimal(quantityInput.value) || 0;
+        const price = parseDecimal(priceInput.value) || 0;
         productSubtotal.textContent = formatAmount(Math.round((quantity * price + Number.EPSILON) * 100) / 100);
     }
 
@@ -272,6 +289,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     productForm.addEventListener('input', (event) => {
         if (event.target.matches('[data-quantity-input], [data-price-input]')) {
+            event.target.setCustomValidity('');
             updateProductSubtotal();
         }
     });
@@ -284,12 +302,21 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const cantidad = Math.round(Number(quantityInput.value) * 100) / 100;
-        const precioUnitario = Math.round(Number(priceInput.value) * 100) / 100;
-        if (cantidad <= 0 || precioUnitario <= 0) {
-            showMessage(productMessage, 'La cantidad y el precio deben ser mayores que cero.', 'error');
+        const cantidadIngresada = parseDecimal(quantityInput.value);
+        const precioIngresado = parseDecimal(priceInput.value);
+        if (!Number.isFinite(cantidadIngresada) || cantidadIngresada <= 0) {
+            quantityInput.setCustomValidity('Ingrese una cantidad válida usando punto o coma decimal.');
+            quantityInput.reportValidity();
             return;
         }
+        if (!Number.isFinite(precioIngresado) || precioIngresado <= 0) {
+            priceInput.setCustomValidity('Ingrese un precio válido usando punto o coma decimal.');
+            priceInput.reportValidity();
+            return;
+        }
+
+        const cantidad = Math.round(cantidadIngresada * 100) / 100;
+        const precioUnitario = Math.round(precioIngresado * 100) / 100;
 
         const detalle = {
             idProducto: Number(productInput.value),

@@ -157,7 +157,7 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
                     <option value="">Seleccione un producto</option>
                     <?php foreach ($productos as $producto) : ?>
                         <option value="<?= (int) $producto['idProducto'] ?>">
-                            <?= $text(($producto['codigoInterno'] ?? '') . ' - ' . $producto['nombre']) ?>
+                            <?= $text($producto['nombre']) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -175,12 +175,12 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
 
             <label class="cotizacion-product-form-field">
                 Cantidad
-                <input type="number" min="0.01" step="0.01" inputmode="decimal" required data-quantity-input>
+                <input type="text" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="0.00 o 0,00" required data-quantity-input>
             </label>
 
             <label class="cotizacion-product-form-field">
                 Precio unitario
-                <input type="number" min="0.01" step="0.01" inputmode="decimal" required data-price-input>
+                <input type="text" inputmode="decimal" autocomplete="off" maxlength="20" placeholder="0.00 o 0,00" required data-price-input>
             </label>
         </div>
 
