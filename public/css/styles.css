@@ -5018,6 +5018,48 @@ body:has(.auth-topbar) {
     align-items: start;
 }
 
+.salida-panel .salida-open-filter {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 44px;
+}
+
+.salida-panel .salida-open-filter input {
+    width: 18px;
+    height: 18px;
+    min-height: 0;
+    margin: 0;
+}
+
+.salida-panel .salida-status-open {
+    color: var(--ink);
+    background-color: #fff;
+    font-weight: 700;
+}
+
+.salida-panel .salida-status-readonly,
+.salida-panel .salida-consultation-status {
+    color: #14532d;
+    background-color: #dcfce7;
+    font-weight: 700;
+}
+
+.salida-panel #predespacho option[value=""] {
+    color: var(--ink);
+    background-color: #fff;
+}
+
+.salida-consultation-status {
+    padding: 10px 12px;
+    border-left: 4px solid #14532d;
+    font-weight: 700;
+}
+
+.predespacho-delivery-grid.salida-readonly {
+    grid-template-columns: minmax(0, 1fr);
+}
+
 .predespacho-products-panel {
     min-width: 0;
 }

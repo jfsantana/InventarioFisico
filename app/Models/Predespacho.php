@@ -833,8 +833,18 @@ class Predespacho extends BaseModel
         return $statement->fetchAll();
     }
 
-    public function obtenerPredespachosPendientesEntrega(): array
+    public function obtenerPredespachosPendientesEntrega(bool $incluirEmbarcados = false): array
     {
+        $estados = ':estatusAbierto, :estatusPendiente';
+        $params = [
+            'estatusAbierto' => 'abierto',
+            'estatusPendiente' => 'pendiente',
+        ];
+        if ($incluirEmbarcados) {
+            $estados .= ', :estatusEmbarcado';
+            $params['estatusEmbarcado'] = 'embarcado';
+        }
+
         $statement = $this->db->prepare(
             'SELECT cp.idCabeceraPredespacho,
                     cp.idCliente,
@@ -850,7 +860,7 @@ class Predespacho extends BaseModel
                     cp.fechaActualizacion
              FROM tbl_cabecera_predespacho cp
              INNER JOIN tbl_cliente c ON c.idCliente = cp.idCliente
-             WHERE cp.statusGeneralPredespacho IN (:estatusAbierto, :estatusPendiente)
+                 WHERE cp.statusGeneralPredespacho IN (' . $estados . ')
                              AND EXISTS (
                                      SELECT 1
                                      FROM tbl_items_predespacho ip
@@ -858,10 +868,7 @@ class Predespacho extends BaseModel
                              )
              ORDER BY cp.fechaCreacion DESC'
         );
-        $statement->execute([
-            'estatusAbierto' => 'abierto',
-            'estatusPendiente' => 'pendiente',
-        ]);
+        $statement->execute($params);
 
         return $statement->fetchAll();
     }
@@ -1134,8 +1141,10 @@ class Predespacho extends BaseModel
                                 'SELECT ip.idInventarioEntrante,
                                                 ip.cantidadSolicitada,
                                                 ip.cantidadDespachada,
+                                                ip.estatusItemPredespacho,
                                                 ie.sector,
                                                 cp.codigoInterno,
+                                                cp.statusGeneralPredespacho,
                                                 cp.codigoNotaEntregaSAP,
                                                 c.nombre AS nombreCliente
                                  FROM tbl_items_predespacho ip
@@ -1159,6 +1168,17 @@ class Predespacho extends BaseModel
                 return [
                     'success' => false,
                     'mensaje' => 'Item de predespacho no encontrado.',
+                    'predespachoEmbarcado' => false,
+                ];
+            }
+
+            if (!in_array($item['statusGeneralPredespacho'], ['abierto', 'pendiente'], true)
+                || $item['estatusItemPredespacho'] === 'cerrado') {
+                $this->db->rollBack();
+
+                return [
+                    'success' => false,
+                    'mensaje' => 'El predespacho o producto esta completado y es de solo consulta.',
                     'predespachoEmbarcado' => false,
                 ];
             }

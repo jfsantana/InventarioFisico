@@ -18,7 +18,7 @@ class SalidaController extends Controller
                 'requiresAuthentication' => true,
                 'authError' => $authError,
                 'authUsername' => $authUsername,
-                'returnQuery' => http_build_query(array_intersect_key($_GET, array_flip(['predespacho', 'sector']))),
+                'returnQuery' => http_build_query(array_intersect_key($_GET, array_flip(['predespacho', 'sector', 'solo_abiertos']))),
             ]);
             return;
         }
@@ -26,6 +26,7 @@ class SalidaController extends Controller
         $model = $this->model('Predespacho');
         $sectorSeleccionado = trim($_GET['sector'] ?? '');
         $codigoPredespachoSeleccionado = trim($_GET['predespacho'] ?? '');
+        $soloAbiertos = ($_GET['solo_abiertos'] ?? '1') !== '0';
         $sectores = [];
         $predespachos = [];
         $predespachoSeleccionado = null;
@@ -37,7 +38,7 @@ class SalidaController extends Controller
         }
 
         try {
-            $predespachos = $model->obtenerPredespachosPendientesEntrega();
+            $predespachos = $model->obtenerPredespachosPendientesEntrega(!$soloAbiertos);
 
             if ($codigoPredespachoSeleccionado !== '') {
                 foreach ($predespachos as $predespachoDisponible) {
@@ -64,6 +65,7 @@ class SalidaController extends Controller
             'sectores' => $sectores,
             'sectorSeleccionado' => $sectorSeleccionado,
             'predespachos' => $predespachos,
+            'soloAbiertos' => $soloAbiertos,
             'codigoPredespachoSeleccionado' => $codigoPredespachoSeleccionado,
             'predespachoSeleccionado' => $predespachoSeleccionado,
             'items' => $items,
