@@ -148,12 +148,12 @@ foreach ($predespachos as $predespacho) {
                                 <th>Producto</th>
                                 <th>Lote</th>
                                 <th>Sector</th>
-                                <th>Silos disponibles</th>
-                                <th>Presentacion</th>
+                                <th>Silos</th>
+                                <th title="Presentación">Present</th>
                                 <th>Unidad</th>
                                 <th>Inicial</th>
-                                <th>Entregado</th>
-                                <th>Pendiente</th>
+                                <th title="Entregado">A entreg.</th>
+                                <th title="Pendiente">Pend.</th>
                                 <th>Estado</th>
                             </tr>
                         </thead>
@@ -175,13 +175,13 @@ foreach ($predespachos as $predespacho) {
                                         <td><strong><?= $text($item['nombreProducto']) ?></strong></td>
                                         <td><?= $text($item['NumLote']) ?></td>
                                         <td><?= $text($item['sector']) ?></td>
-                                        <td><?= $text($item['silosDisponibles'] ?: (str_replace(' ', '', strtolower((string) $item['sector'])) === 'sector3' ? 'Pendiente de distribuir' : 'No aplica')) ?></td>
+                                        <td><?= $text($item['silosDisponibles'] ?: (str_replace(' ', '', strtolower((string) $item['sector'])) === 'sector3' ? 'Pendiente de distribuir' : 'N/A')) ?></td>
                                         <td><?= $text($item['presentacion'] ?? '') ?></td>
                                         <td><?= $unidad === null ? 'N/D' : $money($unidad) ?></td>
                                         <td><?= $money($solicitada) ?></td>
                                         <td><?= $money($entregada) ?></td>
                                         <td><span class="stock-pill <?= $pendiente <= 0 ? 'stock-pill--risk' : '' ?>"><?= $money($pendiente) ?></span></td>
-                                        <td><span class="delivery-dot <?= $estadoClase ?>" aria-hidden="true"></span><?= $text($estadoTexto) ?> <?= $item['estatusItemPredespacho'] === 'cerrado' ? '<span class="delivery-check">✓</span>' : '' ?></td>
+                                        <td><span class="delivery-dot <?= $estadoClase ?>" aria-hidden="true"></span><?= $text($estadoTexto) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             <?php endif; ?>

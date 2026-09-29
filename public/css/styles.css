@@ -5151,6 +5151,41 @@ body:has(.auth-topbar) {
     min-width: 130px;
 }
 
+.salida-panel .predespacho-products-panel .admin-table {
+    width: 100%;
+    max-width: 100%;
+    table-layout: auto;
+}
+
+.salida-panel .predespacho-products-panel .admin-table th,
+.salida-panel .predespacho-products-panel .admin-table td {
+    padding: 6px 4px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+.salida-panel .predespacho-products-panel .admin-table th:first-child,
+.salida-panel .predespacho-products-panel .admin-table td:first-child {
+    min-width: 0;
+}
+
+.salida-panel .predespacho-products-panel .admin-table td:nth-child(5) {
+    font-size: 0.7rem;
+    text-align: left;
+}
+
+.salida-panel .predespacho-products-panel .stock-pill {
+    min-width: 0;
+    padding: 3px 4px;
+    white-space: normal;
+}
+
+.salida-panel .predespacho-products-panel .delivery-dot {
+    width: 8px;
+    height: 8px;
+    margin-right: 4px;
+}
+
 /* numeric columns right-aligned */
 .predespacho-products-panel .admin-table th:nth-child(n+5):nth-child(-n+8),
 .predespacho-products-panel .admin-table td:nth-child(n+5):nth-child(-n+8) {
