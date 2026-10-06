@@ -171,7 +171,9 @@ class CotizacionController extends Controller
         $clienteSeguro = preg_replace('/[^A-Za-z0-9]+/', '-', $clienteAscii ?: $cliente);
         $clienteSeguro = trim((string) $clienteSeguro, '-') ?: 'cliente';
 
-        return $clienteSeguro . '-' . $fechaNumero->format('YmdH') . '.pdf';
+        $numeroCotizacion = $fechaNumero->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
+
+        return $clienteSeguro . '-' . $numeroCotizacion . '.pdf';
     }
 
     public function actualizarEmail(): void

@@ -41,7 +41,7 @@ $cotizaciones = $cotizaciones ?? [];
             $fechaCreacion = new DateTimeImmutable((string) $cotizacion['fechaCreacion']);
             $fechaEmision = new DateTimeImmutable((string) $cotizacion['fechaEmision']);
             $fechaVencimiento = $fechaEmision->modify('+' . (int) $cotizacion['diasVigencia'] . ' days');
-            $numeroCotizacion = $fechaCreacion->format('YmdH');
+            $numeroCotizacion = $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
             $vencida = $fechaVencimiento < new DateTimeImmutable('today');
             $search = $numeroCotizacion . ' ' . $cotizacion['nombreCliente'] . ' ' . $cotizacion['rifCliente'];
             ?>

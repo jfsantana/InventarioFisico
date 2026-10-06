@@ -61,7 +61,8 @@ class CotizacionNotificador
 
         $prefijo = $esReenvio ? '[REENVIO] ' : '';
         $fechaNumero = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
-        $mail->Subject = $prefijo . 'Cotizacion N° ' . $fechaNumero->format('YmdH');
+        $numeroCotizacion = $fechaNumero->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
+        $mail->Subject = $prefijo . 'Cotizacion N° ' . $numeroCotizacion;
         $mail->isHTML(true);
         $mail->Body = $this->crearHtml($cotizacion, $esReenvio, $logoPath !== '' ? 'cid:cotizacion-logo' : '');
         $mail->AltBody = $this->crearTexto($cotizacion, $esReenvio);
@@ -73,7 +74,7 @@ class CotizacionNotificador
         $fechaEmision = new DateTimeImmutable((string) $cotizacion['fechaEmision']);
         $fechaVencimiento = $fechaEmision->modify('+' . (int) $cotizacion['diasVigencia'] . ' days');
         $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
-        $numeroCotizacion = $fechaCreacion->format('YmdH');
+        $numeroCotizacion = $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
         $subtotal = (float) $cotizacion['subtotal'];
         $iva = round($subtotal * 0.16, 2);
         $total = round($subtotal + $iva, 2);
@@ -126,10 +127,11 @@ class CotizacionNotificador
 
     private function crearTexto(array $cotizacion, bool $esReenvio): string
     {
+        $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
         $subtotal = (float) $cotizacion['subtotal'];
         $iva = round($subtotal * 0.16, 2);
         $lineas = [
-            ($esReenvio ? 'REENVIO - ' : '') . 'Cotizacion #' . (int) $cotizacion['idCotizacion'],
+            ($esReenvio ? 'REENVIO - ' : '') . 'Cotizacion N° ' . $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT),
             'Cliente: ' . ($cotizacion['nombreCliente'] ?? ''),
             '',
         ];

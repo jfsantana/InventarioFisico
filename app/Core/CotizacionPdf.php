@@ -28,7 +28,7 @@ class CotizacionPdf
         $fechaEmision = new DateTimeImmutable((string) $cotizacion['fechaEmision']);
         $fechaVencimiento = $fechaEmision->modify('+' . (int) $cotizacion['diasVigencia'] . ' days');
         $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
-        $numeroCotizacion = $fechaCreacion->format('YmdH');
+        $numeroCotizacion = $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
         $subtotal = (float) $cotizacion['subtotal'];
         $iva = round($subtotal * 0.16, 2);
         $total = round($subtotal + $iva, 2);
