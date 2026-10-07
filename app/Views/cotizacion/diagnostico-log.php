@@ -16,7 +16,8 @@ $text = static fn (mixed $value): string => htmlspecialchars((string) $value, EN
 </head>
 <body>
     <h1>Log exclusivo de cotizaciones</h1>
-    <p>Acceso exclusivo para directores. Sin enlace en el menu. Actualice para consultar los nuevos pasos.</p>
+    <p>Acceso exclusivo para directores. Disponible en Accesos y auditoría. Actualice para consultar los nuevos pasos.</p>
+    <p><a href="<?= $text(APP_URL . '/') ?>">Volver al menú principal</a></p>
     <?php if (!$logDisponible) : ?>
         <p role="alert"><strong>LOG NO DISPONIBLE:</strong> no se pudo escribir. Otorgue permisos de escritura al usuario de PHP sobre storage/cotizaciones. Este fallo tambien se informa al log de errores de PHP.</p>
     <?php endif; ?>

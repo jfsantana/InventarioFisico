@@ -119,7 +119,7 @@ class CotizacionNotificador
             . $avisoReenvio
             . '<tr><td><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
             . '<td style="width:46%;vertical-align:middle">' . ($logoSrc !== '' ? '<img src="' . $this->escapar($logoSrc) . '" alt="ADYAR" style="width:205px;height:auto;max-width:100%">' : '') . '</td>'
-            . '<td style="text-align:right;vertical-align:middle"><div style="color:#801d35;font-size:22px;font-weight:bold;letter-spacing:.4px">ADYARCA INDUSTRIES C.A.</div><div style="margin-top:5px;color:#555;font-size:12px">RIF: J-29967374-9</div></td>'
+            . '<td style="text-align:right;vertical-align:middle"><div style="color:#801d35;font-size:22px;font-weight:bold;letter-spacing:.4px">ADYAR INDUSTRIES C.A.</div><div style="margin-top:5px;color:#555;font-size:12px">RIF: J-29967374-9</div></td>'
             . '</tr></table><div style="height:4px;margin:18px 0;background:#801d35"></div></td></tr>'
             . '<tr><td><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="width:58%"></td>'
             . '<td style="width:42%;padding:12px 14px;border-left:4px solid #e52b20;background:#f7f7f7"><div><span style="color:#e52b20;font-size:14px;font-weight:bold">COTIZACION</span> <span style="font-size:16px;font-weight:bold">N° ' . $numeroCotizacion . '</span></div>'
@@ -137,7 +137,7 @@ class CotizacionNotificador
             . '</td><td style="width:42%;vertical-align:bottom"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:12px"><tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">SUBTOTAL</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($subtotal) . '</td></tr>'
             . '<tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">IVA 16%</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($iva) . '</td></tr>'
             . '<tr><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;font-size:14px;font-weight:bold">TOTAL</td><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;text-align:right;font-size:14px;font-weight:bold">' . $this->numero($total) . '</td></tr></table></td></tr></table></td></tr>'
-            . '<tr><td><div style="height:3px;background:#801d35"></div><div style="margin-top:7px;color:#777;font-size:10px;text-align:center">ADYARCA INDUSTRIES C.A. · RIF J-29967374-9</div></td></tr>'
+            . '<tr><td><div style="height:3px;background:#801d35"></div><div style="margin-top:7px;color:#777;font-size:10px;text-align:center">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div></td></tr>'
             . '</table></td></tr></table></body></html>';
     }
 

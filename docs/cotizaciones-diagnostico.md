@@ -8,12 +8,13 @@
 2. Iniciar sesion con un usuario **Director** (el mismo rol que genera cotizaciones).
 3. Abrir directamente `https://TU-DOMINIO/TU-RUTA/cotizacion/diagnosticoLog`.
    Si la aplicacion esta en la raiz, omitir `TU-RUTA`.
-   No se agrega ningun enlace al menu. No hace falta consola ni acceso al archivo.
+   Tambien disponible desde **Accesos y auditoria > Log de cotizaciones** en el
+   menu principal, solo para directores. No hace falta consola ni acceso al archivo.
 4. El usuario de PHP necesita escritura en `storage/cotizaciones`.
    La pagina realiza una prueba de escritura y muestra una alerta si falla.
    No otorgar permisos publicos de lectura ni habilitar listados de directorios.
 
-La URL es discreta, **no es una clave de acceso**: exige sesion y rol Director.
+El enlace y la URL exigen sesion y rol Director; conocer la URL no otorga acceso.
 El visor responde con `Cache-Control: no-store` y escapa el contenido del log.
 Los archivos estan fuera de `public`, protegidos por las reglas de Apache de
 `storage/.htaccess` y `storage/cotizaciones/.htaccess`. Si PRD usa Nginx/IIS,

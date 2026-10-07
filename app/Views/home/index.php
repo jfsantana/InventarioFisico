@@ -172,8 +172,9 @@ $authUser = Auth::user();
         </section>
         <?php endif; ?>
 
-        <?php if ($canAdmin) : ?>
+        <?php if ($canAdmin || $isDirector) : ?>
             <div class="administration-sections">
+                <?php if ($canAdmin) : ?>
                 <section class="menu-section menu-section--admin">
                     <span>Administración</span>
                     <h2>Gestión del sistema</h2>
@@ -202,11 +203,13 @@ $authUser = Auth::user();
                         </a>
                     </div>
                 </section>
+                <?php endif; ?>
 
                 <section class="menu-section menu-section--security">
                     <span>Seguridad</span>
                     <h2>Accesos y auditoría</h2>
                     <div class="menu-section-grid">
+                    <?php if ($canAdmin) : ?>
                     <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/admin/usuarios">
                         <span class="menu-card-icon" aria-hidden="true">👥</span>
                         <span>Gestión de accesos</span>
@@ -225,6 +228,17 @@ $authUser = Auth::user();
                         <strong>Log de accesos</strong>
                         <i aria-hidden="true">→</i>
                     </a>
+                    <?php endif; ?>
+                    <?php if ($isDirector) : ?>
+                    <a class="menu-card menu-card--admin" href="<?= APP_URL ?>/cotizacion/diagnosticoLog">
+                        <span class="menu-card-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><path d="M6 3h9l3 3v15H6z" /><path d="M14 3v4h4M9 11h6M9 15h6M9 18h4" /></svg>
+                        </span>
+                        <span>Seguimiento de cotizaciones</span>
+                        <strong>Log de cotizaciones</strong>
+                        <i aria-hidden="true">→</i>
+                    </a>
+                    <?php endif; ?>
                     </div>
                 </section>
                 </div>

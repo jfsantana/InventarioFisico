@@ -84,7 +84,7 @@ class CotizacionPdf
             . '.footer-line{margin-top:18px;height:3px;background:#801d35}.footer-text{margin-top:6px;color:#777;font-size:7px;text-align:center}'
             . '</style></head><body>'
             . '<table class="brand-table"><tr><td class="logo-cell"><img class="logo" src="' . $logo . '" alt="ADYAR"></td>'
-            . '<td class="company-cell"><div class="company-name">ADYARCA INDUSTRIES C.A.</div><div class="company-rif">RIF: J-29967374-9</div></td></tr></table>'
+            . '<td class="company-cell"><div class="company-name">ADYAR INDUSTRIES C.A.</div><div class="company-rif">RIF: J-29967374-9</div></td></tr></table>'
             . '<div class="top-rule"></div>'
             . '<table class="quote-table"><tr><td class="quote-spacer"></td><td class="quote-box"><div><span class="quote-label">COTIZACION</span> <span class="quote-number">N° ' . $numeroCotizacion . '</span></div>'
             . '<div class="quote-date"><strong>FECHA DE CREACION:</strong> ' . $fechaCreacion->format('d/m/Y') . '</div>'
@@ -98,7 +98,7 @@ class CotizacionPdf
             . '<div class="note"><div class="conditions-title">NOTA</div><div class="conditions-value">' . ($observacion !== '' ? nl2br($this->escapar(mb_strtoupper($observacion, 'UTF-8'))) : 'SIN OBSERVACIONES') . '</div></div>'
             . '</td><td class="summary"><table class="summary-table"><tr><td>SUBTOTAL</td><td>' . $this->numero($subtotal) . '</td></tr>'
             . '<tr><td>IVA 16%</td><td>' . $this->numero($iva) . '</td></tr><tr class="grand-total"><td>TOTAL</td><td>' . $this->numero($total) . '</td></tr></table></td></tr></table></div></div>'
-            . '<div class="footer-line"></div><div class="footer-text">ADYARCA INDUSTRIES C.A. · RIF J-29967374-9</div>'
+            . '<div class="footer-line"></div><div class="footer-text">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div>'
             . '</body></html>';
     }
 
