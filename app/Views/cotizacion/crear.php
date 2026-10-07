@@ -254,6 +254,14 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
             </button>
         </div>
 
+        <div class="cotizacion-generation-progress" data-generation-progress role="status" aria-live="polite" aria-atomic="true" tabindex="-1" hidden>
+            <span class="cotizacion-generation-spinner" aria-hidden="true"></span>
+            <div>
+                <strong data-generation-progress-text>Procesando cotización...</strong>
+                <p>Por favor, espera. No cierres ni recargues esta página hasta que termine el proceso.</p>
+            </div>
+        </div>
+
         <div class="message" data-generation-message role="alert" hidden></div>
 
         <footer class="modal-actions">

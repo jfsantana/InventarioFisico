@@ -34,6 +34,9 @@ document.addEventListener('DOMContentLoaded', () => {
     const generationModal = document.querySelector('[data-generation-modal]');
     const generationTitle = generationModal.querySelector('[data-generation-title]');
     const generationMessage = generationModal.querySelector('[data-generation-message]');
+    const generationProgress = generationModal.querySelector('[data-generation-progress]');
+    const generationProgressText = generationModal.querySelector('[data-generation-progress-text]');
+    const generationCloseButtons = Array.from(generationModal.querySelectorAll('[data-generation-close]'));
     const generationButtons = Array.from(generationModal.querySelectorAll('[data-generation-mode]'));
     const emailModal = document.querySelector('[data-email-modal]');
     const emailForm = emailModal.querySelector('[data-email-form]');
@@ -45,6 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const detalles = [];
     let editingIndex = null;
     let logQueue = Promise.resolve();
+    let generating = false;
 
     function warnLog() {
         logWarning.textContent = 'No se pudo registrar parte del seguimiento de esta cotizacion. Revise el diagnostico web y los permisos del log.';
@@ -237,6 +241,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function closeGenerationModal() {
+        if (generating) {
+            return;
+        }
         generationModal.classList.remove('is-open');
         generationModal.hidden = true;
         document.body.classList.remove('modal-is-open');
@@ -487,6 +494,9 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     generationButtons.forEach((button) => button.addEventListener('click', async () => {
+        if (generating) {
+            return;
+        }
         hideMessage(generationMessage);
 
         calculateTotals();
@@ -495,7 +505,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const modo = button.dataset.generationMode;
 
         saveButton.disabled = true;
+        generating = true;
         generationButtons.forEach((option) => { option.disabled = true; });
+        generationCloseButtons.forEach((option) => { option.disabled = true; });
+        generationModal.querySelector('.cotizacion-generation-card').setAttribute('aria-busy', 'true');
+        generationProgressText.textContent = modo === 'pdf'
+            ? 'Guardando cotización para generar el PDF...'
+            : 'Guardando cotización y enviando el correo...';
+        generationProgress.hidden = false;
+        generationProgress.focus();
+        let completed = false;
 
         const payload = {
             modo,
@@ -518,9 +537,9 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             await logStep('formulario.generacion_elegida', modo);
             const data = await sendJson(page.dataset.saveEndpoint, payload);
-            closeGenerationModal();
             showMessage(pageMessage, `${data.mensaje} Número: ${data.idCotizacion}.`, data.correoEnviado === false ? 'error' : 'success');
             if (data.pdfUrl) {
+                generationProgressText.textContent = 'Generando y descargando el PDF...';
                 try {
                     await downloadPdf(data.pdfUrl, data.pdfFilename);
                     await logStep('pdf.descarga_completada');
@@ -536,13 +555,24 @@ document.addEventListener('DOMContentLoaded', () => {
             updateExpirationDate();
             detalles.length = 0;
             renderDetails();
+            completed = true;
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
             logStep('formulario.error_navegador');
             showMessage(generationMessage, error.message, 'error');
         } finally {
+            generating = false;
+            generationProgress.hidden = true;
+            generationModal.querySelector('.cotizacion-generation-card').setAttribute('aria-busy', 'false');
             saveButton.disabled = false;
             generationButtons.forEach((option) => { option.disabled = false; });
+            generationCloseButtons.forEach((option) => { option.disabled = false; });
+            if (completed) {
+                closeGenerationModal();
+                clientSelect.focus();
+            } else {
+                button.focus();
+            }
         }
     }));
 

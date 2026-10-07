@@ -45,6 +45,12 @@ configurar la denegacion equivalente para `/storage` antes de desplegar.
    la misma consistencia. El servidor evita almacenar/emparejar codigos mediante
    conversion numerica y deshabilita el cache de la respuesta PDF.
 8. Probar **email** y **PDF + email** con una direccion de prueba autorizada.
+   Al elegir cualquiera de los tres modos, el modal muestra un indicador de
+   espera y el paso actual. Las opciones y los botones de cerrar/cancelar
+   permanecen bloqueados hasta finalizar, incluida la descarga PDF.
+   Si falla el guardado, desaparece el indicador y el modal permite reintentar;
+   si falla correo/descarga tras guardar, se conserva el aviso existente.
+   Con movimiento reducido, el indicador permanece estatico.
    Buscar `correo.inicio`, `correo.contactos_cargados`,
    `correo.smtp_configurado`, `correo.envio_inicio`, `correo.envio_completado`.
    En modo solo email no se genera un PDF: se conserva el envio HTML existente.
