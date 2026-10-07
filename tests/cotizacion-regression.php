@@ -89,6 +89,9 @@ try {
     $pdf = new CotizacionPdf();
     $html = new ReflectionMethod(CotizacionPdf::class, 'crearHtml');
     $htmlB = $html->invoke($pdf, $cotizacionB);
+    $imagenesFirma = CotizacionFirma::imagenesPdf();
+    verificar(str_contains($htmlB, $imagenesFirma['firma']) && str_contains($htmlB, $imagenesFirma['sello'])
+        && str_contains($htmlB, 'Firma autorizada'), 'PDF incorpora las dos imagenes del respaldo comercial');
     verificar(str_contains($htmlB, 'PROVEEDOR DE PRUEBA B') && !str_contains($htmlB, 'ACTSA VENEZUELA')
         && str_contains($htmlB, 'J-22222222-2'), 'HTML del PDF usa nombre y RIF del cliente seleccionado');
     $pdfB = $pdf->generar($cotizacionB);
@@ -112,6 +115,23 @@ try {
     $htmlCorreo = new ReflectionMethod(CotizacionNotificador::class, 'crearHtml');
     $correoB = $htmlCorreo->invoke(new CotizacionNotificador(), $cotizacionB, false);
     verificar(str_contains($correoB, 'PROVEEDOR DE PRUEBA B') && !str_contains($correoB, 'ACTSA VENEZUELA'), 'Correo usa el mismo cliente, sin enviar SMTP');
+    $mail = new PHPMailer\PHPMailer\PHPMailer(true);
+    $mail->CharSet = 'UTF-8';
+    $mail->setFrom('cotizaciones@example.invalid');
+    $mail->addAddress('prueba@example.invalid');
+    $mail->Subject = 'Prueba local de firma y sello';
+    $mail->isHTML(true);
+    $cids = CotizacionFirma::adjuntarImagenes($mail);
+    $mail->Body = $htmlCorreo->invoke(new CotizacionNotificador(), $cotizacionB, false, '', $cids);
+    $mail->AltBody = 'Prueba local, sin envio.';
+    verificar($mail->preSend(), 'Construccion MIME del correo sin envio SMTP');
+    $mime = $mail->getSentMIMEMessage();
+    verificar(str_contains($mail->Body, 'cid:cotizacion-firma') && str_contains($mail->Body, 'cid:cotizacion-sello')
+        && str_contains($mime, 'Content-ID: <cotizacion-firma>') && str_contains($mime, 'Content-ID: <cotizacion-sello>')
+        && count($mail->getAttachments()) === 2, 'Firma y sello viajan embebidos en el correo, no como URLs externas');
+    $reenvio = $htmlCorreo->invoke(new CotizacionNotificador(), $cotizacionB, true, '', $cids);
+    verificar(str_contains($reenvio, 'cid:cotizacion-firma') && str_contains($reenvio, 'cid:cotizacion-sello')
+        && str_contains($reenvio, 'reenvio'), 'Reenvio conserva firma y sello');
     $incorrecta = $cotizacionB;
     $incorrecta['idClienteResuelto'] = 'COT00001';
     foreach ([$pdf, new CotizacionNotificador()] as $generador) {

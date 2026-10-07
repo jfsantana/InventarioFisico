@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CotizacionLog.php';
+require_once __DIR__ . '/CotizacionFirma.php';
 
 use PHPMailer\PHPMailer\PHPMailer;
 
@@ -60,6 +61,7 @@ class CotizacionNotificador
         if ($logoPath !== '') {
             $mail->addEmbeddedImage($logoPath, 'cotizacion-logo', 'logoAdyarcaCotizacion.png', PHPMailer::ENCODING_BASE64, 'image/png');
         }
+        $imagenesFirma = CotizacionFirma::adjuntarImagenes($mail);
 
         $emailsAgregados = [strtolower($emailCliente) => true];
         foreach ($contactosInternos as $contacto) {
@@ -78,14 +80,14 @@ class CotizacionNotificador
         $numeroCotizacion = $fechaNumero->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
         $mail->Subject = $prefijo . 'Cotizacion N° ' . $numeroCotizacion;
         $mail->isHTML(true);
-        $mail->Body = $this->crearHtml($cotizacion, $esReenvio, $logoPath !== '' ? 'cid:cotizacion-logo' : '');
+        $mail->Body = $this->crearHtml($cotizacion, $esReenvio, $logoPath !== '' ? 'cid:cotizacion-logo' : '', $imagenesFirma);
         $mail->AltBody = $this->crearTexto($cotizacion, $esReenvio);
         CotizacionLog::registrar('correo.envio_inicio', ['idCotizacion' => $cotizacion['idCotizacion'], 'destinatarios' => count($emailsAgregados)]);
         $mail->send();
         CotizacionLog::registrar('correo.envio_completado', ['idCotizacion' => $cotizacion['idCotizacion'], 'destinatarios' => count($emailsAgregados)]);
     }
 
-    private function crearHtml(array $cotizacion, bool $esReenvio, string $logoSrc = ''): string
+    private function crearHtml(array $cotizacion, bool $esReenvio, string $logoSrc = '', ?array $imagenesFirma = null): string
     {
         $fechaEmision = new DateTimeImmutable((string) $cotizacion['fechaEmision']);
         $fechaVencimiento = $fechaEmision->modify('+' . (int) $cotizacion['diasVigencia'] . ' days');
@@ -119,7 +121,7 @@ class CotizacionNotificador
             . $avisoReenvio
             . '<tr><td><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr>'
             . '<td style="width:46%;vertical-align:middle">' . ($logoSrc !== '' ? '<img src="' . $this->escapar($logoSrc) . '" alt="ADYAR" style="width:205px;height:auto;max-width:100%">' : '') . '</td>'
-            . '<td style="text-align:right;vertical-align:middle"><div style="color:#801d35;font-size:22px;font-weight:bold;letter-spacing:.4px">ADYAR INDUSTRIES C.A.</div><div style="margin-top:5px;color:#555;font-size:12px">RIF: J-29967374-9</div></td>'
+            . '<td style="text-align:right;vertical-align:middle"><div style="color:#000000;font-size:22px;font-weight:bold;letter-spacing:.4px">ADYAR INDUSTRIES C.A.</div><div style="margin-top:5px;color:#000000;font-size:12px">RIF: J-29967374-9</div></td>'
             . '</tr></table><div style="height:4px;margin:18px 0;background:#801d35"></div></td></tr>'
             . '<tr><td><table role="presentation" width="100%" cellspacing="0" cellpadding="0"><tr><td style="width:58%"></td>'
             . '<td style="width:42%;padding:12px 14px;border-left:4px solid #e52b20;background:#f7f7f7"><div><span style="color:#e52b20;font-size:14px;font-weight:bold">COTIZACION</span> <span style="font-size:16px;font-weight:bold">N° ' . $numeroCotizacion . '</span></div>'
@@ -137,6 +139,7 @@ class CotizacionNotificador
             . '</td><td style="width:42%;vertical-align:bottom"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:12px"><tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">SUBTOTAL</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($subtotal) . '</td></tr>'
             . '<tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">IVA 16%</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($iva) . '</td></tr>'
             . '<tr><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;font-size:14px;font-weight:bold">TOTAL</td><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;text-align:right;font-size:14px;font-weight:bold">' . $this->numero($total) . '</td></tr></table></td></tr></table></td></tr>'
+            . '<tr><td style="padding-bottom:18px">' . CotizacionFirma::crearHtml($imagenesFirma ?? CotizacionFirma::imagenesPdf(), true) . '</td></tr>'
             . '<tr><td><div style="height:3px;background:#801d35"></div><div style="margin-top:7px;color:#777;font-size:10px;text-align:center">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div></td></tr>'
             . '</table></td></tr></table></body></html>';
     }
@@ -167,6 +170,9 @@ class CotizacionNotificador
         if (!empty($cotizacion['observacion'])) {
             $lineas[] = 'Observacion: ' . $cotizacion['observacion'];
         }
+        $lineas[] = '';
+        $lineas[] = 'ADYAR INDUSTRIES C.A. | RIF J-29967374-9';
+        $lineas[] = 'La version HTML de esta cotizacion incluye la imagen de firma autorizada y el sello de la empresa.';
 
         return implode(PHP_EOL, $lineas);
     }

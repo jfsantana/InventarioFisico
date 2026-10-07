@@ -125,6 +125,22 @@ Antes de corregir PRD:
 
 ## Archivos y limites
 
+### Firma y sello
+
+PDF y correo incluyen un bloque de respaldo comercial despues de los totales,
+con firma y sello en dos columnas y los colores corporativos. En el PDF el
+bloque se mantiene unido al cambiar de pagina. El correo usa imagenes inline
+CID (tambien en reenvios), sin depender de URLs publicas para mostrarlas.
+Algunos clientes de correo pueden bloquear imagenes: quedan los textos
+alternativos y las etiquetas de firma/sello.
+
+Desplegar tambien `public/media/fimaAdrianTransparente.png`,
+`public/media/sellohumedoAdyarTransparente.png` y `app/Core/CotizacionFirma.php`.
+Si falta una imagen o no es PNG, se informa el error mediante el proceso
+existente; no se emite silenciosamente una cotizacion sin el bloque requerido.
+Se trata de una **firma grafica**, no de una firma digital criptografica ni
+de una certificacion de integridad del documento.
+
 Se escribe un JSON por linea en
 `storage/cotizaciones/cotizaciones-AAAA-MM-DD.jsonl`, con hora y zona del servidor.
 Rotacion a `.jsonl.1` al superar 5 MiB; se conserva un rotado por fecha.

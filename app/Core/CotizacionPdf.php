@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/CotizacionLog.php';
+require_once __DIR__ . '/CotizacionFirma.php';
 
 use Dompdf\Dompdf;
 use Dompdf\Options;
@@ -68,7 +69,7 @@ class CotizacionPdf
             . '@page{margin:30px 34px 32px}*{box-sizing:border-box}body{margin:0;font-family:"DejaVu Sans",sans-serif;color:#2d333b;font-size:9px}'
             . '.brand-table,.quote-table,.client-table,.summary-table{width:100%;border-collapse:collapse}'
             . '.brand-table td{vertical-align:middle}.logo-cell{width:46%}.logo{width:205px;height:auto}.company-cell{text-align:right}'
-            . '.company-name{color:#801d35;font-size:18px;font-weight:bold;letter-spacing:.4px}.company-rif{margin-top:5px;color:#555;font-size:9px}'
+            . '.company-name{color:#000000;font-size:18px;font-weight:bold;letter-spacing:.4px}.company-rif{margin-top:5px;color:#000000;font-size:9px}'
             . '.top-rule{height:4px;margin:15px 0 18px;background:#801d35}'
             . '.quote-table td{vertical-align:top}.quote-spacer{width:58%}.quote-box{width:42%;padding:10px 13px;border-left:4px solid #e52b20;background:#f7f7f7}'
             . '.quote-label{color:#e52b20;font-size:11px;font-weight:bold}.quote-number{color:#2d333b;font-size:13px;font-weight:bold}.quote-date{margin-top:4px;color:#555;font-size:8px}'
@@ -98,6 +99,7 @@ class CotizacionPdf
             . '<div class="note"><div class="conditions-title">NOTA</div><div class="conditions-value">' . ($observacion !== '' ? nl2br($this->escapar(mb_strtoupper($observacion, 'UTF-8'))) : 'SIN OBSERVACIONES') . '</div></div>'
             . '</td><td class="summary"><table class="summary-table"><tr><td>SUBTOTAL</td><td>' . $this->numero($subtotal) . '</td></tr>'
             . '<tr><td>IVA 16%</td><td>' . $this->numero($iva) . '</td></tr><tr class="grand-total"><td>TOTAL</td><td>' . $this->numero($total) . '</td></tr></table></td></tr></table></div></div>'
+            . CotizacionFirma::crearHtml(CotizacionFirma::imagenesPdf())
             . '<div class="footer-line"></div><div class="footer-text">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div>'
             . '</body></html>';
     }
