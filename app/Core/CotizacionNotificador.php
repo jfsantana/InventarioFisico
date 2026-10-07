@@ -1,11 +1,24 @@
 <?php
 
+require_once __DIR__ . '/CotizacionLog.php';
+
 use PHPMailer\PHPMailer\PHPMailer;
 
 class CotizacionNotificador
 {
     public function enviar(array $cotizacion, array $contactosInternos = [], bool $esReenvio = false): void
     {
+        if (trim((string) ($cotizacion['idCliente'] ?? '')) === ''
+            || trim((string) ($cotizacion['nombreCliente'] ?? '')) === ''
+            || (string) ($cotizacion['idCliente'] ?? '') !== (string) ($cotizacion['idClienteResuelto'] ?? '')) {
+            throw new InvalidArgumentException('No se puede enviar el correo sin un cliente resuelto exactamente.');
+        }
+        CotizacionLog::registrar('correo.inicio', [
+            'idCotizacion' => $cotizacion['idCotizacion'],
+            'idCliente' => $cotizacion['idCliente'],
+            'nombreCliente' => $cotizacion['nombreCliente'],
+            'reenvio' => $esReenvio,
+        ]);
         $emailCliente = (string) ($cotizacion['emailCliente'] ?? '');
         if (filter_var($emailCliente, FILTER_VALIDATE_EMAIL) === false) {
             throw new InvalidArgumentException('El cliente no tiene un email valido.');
@@ -28,6 +41,7 @@ class CotizacionNotificador
         if ($smtpHost === '' || $smtpUsername === '' || $smtpPassword === '') {
             throw new RuntimeException('La configuracion SMTP esta incompleta.');
         }
+        CotizacionLog::registrar('correo.smtp_configurado', ['idCotizacion' => $cotizacion['idCotizacion'], 'puerto' => $smtpPort, 'cifrado' => $smtpEncryption]);
 
         $mail = new PHPMailer(true);
         $mail->isSMTP();
@@ -66,7 +80,9 @@ class CotizacionNotificador
         $mail->isHTML(true);
         $mail->Body = $this->crearHtml($cotizacion, $esReenvio, $logoPath !== '' ? 'cid:cotizacion-logo' : '');
         $mail->AltBody = $this->crearTexto($cotizacion, $esReenvio);
+        CotizacionLog::registrar('correo.envio_inicio', ['idCotizacion' => $cotizacion['idCotizacion'], 'destinatarios' => count($emailsAgregados)]);
         $mail->send();
+        CotizacionLog::registrar('correo.envio_completado', ['idCotizacion' => $cotizacion['idCotizacion'], 'destinatarios' => count($emailsAgregados)]);
     }
 
     private function crearHtml(array $cotizacion, bool $esReenvio, string $logoSrc = ''): string

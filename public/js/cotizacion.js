@@ -40,8 +40,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const emailMessage = emailModal.querySelector('[data-email-message]');
     const emailClientName = emailModal.querySelector('[data-email-client-name]');
     const csrfToken = page.dataset.csrfToken;
+    const flujo = page.dataset.logFlow;
+    const logWarning = page.querySelector('[data-log-warning]');
     const detalles = [];
     let editingIndex = null;
+    let logQueue = Promise.resolve();
+
+    function warnLog() {
+        logWarning.textContent = 'No se pudo registrar parte del seguimiento de esta cotizacion. Revise el diagnostico web y los permisos del log.';
+        logWarning.hidden = false;
+    }
+
+    function logStep(paso, modo = '') {
+        const payload = { paso, modo, flujo, idCliente: clientSelect.value, cantidadDetalles: detalles.length };
+        // Mantener el orden de los eventos sin bloquear el formulario si falla el log.
+        logQueue = logQueue.then(async () => {
+            const controller = new AbortController();
+            const timeout = setTimeout(() => controller.abort(), 3000);
+            try {
+                await sendJson(page.dataset.logEndpoint, payload, { signal: controller.signal });
+            } catch (error) {
+                warnLog();
+                console.error('Error en seguimiento de cotizacion:', error.message);
+            } finally {
+                clearTimeout(timeout);
+            }
+        });
+        return logQueue;
+    }
 
     document.body.appendChild(productModal);
     document.body.appendChild(clientModal);
@@ -118,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         calculateTotals();
+        logStep('formulario.productos_actualizados');
     }
 
     function updateExpirationDate() {
@@ -216,7 +243,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function downloadPdf(url, filename) {
-        const response = await fetch(url, { credentials: 'same-origin' });
+        const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
+        if (response.headers.get('X-Cotizacion-Log') === 'error') {
+            warnLog();
+        }
         const contentType = response.headers.get('Content-Type') || '';
         if (!response.ok || !contentType.toLowerCase().includes('application/pdf')) {
             throw new Error('La cotización se guardó, pero el servidor no pudo generar el PDF.');
@@ -258,15 +288,19 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('modal-is-open');
     }
 
-    async function sendJson(url, payload) {
+    async function sendJson(url, payload, options = {}) {
         const response = await fetch(url, {
+            ...options,
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRF-Token': csrfToken,
             },
-            body: JSON.stringify(payload),
+            body: JSON.stringify({ ...payload, flujo }),
         });
+        if (response.headers.get('X-Cotizacion-Log') === 'error') {
+            warnLog();
+        }
         const data = await response.json().catch(() => ({ error: 'El servidor devolvió una respuesta inválida.' }));
 
         if (!response.ok || !data.success) {
@@ -361,6 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     clientSelect.addEventListener('change', () => {
+        logStep('formulario.cliente_seleccionado');
         updateClientGate();
         if (selectedClientNeedsEmail()) {
             openEmailModal();
@@ -396,6 +431,7 @@ document.addEventListener('DOMContentLoaded', () => {
             closeEmailModal();
             showMessage(pageMessage, 'Email del cliente actualizado correctamente.', 'success');
         } catch (error) {
+            logStep('formulario.error_navegador');
             showMessage(emailMessage, error.message, 'error');
         } finally {
             submitButton.disabled = false;
@@ -430,6 +466,7 @@ document.addEventListener('DOMContentLoaded', () => {
             clientSelect.dispatchEvent(new Event('change', { bubbles: true }));
             showMessage(pageMessage, 'Cliente creado y seleccionado correctamente.', 'success');
         } catch (error) {
+            logStep('formulario.error_navegador');
             showMessage(clientMessage, error.message, 'error');
         } finally {
             submitButton.disabled = false;
@@ -441,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideMessage(pageMessage);
 
         if (!form.reportValidity() || detalles.length === 0) {
+            logStep('formulario.error_navegador');
             showMessage(pageMessage, 'Completa todos los datos de la cotización.', 'error');
             return;
         }
@@ -459,31 +497,35 @@ document.addEventListener('DOMContentLoaded', () => {
         saveButton.disabled = true;
         generationButtons.forEach((option) => { option.disabled = true; });
 
+        const payload = {
+            modo,
+            cabecera: {
+                idCliente: clientSelect.value,
+                diasVigencia: Number(form.elements.diasVigencia.value),
+                condicionPago: form.elements.condicionPago.value,
+                observacion: form.elements.observacion.value.trim(),
+                subtotal,
+                total,
+            },
+            detalles: detalles.map(({ idProducto, idPresentacion, cantidad, precioUnitario, subtotal }) => ({
+                idProducto,
+                idPresentacion,
+                cantidad,
+                precioUnitario,
+                subtotal,
+            })),
+        };
         try {
-            const data = await sendJson(page.dataset.saveEndpoint, {
-                modo,
-                cabecera: {
-                    idCliente: clientSelect.value,
-                    diasVigencia: Number(form.elements.diasVigencia.value),
-                    condicionPago: form.elements.condicionPago.value,
-                    observacion: form.elements.observacion.value.trim(),
-                    subtotal,
-                    total,
-                },
-                detalles: detalles.map(({ idProducto, idPresentacion, cantidad, precioUnitario, subtotal }) => ({
-                    idProducto,
-                    idPresentacion,
-                    cantidad,
-                    precioUnitario,
-                    subtotal,
-                })),
-            });
+            await logStep('formulario.generacion_elegida', modo);
+            const data = await sendJson(page.dataset.saveEndpoint, payload);
             closeGenerationModal();
             showMessage(pageMessage, `${data.mensaje} Número: ${data.idCotizacion}.`, data.correoEnviado === false ? 'error' : 'success');
             if (data.pdfUrl) {
                 try {
                     await downloadPdf(data.pdfUrl, data.pdfFilename);
+                    await logStep('pdf.descarga_completada');
                 } catch (error) {
+                    await logStep('pdf.descarga_error');
                     showMessage(pageMessage, error.message, 'error');
                 }
             }
@@ -496,6 +538,7 @@ document.addEventListener('DOMContentLoaded', () => {
             renderDetails();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         } catch (error) {
+            logStep('formulario.error_navegador');
             showMessage(generationMessage, error.message, 'error');
         } finally {
             saveButton.disabled = false;
@@ -503,6 +546,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }));
 
+    logStep('formulario.listo');
     renderDetails();
     updateExpirationDate();
     updateClientGate();

@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/CotizacionLog.php';
+
 use Dompdf\Dompdf;
 use Dompdf\Options;
 
@@ -7,6 +9,17 @@ class CotizacionPdf
 {
     public function generar(array $cotizacion): string
     {
+        if (trim((string) ($cotizacion['idCliente'] ?? '')) === ''
+            || trim((string) ($cotizacion['nombreCliente'] ?? '')) === ''
+            || (string) ($cotizacion['idCliente'] ?? '') !== (string) ($cotizacion['idClienteResuelto'] ?? '')) {
+            throw new InvalidArgumentException('No se puede generar el PDF sin un cliente resuelto exactamente.');
+        }
+        CotizacionLog::registrar('pdf.render_inicio', [
+            'idCotizacion' => $cotizacion['idCotizacion'],
+            'idCliente' => $cotizacion['idCliente'],
+            'nombreCliente' => $cotizacion['nombreCliente'],
+            'rifCliente' => $cotizacion['rifCliente'],
+        ]);
         if (empty($cotizacion['detalles'])) {
             throw new InvalidArgumentException('La cotizacion no contiene detalles.');
         }
@@ -19,8 +32,9 @@ class CotizacionPdf
         $dompdf->loadHtml($this->crearHtml($cotizacion), 'UTF-8');
         $dompdf->setPaper('letter', 'portrait');
         $dompdf->render();
-
-        return $dompdf->output();
+        $pdf = $dompdf->output();
+        CotizacionLog::registrar('pdf.render_completado', ['idCotizacion' => $cotizacion['idCotizacion'], 'bytes' => strlen($pdf)]);
+        return $pdf;
     }
 
     private function crearHtml(array $cotizacion): string

@@ -16,6 +16,8 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
     data-save-endpoint="<?= APP_URL ?>/cotizacion/guardar"
     data-email-endpoint="<?= APP_URL ?>/cotizacion/actualizarEmail"
     data-client-create-endpoint="<?= APP_URL ?>/cotizacion/crearCliente"
+    data-log-endpoint="<?= APP_URL ?>/cotizacion/registrarPaso"
+    data-log-flow="<?= $text($flujoCotizacion ?? '') ?>"
     data-csrf-token="<?= $text($csrfToken ?? '') ?>"
 >
     <header class="cotizacion-heading">
@@ -30,6 +32,8 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
     </header>
 
     <div class="message" data-cotizacion-message role="status" hidden></div>
+    <div class="message message--error" data-log-warning role="alert" hidden></div>
+    <p>Seguimiento de cotizacion: <code><?= $text($flujoCotizacion ?? '') ?></code></p>
 
     <form class="cotizacion-form" data-cotizacion-form novalidate>
         <div class="cotizacion-client-picker">

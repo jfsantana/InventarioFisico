@@ -2,6 +2,7 @@
 
 require_once __DIR__ . '/../Core/CotizacionNotificador.php';
 require_once __DIR__ . '/../Core/CotizacionPdf.php';
+require_once __DIR__ . '/../Core/CotizacionLog.php';
 
 class CotizacionController extends Controller
 {
@@ -34,16 +35,21 @@ class CotizacionController extends Controller
     public function crear(): void
     {
         Auth::requireDirector();
+        $flujo = CotizacionLog::iniciar();
+        CotizacionLog::registrar('formulario.inicio', ['idClientePreseleccionado' => trim((string) ($_GET['idCliente'] ?? ''))]);
 
         try {
             $clienteModel = $this->model('ClienteCotizacion');
             $inventarioModel = $this->model('EntradaInventario');
             $diasVigencia = $this->diasVigenciaConfigurados();
+            $clientes = $clienteModel->obtenerTodosLosClientes();
+            CotizacionLog::registrar('formulario.catalogos_cargados', ['clientes' => count($clientes)]);
 
             $this->view('cotizacion/crear', [
                 'title' => 'Nueva cotizacion',
                 'bodyClass' => 'cotizacion-creation-mode',
-                'clientes' => $clienteModel->obtenerTodosLosClientes(),
+                'clientes' => $clientes,
+                'flujoCotizacion' => $flujo,
                 'productos' => $this->productosUnificados($inventarioModel->obtenerProductos()),
                 'presentaciones' => $inventarioModel->obtenerPresentaciones(),
                 'condicionesPago' => self::CONDICIONES_PAGO,
@@ -54,9 +60,67 @@ class CotizacionController extends Controller
                 'csrfToken' => Auth::csrfToken(),
             ]);
         } catch (Throwable $exception) {
+            CotizacionLog::error('formulario.error', $exception);
             http_response_code(500);
             echo 'No se pudo inicializar la creacion de cotizaciones.';
         }
+    }
+
+    public function diagnosticoLog(): void
+    {
+        Auth::requireDirector();
+        header('Cache-Control: no-store, private, max-age=0');
+        header('Content-Type: text/html; charset=utf-8');
+        $fecha = (string) ($_GET['fecha'] ?? date('Y-m-d'));
+        $flujo = (string) ($_GET['flujo'] ?? '');
+        try {
+            $contenido = CotizacionLog::leer($fecha, $flujo);
+            $esquema = $this->model('Cotizacion')->diagnosticoEsquema();
+            $logDisponible = CotizacionLog::registrar('diagnostico.consulta');
+            $this->view('cotizacion/diagnostico-log', [
+                'fecha' => $fecha,
+                'flujo' => $flujo,
+                'contenido' => $contenido,
+                'esquema' => $esquema,
+                'logDisponible' => $logDisponible,
+            ]);
+        } catch (InvalidArgumentException $exception) {
+            http_response_code(422);
+            echo htmlspecialchars($exception->getMessage(), ENT_QUOTES, 'UTF-8');
+        } catch (Throwable $exception) {
+            CotizacionLog::error('diagnostico.error', $exception);
+            http_response_code(500);
+            echo 'No se pudo leer el log o consultar el esquema. Revise permisos de storage/cotizaciones y conexion de BD.';
+        }
+    }
+
+    public function registrarPaso(): void
+    {
+        $payload = $this->iniciarPeticionJson();
+        if ($payload === null) {
+            return;
+        }
+        $paso = (string) ($payload['paso'] ?? '');
+        if (!in_array($paso, [
+            'formulario.listo', 'formulario.cliente_seleccionado', 'formulario.productos_actualizados',
+            'formulario.generacion_elegida', 'formulario.error_navegador',
+            'pdf.descarga_completada', 'pdf.descarga_error',
+        ], true)) {
+            $this->responderJson(422, false, 'Paso de cotizacion no permitido.');
+            return;
+        }
+        $idCliente = $payload['idCliente'] ?? '';
+        if (!is_string($idCliente) || strlen($idCliente) > 15) {
+            $this->responderJson(422, false, 'Codigo de cliente invalido.');
+            return;
+        }
+        $ok = CotizacionLog::registrar($paso, [
+            'origen' => 'navegador',
+            'idClienteSeleccionado' => $idCliente,
+            'cantidadDetalles' => max(0, min(10000, (int) ($payload['cantidadDetalles'] ?? 0))),
+            'modo' => in_array($payload['modo'] ?? '', ['pdf', 'email', 'pdf_email'], true) ? $payload['modo'] : '',
+        ]);
+        $this->responderJson($ok ? 200 : 500, $ok, $ok ? 'Paso registrado.' : 'No se pudo escribir el log de cotizaciones.');
     }
 
     public function guardar(): void
@@ -69,6 +133,11 @@ class CotizacionController extends Controller
         $cabecera = $payload['cabecera'] ?? null;
         $detalles = $payload['detalles'] ?? null;
         $modo = (string) ($payload['modo'] ?? '');
+        CotizacionLog::registrar('guardar.recibido', [
+            'idClienteSeleccionado' => is_array($cabecera) && is_scalar($cabecera['idCliente'] ?? null) ? (string) $cabecera['idCliente'] : null,
+            'detalles' => is_array($detalles) ? count($detalles) : 0,
+            'modo' => $modo,
+        ]);
         if (!is_array($cabecera) || !is_array($detalles) || $detalles === []) {
             $this->responderJson(422, false, 'La cabecera y al menos un detalle son obligatorios.');
             return;
@@ -81,6 +150,7 @@ class CotizacionController extends Controller
 
         try {
             [$cabeceraValidada, $detallesValidados, $clienteTieneEmail] = $this->validarCotizacion($cabecera, $detalles);
+            CotizacionLog::registrar('guardar.validado', ['idClienteSeleccionado' => $cabeceraValidada['idCliente'], 'detalles' => count($detallesValidados)]);
             if (in_array($modo, ['email', 'pdf_email'], true) && !$clienteTieneEmail) {
                 $this->responderJson(422, false, 'El cliente no tiene un email válido. Genere la cotización para descargarla en PDF.');
                 return;
@@ -95,27 +165,34 @@ class CotizacionController extends Controller
 
             $debeEnviarCorreo = in_array($modo, ['email', 'pdf_email'], true);
             $debeDescargarPdf = in_array($modo, ['pdf', 'pdf_email'], true);
+            $cotizacionCreada = $model->obtenerCotizacionPorId($idCotizacion);
+            if (!$cotizacionCreada || (string) $cotizacionCreada['idCliente'] !== $cabeceraValidada['idCliente']) {
+                throw new RuntimeException('El cliente de la cotizacion creada no coincide con el seleccionado.');
+            }
             $correoEnviado = $debeEnviarCorreo
-                ? $this->notificarCotizacion($model, $idCotizacion, false)
+                ? $this->notificarCotizacion($model, $idCotizacion, false, $cotizacionCreada)
                 : null;
+            if (!$debeEnviarCorreo) {
+                CotizacionLog::registrar('correo.omitido', ['idCotizacion' => $idCotizacion, 'modo' => $modo]);
+            }
             $mensaje = 'Cotizacion creada correctamente.';
             if ($debeEnviarCorreo && !$correoEnviado) {
                 $mensaje .= ' No se pudo enviar el correo; puede reenviarlo desde el listado de cotizaciones.';
             }
-
-            $cotizacionCreada = $debeDescargarPdf ? $model->obtenerCotizacionPorId($idCotizacion) : null;
 
             $this->responderJson(201, true, $mensaje, [
                 'idCotizacion' => $idCotizacion,
                 'subtotal' => $cabeceraValidada['subtotal'],
                 'total' => $cabeceraValidada['total'],
                 'correoEnviado' => $correoEnviado,
-                'pdfUrl' => $debeDescargarPdf ? APP_URL . '/cotizacion/descargarPdf/' . $idCotizacion : null,
+                'pdfUrl' => $debeDescargarPdf ? APP_URL . '/cotizacion/descargarPdf/' . $idCotizacion . '?flujo=' . CotizacionLog::iniciar() : null,
                 'pdfFilename' => $cotizacionCreada ? $this->nombreArchivoPdf($cotizacionCreada) : null,
             ]);
         } catch (InvalidArgumentException $exception) {
+            CotizacionLog::error('guardar.validacion_error', $exception);
             $this->responderJson(422, false, $exception->getMessage());
         } catch (Throwable $exception) {
+            CotizacionLog::error('guardar.error', $exception);
             $this->responderJson(500, false, 'No se pudo guardar la cotizacion.');
         }
     }
@@ -133,32 +210,37 @@ class CotizacionController extends Controller
     private function responderPdf(?string $idCotizacion, bool $descargar): void
     {
         Auth::requireDirector();
+        CotizacionLog::iniciar(is_string($_GET['flujo'] ?? null) ? $_GET['flujo'] : null);
+        header('Cache-Control: no-store, private, max-age=0');
+        CotizacionLog::registrar('pdf.solicitado', ['idCotizacion' => $idCotizacion, 'descargar' => $descargar]);
 
         $id = filter_var($idCotizacion, FILTER_VALIDATE_INT);
         if (!$id) {
-            http_response_code(404);
-            return;
-        }
-
-        $model = $this->model('Cotizacion');
-        $cotizacion = $model->obtenerCotizacionPorId((int) $id);
-        if (!$cotizacion) {
+            CotizacionLog::registrar('pdf.id_invalido');
             http_response_code(404);
             return;
         }
 
         try {
+            $model = $this->model('Cotizacion');
+            $cotizacion = $model->obtenerCotizacionPorId((int) $id);
+            if (!$cotizacion) {
+                CotizacionLog::registrar('pdf.cotizacion_no_encontrada', ['idCotizacion' => (int) $id]);
+                http_response_code(404);
+                return;
+            }
             $pdf = (new CotizacionPdf())->generar($cotizacion);
             $nombre = $this->nombreArchivoPdf($cotizacion);
+            CotizacionLog::registrar('pdf.respuesta', ['idCotizacion' => (int) $id, 'archivo' => $nombre, 'bytes' => strlen($pdf), 'sha256' => hash('sha256', $pdf)]);
             header('Content-Type: application/pdf');
             header('Content-Disposition: ' . ($descargar ? 'attachment' : 'inline') . '; filename="' . $nombre . '"; filename*=UTF-8\'\'' . rawurlencode($nombre));
             header('Content-Length: ' . strlen($pdf));
             header('X-Content-Type-Options: nosniff');
             echo $pdf;
         } catch (Throwable $exception) {
+            CotizacionLog::error('pdf.error', $exception, ['idCotizacion' => (int) $id]);
             http_response_code(500);
             header('Content-Type: text/plain; charset=utf-8');
-            error_log('Error generando PDF de cotizacion #' . $id . ': ' . $exception->getMessage());
             echo 'No se pudo generar el PDF de la cotizacion.';
         }
     }
@@ -189,30 +271,37 @@ class CotizacionController extends Controller
         }
 
         $idCliente = trim((string) ($payload['idCliente'] ?? ''));
+        CotizacionLog::registrar('cliente.email_solicitado', ['idCliente' => $idCliente]);
         $email = trim((string) ($payload['email'] ?? ''));
         if ($idCliente === '' || filter_var($email, FILTER_VALIDATE_EMAIL) === false) {
             $this->responderJson(422, false, 'El cliente y un email valido son obligatorios.');
             return;
         }
 
-        $clienteModel = $this->model('ClienteCotizacion');
-        $cliente = $clienteModel->obtenerClientePorId($idCliente);
-        if (!$cliente) {
-            $this->responderJson(404, false, 'Cliente no encontrado.');
-            return;
-        }
+        try {
+            $clienteModel = $this->model('ClienteCotizacion');
+            $cliente = $clienteModel->obtenerClientePorId($idCliente);
+            if (!$cliente) {
+                $this->responderJson(404, false, 'Cliente no encontrado.');
+                return;
+            }
 
-        if (trim((string) ($cliente['email'] ?? '')) !== '') {
-            $this->responderJson(409, false, 'El cliente ya tiene un email registrado.');
-            return;
-        }
+            if (trim((string) ($cliente['email'] ?? '')) !== '') {
+                $this->responderJson(409, false, 'El cliente ya tiene un email registrado.');
+                return;
+            }
 
-        if (!$clienteModel->actualizarEmailSiVacio($idCliente, $email)) {
-            $this->responderJson(409, false, 'El email no pudo actualizarse porque ya fue registrado.');
-            return;
-        }
+            if (!$clienteModel->actualizarEmailSiVacio($idCliente, $email)) {
+                $this->responderJson(409, false, 'El email no pudo actualizarse porque ya fue registrado.');
+                return;
+            }
 
-        $this->responderJson(200, true, 'Email del cliente actualizado correctamente.');
+            CotizacionLog::registrar('cliente.email_actualizado', ['idCliente' => $idCliente]);
+            $this->responderJson(200, true, 'Email del cliente actualizado correctamente.');
+        } catch (Throwable $exception) {
+            CotizacionLog::error('cliente.email_error', $exception, ['idCliente' => $idCliente]);
+            $this->responderJson(500, false, 'No se pudo actualizar el email del cliente.');
+        }
     }
 
     public function crearCliente(): void
@@ -226,15 +315,19 @@ class CotizacionController extends Controller
             $clienteModel = $this->model('ClienteCotizacion');
             $idCliente = $clienteModel->crear($payload);
             $cliente = $clienteModel->obtenerClientePorId($idCliente);
+            CotizacionLog::registrar('cliente.creado', ['idCliente' => $idCliente, 'nombreCliente' => $cliente['nombre'] ?? null]);
             $this->responderJson(201, true, 'Cliente creado correctamente.', ['cliente' => $cliente]);
         } catch (PDOException $exception) {
+            CotizacionLog::error('cliente.creacion_error', $exception);
             $message = ((int) $exception->errorInfo[1] === 1062)
                 ? 'Ya existe un cliente de Cotizaciones con ese RIF.'
                 : 'No se pudo crear el cliente.';
             $this->responderJson(422, false, $message);
         } catch (InvalidArgumentException $exception) {
+            CotizacionLog::error('cliente.validacion_error', $exception);
             $this->responderJson(422, false, $exception->getMessage());
         } catch (Throwable $exception) {
+            CotizacionLog::error('cliente.creacion_error', $exception);
             $this->responderJson(500, false, 'No se pudo crear el cliente.');
         }
     }
@@ -275,6 +368,7 @@ class CotizacionController extends Controller
         }
 
         try {
+            CotizacionLog::registrar('correo.reenvio_solicitado', ['idCotizacion' => (int) $idCotizacion]);
             $model = $this->model('Cotizacion');
             $cotizacion = $model->obtenerCotizacionPorId((int) $idCotizacion);
             if (!$cotizacion) {
@@ -289,6 +383,7 @@ class CotizacionController extends Controller
 
             $this->responderJson(200, true, 'Correo reenviado correctamente.');
         } catch (Throwable $exception) {
+            CotizacionLog::error('correo.reenvio_error', $exception);
             $this->responderJson(500, false, 'No se pudo reenviar el correo de la cotizacion.');
         }
     }
@@ -312,6 +407,15 @@ class CotizacionController extends Controller
         if (!$cliente || (int) $cliente['activo'] !== 1) {
             throw new InvalidArgumentException('El cliente seleccionado no esta activo.');
         }
+        if ((string) $cliente['idCliente'] !== $idCliente) {
+            throw new InvalidArgumentException('El cliente recuperado no coincide exactamente con el seleccionado.');
+        }
+        CotizacionLog::registrar('cliente.validado', [
+            'idClienteSeleccionado' => $idCliente,
+            'idClienteResuelto' => (string) $cliente['idCliente'],
+            'nombreCliente' => $cliente['nombre'],
+            'rifCliente' => $cliente['rif'],
+        ]);
 
         $clienteTieneEmail = filter_var($cliente['email'] ?? '', FILTER_VALIDATE_EMAIL) !== false;
 
@@ -438,6 +542,7 @@ class CotizacionController extends Controller
 
     private function iniciarPeticionJson(): ?array
     {
+        CotizacionLog::iniciar();
         header('Content-Type: application/json; charset=utf-8');
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
@@ -472,6 +577,7 @@ class CotizacionController extends Controller
             $this->responderJson(419, false, 'Token CSRF invalido.');
             return null;
         }
+        CotizacionLog::iniciar(is_string($payload['flujo'] ?? null) ? $payload['flujo'] : null);
 
         return $payload;
     }
@@ -488,11 +594,12 @@ class CotizacionController extends Controller
         try {
             $cotizacion ??= $model->obtenerCotizacionPorId($idCotizacion);
             if (!$cotizacion) {
-                return false;
+                throw new RuntimeException('Cotizacion no encontrada para envio de correo.');
             }
 
             $contactoModel = $this->model('ContactoInternoEmail');
             $contactosInternos = $contactoModel->obtenerPorProceso('COTIZACION');
+            CotizacionLog::registrar('correo.contactos_cargados', ['idCotizacion' => $idCotizacion, 'contactosInternos' => count($contactosInternos), 'reenvio' => $esReenvio]);
             (new CotizacionNotificador())->enviar($cotizacion, $contactosInternos, $esReenvio);
 
             Auth::log(
@@ -506,6 +613,7 @@ class CotizacionController extends Controller
 
             return true;
         } catch (Throwable $exception) {
+            CotizacionLog::error('correo.error', $exception, ['idCotizacion' => $idCotizacion, 'reenvio' => $esReenvio]);
             Auth::log(
                 (int) ($_SESSION['id_usuario'] ?? 0),
                 $_SESSION['username'] ?? null,
@@ -521,10 +629,14 @@ class CotizacionController extends Controller
 
     private function responderJson(int $status, bool $success, string $mensaje, array $data = []): void
     {
+        CotizacionLog::registrar($success ? 'peticion.completada' : 'peticion.rechazada', [
+            'status' => $status, 'mensaje' => $mensaje, 'idCotizacion' => $data['idCotizacion'] ?? null,
+        ]);
         http_response_code($status);
         echo json_encode([
             'success' => $success,
             $success ? 'mensaje' : 'error' => $mensaje,
+            'flujo' => CotizacionLog::iniciar(),
         ] + $data, JSON_UNESCAPED_UNICODE);
     }
 }

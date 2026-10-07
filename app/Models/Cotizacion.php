@@ -1,5 +1,7 @@
 <?php
 
+require_once __DIR__ . '/../Core/CotizacionLog.php';
+
 class Cotizacion extends BaseModel
 {
     public function crearCotizacion(array $cabecera, array $detalles): int|false
@@ -9,15 +11,36 @@ class Cotizacion extends BaseModel
         }
 
         try {
+            $esquema = $this->diagnosticoEsquema();
+            CotizacionLog::registrar('bd.esquema', $esquema);
+            if (!in_array($esquema['tipoIdCliente'], ['varchar', 'char'], true)) {
+                throw new RuntimeException('El esquema de PRD requiere idCliente de texto. No se guardo la cotizacion; revise el diagnostico web.');
+            }
             $this->db->beginTransaction();
             $idCotizacion = $this->insertarCabecera($cabecera);
             if ($idCotizacion <= 0) {
                 throw new RuntimeException('No se pudo obtener el identificador de la cotizacion.');
             }
 
+            $verificacion = $this->db->prepare('SELECT idCliente FROM tbl_cotizacion_cabecera WHERE idCotizacion = :id');
+            $verificacion->execute(['id' => $idCotizacion]);
+            $idGuardado = (string) $verificacion->fetchColumn();
+            CotizacionLog::registrar('bd.cabecera_insertada', [
+                'idCotizacion' => $idCotizacion,
+                'idClienteSeleccionado' => (string) $cabecera['idCliente'],
+                'idClienteGuardado' => $idGuardado,
+            ]);
+            if ($idGuardado !== (string) $cabecera['idCliente']) {
+                throw new RuntimeException('El cliente guardado no coincide con el seleccionado. La cotizacion fue revertida.');
+            }
             $this->insertarDetalles($idCotizacion, $detalles);
+            $cotizacion = $this->obtenerCotizacionPorId($idCotizacion);
+            if (!$cotizacion || (string) $cotizacion['idClienteResuelto'] !== (string) $cabecera['idCliente']) {
+                throw new RuntimeException('No se pudo resolver exactamente el cliente de la cotizacion.');
+            }
 
             $this->db->commit();
+            CotizacionLog::registrar('bd.commit', ['idCotizacion' => $idCotizacion, 'detalles' => count($detalles)]);
 
             return $idCotizacion;
         } catch (Throwable $exception) {
@@ -25,8 +48,32 @@ class Cotizacion extends BaseModel
                 $this->db->rollBack();
             }
 
-            return false;
+            CotizacionLog::error('bd.rollback', $exception);
+            throw $exception;
         }
+    }
+
+    public function diagnosticoEsquema(): array
+    {
+        $statement = $this->db->query(
+            "SELECT TABLE_NAME, COLUMN_NAME, DATA_TYPE, COLUMN_TYPE, COLLATION_NAME
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND ((TABLE_NAME = 'tbl_cotizacion_cabecera' AND COLUMN_NAME = 'idCliente')
+                 OR (TABLE_NAME = 'tbl_clientes_cotizacion' AND COLUMN_NAME = 'CardCode'))"
+        );
+        $columnas = $statement->fetchAll();
+        $tipo = '';
+        foreach ($columnas as $columna) {
+            if ($columna['TABLE_NAME'] === 'tbl_cotizacion_cabecera') {
+                $tipo = strtolower((string) $columna['DATA_TYPE']);
+            }
+        }
+        return [
+            'tipoIdCliente' => $tipo,
+            'columnas' => $columnas,
+            'sqlMode' => (string) $this->db->query('SELECT @@SESSION.sql_mode')->fetchColumn(),
+        ];
     }
 
     private function insertarCabecera(array $cabecera): int
@@ -72,7 +119,7 @@ class Cotizacion extends BaseModel
 
     public function obtenerCotizacionesActivas(?string $idCliente = null): array
     {
-        $filtroCliente = $idCliente !== null && trim($idCliente) !== '' ? ' AND cotizacion.idCliente = :idCliente' : '';
+        $filtroCliente = $idCliente !== null && trim($idCliente) !== '' ? ' AND BINARY CAST(cotizacion.idCliente AS CHAR) = BINARY :idCliente' : '';
         $statement = $this->db->prepare(
             'SELECT cotizacion.idCotizacion,
                     cotizacion.idCliente,
@@ -91,7 +138,7 @@ class Cotizacion extends BaseModel
                      FROM tbl_cotizacion_detalle detalle
                      WHERE detalle.idCotizacion = cotizacion.idCotizacion) AS cantidadProductos
              FROM tbl_cotizacion_cabecera cotizacion
-             INNER JOIN tbl_clientes_cotizacion cliente ON cliente.CardCode = cotizacion.idCliente
+             INNER JOIN tbl_clientes_cotizacion cliente ON BINARY cliente.CardCode = BINARY CAST(cotizacion.idCliente AS CHAR)
                WHERE cotizacion.activo = :activo' . $filtroCliente . '
              ORDER BY cotizacion.fechaEmision DESC, cotizacion.idCotizacion DESC'
         );
@@ -109,6 +156,7 @@ class Cotizacion extends BaseModel
         $statement = $this->db->prepare(
             'SELECT cotizacion.idCotizacion,
                     cotizacion.idCliente,
+                    cliente.CardCode AS idClienteResuelto,
                     cliente.LicTradNum AS rifCliente,
                     cliente.CardName AS nombreCliente,
                     COALESCE(cliente.MailAddres, cliente.Address) AS direccionCliente,
@@ -122,7 +170,7 @@ class Cotizacion extends BaseModel
                     cotizacion.subtotal,
                     cotizacion.total
              FROM tbl_cotizacion_cabecera cotizacion
-             INNER JOIN tbl_clientes_cotizacion cliente ON cliente.CardCode = cotizacion.idCliente
+             INNER JOIN tbl_clientes_cotizacion cliente ON BINARY cliente.CardCode = BINARY CAST(cotizacion.idCliente AS CHAR)
              WHERE cotizacion.idCotizacion = :idCotizacion
                AND cotizacion.activo = :activo
              LIMIT 1'
@@ -134,7 +182,21 @@ class Cotizacion extends BaseModel
         $cotizacion = $statement->fetch();
 
         if (!$cotizacion) {
+            $cabeceraStatement = $this->db->prepare(
+                'SELECT idCliente, activo FROM tbl_cotizacion_cabecera WHERE idCotizacion = :id'
+            );
+            $cabeceraStatement->execute(['id' => $idCotizacion]);
+            $cabecera = $cabeceraStatement->fetch();
+            CotizacionLog::registrar('bd.cotizacion_no_resuelta', [
+                'idCotizacion' => $idCotizacion,
+                'idClienteGuardado' => $cabecera ? (string) $cabecera['idCliente'] : null,
+                'activo' => $cabecera ? (int) $cabecera['activo'] : null,
+                'motivo' => $cabecera ? 'Sin cliente exacto o cotizacion inactiva.' : 'Cabecera inexistente.',
+            ]);
             return null;
+        }
+        if ((string) $cotizacion['idCliente'] !== (string) $cotizacion['idClienteResuelto']) {
+            throw new RuntimeException('El cliente recuperado no coincide con el codigo guardado.');
         }
 
         $detalleStatement = $this->db->prepare(
@@ -155,6 +217,14 @@ class Cotizacion extends BaseModel
         );
         $detalleStatement->execute(['idCotizacion' => $idCotizacion]);
         $cotizacion['detalles'] = $detalleStatement->fetchAll();
+        CotizacionLog::registrar('bd.cotizacion_resuelta', [
+            'idCotizacion' => $idCotizacion,
+            'idClienteGuardado' => (string) $cotizacion['idCliente'],
+            'idClienteResuelto' => (string) $cotizacion['idClienteResuelto'],
+            'nombreCliente' => $cotizacion['nombreCliente'],
+            'rifCliente' => $cotizacion['rifCliente'],
+            'detalles' => count($cotizacion['detalles']),
+        ]);
 
         return $cotizacion;
     }

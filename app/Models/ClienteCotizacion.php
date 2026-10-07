@@ -63,7 +63,7 @@ class ClienteCotizacion extends BaseModel
                        COALESCE(MailAddres, Address) AS direccion, E_Mail AS email,
                        Phone1 AS telefono, CardType AS tipo, activo,
                        (SELECT COUNT(*) FROM tbl_cotizacion_cabecera cotizacion
-                        WHERE cotizacion.idCliente = cliente.CardCode) AS cantidadCotizaciones
+                        WHERE BINARY CAST(cotizacion.idCliente AS CHAR) = BINARY cliente.CardCode) AS cantidadCotizaciones
                 FROM tbl_clientes_cotizacion cliente' . $whereSql .
                 ' ORDER BY CardName ASC, CardCode ASC LIMIT :limite OFFSET :offset';
         $statement = $this->db->prepare($sql);
@@ -95,7 +95,7 @@ class ClienteCotizacion extends BaseModel
                     COALESCE(MailAddres, Address) AS direccion, E_Mail AS email,
                     Phone1 AS telefono, CardType AS tipo, activo
              FROM tbl_clientes_cotizacion
-             WHERE CardCode = :idCliente AND activo = 1 LIMIT 1'
+             WHERE BINARY CardCode = BINARY :idCliente AND activo = 1 LIMIT 1'
         );
         $statement->execute(['idCliente' => trim($idCliente)]);
         $cliente = $statement->fetch();

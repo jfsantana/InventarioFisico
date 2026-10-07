@@ -40,6 +40,9 @@ O importa el archivo [database/schema.sql](database/schema.sql) desde phpMyAdmin
 
 ## Ejecutar
 
+Para comprobar el cliente del PDF y consultar el seguimiento por web, ver
+[Diagnostico de cotizaciones](docs/cotizaciones-diagnostico.md).
+
 Con WAMP, abre:
 
 ```text
