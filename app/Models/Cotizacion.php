@@ -1,6 +1,7 @@
 <?php
 
 require_once __DIR__ . '/../Core/CotizacionLog.php';
+require_once __DIR__ . '/../Core/CotizacionEsquemaException.php';
 
 class Cotizacion extends BaseModel
 {
@@ -14,7 +15,11 @@ class Cotizacion extends BaseModel
             $esquema = $this->diagnosticoEsquema();
             CotizacionLog::registrar('bd.esquema', $esquema);
             if (!in_array($esquema['tipoIdCliente'], ['varchar', 'char'], true)) {
-                throw new RuntimeException('El esquema de PRD requiere idCliente de texto. No se guardo la cotizacion; revise el diagnostico web.');
+                throw new CotizacionEsquemaException(
+                    'La base de datos tiene idCliente numerico y no puede guardar el codigo del cliente seleccionado. '
+                    . 'No se guardo la cotizacion. Aplique la migracion repair_cotizacion_id_cliente.sql con respaldo previo '
+                    . 'y compruebe en /cotizacion/diagnosticoLog que idCliente sea varchar(15).'
+                );
             }
             $this->db->beginTransaction();
             $idCotizacion = $this->insertarCabecera($cabecera);

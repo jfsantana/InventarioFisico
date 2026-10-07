@@ -191,6 +191,9 @@ class CotizacionController extends Controller
         } catch (InvalidArgumentException $exception) {
             CotizacionLog::error('guardar.validacion_error', $exception);
             $this->responderJson(422, false, $exception->getMessage());
+        } catch (CotizacionEsquemaException $exception) {
+            CotizacionLog::error('guardar.esquema_incompatible', $exception);
+            $this->responderJson(409, false, $exception->getMessage());
         } catch (Throwable $exception) {
             CotizacionLog::error('guardar.error', $exception);
             $this->responderJson(500, false, 'No se pudo guardar la cotizacion.');

@@ -70,7 +70,10 @@ El visor consulta el esquema real de PRD. En desarrollo, `idCliente` y
 Una columna numerica puede truncar esos codigos a `0` si MySQL no esta en modo
 estricto. Ademas, un JOIN entre numeros y codigos de texto puede emparejar
 distintos clientes y devolver el primero. Esto es una causa reproducible, pero
-**no se puede confirmar la configuracion de PRD desde desarrollo**.
+El log de PRD del 2026-10-07 confirmo `idCliente INT UNSIGNED`,
+`CardCode VARCHAR(15)` y `sqlMode` vacio. La seleccion `COT00001` se
+validaba correctamente, pero el guardado se bloqueaba antes del INSERT.
+No era un fallo de Dompdf: no se habia guardado ninguna cotizacion nueva.
 
 Si `tipoIdCliente` no es `varchar`/`char`, el nuevo codigo bloquea el guardado y
 registra el motivo; no modifica automaticamente el esquema ni los historicos.
@@ -80,6 +83,27 @@ verifica dentro de la transaccion y se revierte.
 Antes de corregir PRD:
 
 - Respaldar BD y revisar tipos, relaciones, triggers y codigos historicos.
+- Para el esquema confirmado en PRD, usar
+  [repair_cotizacion_id_cliente.sql](../database/repair_cotizacion_id_cliente.sql),
+  no la migracion antigua. Poner la aplicacion en mantenimiento, seleccionar
+  la BD correcta en phpMyAdmin y ejecutar el archivo completo desde **Importar**.
+  Requiere permisos de rutinas y ALTER; si faltan, solicitarlo al administrador.
+  No ejecutar desde el visor del log ni agregar un endpoint que altere la BD.
+  La correccion es DDL y no se puede deshacer con ROLLBACK.
+  Detecta el nombre real de la FK anterior, conserva los numeros historicos
+  como texto y usa el charset/collation de CardCode. No cambia clientes.
+  Si hay historicos sin cliente exacto, los lista y deja la FK pendiente,
+  pero las nuevas cotizaciones quedan habilitadas con validacion transaccional.
+  Esos historicos no apareceran en el listado por cliente ni generaran PDF
+  hasta reconciliarlos con evidencia. Reejecutar despues de reconciliarlos
+  crea la FK. No se desactiva FOREIGN_KEY_CHECKS.
+  Si el procedimiento falla, detenerse y revisar el error: puede haber cambios
+  DDL ya aplicados. Si la rutina quedo creada, inspeccionarla y eliminar solo
+  `reparar_cotizacion_id_cliente_prd_v1` antes de reintentar el archivo.
+- Despues, abrir `/cotizacion/diagnosticoLog` y comprobar `tipoIdCliente:
+  varchar`, `COLUMN_TYPE: varchar(15)`. Crear una cotizacion nueva para
+  `COT00001` y verificar nombre/RIF en `bd.cabecera_insertada`,
+  `bd.cotizacion_resuelta`, `pdf.render_inicio` y en el PDF descargado.
 - Revisar la migracion existente
   [add_clientes_cotizaciones.sql](../database/add_clientes_cotizaciones.sql)
   con el administrador de BD. **No ejecutarla a ciegas ni repetirla**:
@@ -114,3 +138,9 @@ Ejecutar `php tests/cotizacion-regression.php` con PHP 8 y extensiones PDO MySQL
 mbstring y las dependencias Composer existentes. Usa la conexion local
 configurada, pero solo tablas **temporales**, sin modificar tablas de negocio
 ni enviar correos. Registra eventos `prueba.*` en el log local.
+
+`php tests/cotizacion-migration.php` valida el archivo SQL en una BD local
+aislada con nombre aleatorio y la elimina al terminar. Requiere CREATE/DROP
+DATABASE y permisos de rutinas; nunca usar credenciales PRD para estas pruebas.
+Comprueba FK antigua con nombre variable, preservacion de historicos,
+guardado alfanumerico y reejecucion de la migracion.

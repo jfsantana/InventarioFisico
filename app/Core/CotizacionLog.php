@@ -79,7 +79,8 @@ class CotizacionLog
             'error_linea' => $exception->getLine(),
             'error' => $exception instanceof PDOException
                 ? 'Error de base de datos; revisar esquema, restricciones y conexion.'
-                : ($exception instanceof InvalidArgumentException || $exception instanceof RuntimeException && get_class($exception) === RuntimeException::class
+                : ($exception instanceof InvalidArgumentException || $exception instanceof CotizacionEsquemaException
+                    || $exception instanceof RuntimeException && get_class($exception) === RuntimeException::class
                     ? mb_substr($exception->getMessage(), 0, 500)
                     : 'Fallo en el proceso; revisar tipo, codigo y ubicacion del error.'),
         ]);

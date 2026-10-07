@@ -137,8 +137,9 @@ try {
     $rechazada = false;
     try {
         $modelo->crearCotizacion($cabecera, $detalles);
-    } catch (RuntimeException $exception) {
-        $rechazada = str_contains($exception->getMessage(), 'esquema');
+    } catch (CotizacionEsquemaException $exception) {
+        $rechazada = str_contains($exception->getMessage(), 'idCliente numerico')
+            && str_contains($exception->getMessage(), 'repair_cotizacion_id_cliente.sql');
     }
     verificar($rechazada && !$db->inTransaction(), 'Esquema numerico bloqueado antes de guardar');
 
