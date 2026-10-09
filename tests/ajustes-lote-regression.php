@@ -159,12 +159,15 @@ try {
                CantidadEntrante AS cantidad_disponible FROM inventarioentrante');
     rechazarAjuste(
         static fn () => (new AjustePrueba($conexion))->obtenerLotes(),
-        'Vista antigua rechazada antes de devolver lotes sin columnas de ajustes',
+        'Esquema antiguo rechazado antes de devolver lotes incompletos',
         PDOException::class
     );
     $migration = file_get_contents(__DIR__ . '/../database/add_ajustes_lote.sql');
     $conexion->exec($migration);
     $conexion->exec($migration);
+    $silosMigration = file_get_contents(__DIR__ . '/../database/add_ajustes_lote_silos.sql');
+    $conexion->exec($silosMigration);
+    $conexion->exec($silosMigration);
     verificarAjuste(true, 'Script SQL ejecutable e idempotente, incluido cambio de motor de usuarios');
     $conexion->exec(file_get_contents(__DIR__ . '/../database/view_disponibilidad_lotes.sql'));
 
@@ -368,6 +371,56 @@ try {
     verificarAjuste($entradas->actualizarEntrada(2, $dataEntrada, [['idSilo' => 1, 'cantidad' => 52]]),
         'Correccion de Sector3 mantiene distribucion incluyendo ajustes');
     verificarAjuste((float) $stock(2)['cantidad_disponible'] === 52.0, 'Correccion no pierde saldo ajustado del silo');
+    verificarAjuste(count($modelo->obtenerSilosParaAjuste(2, 'positivo')) === 2,
+        'Positivo lista silos vacios y del mismo producto con capacidad');
+    verificarAjuste(array_column($modelo->obtenerSilosParaAjuste(2, 'negativo'), 'idSilo') === [1],
+        'Negativo lista solo silos con saldo del lote elegido');
+    $conexion->exec('INSERT INTO silo_asignaciones (idSilo,idInventarioEntrante,cantidadAsignada) VALUES (2,3,2)');
+    verificarAjuste(count($modelo->obtenerSilosParaAjuste(2, 'positivo')) === 1,
+        'Positivo excluye silos de otro producto');
+    verificarAjuste(count($modelo->obtenerSilosParaAjuste(2, 'negativo')) === 1,
+        'Negativo no ofrece inventario de otros lotes');
+    $conexion->exec('DELETE FROM silo_asignaciones WHERE idInventarioEntrante=3');
+    $multi = datosAjuste(2, 'positivo', '10.001');
+    $multi['asignacionesSilo'] = [['idSilo' => 1, 'cantidad' => '5'], ['idSilo' => 2, 'cantidad' => '5.001']];
+    $idMulti = $modelo->registrar($multi, 1);
+    verificarAjuste((float) $stock(2)['cantidad_disponible'] === 62.001
+        && (int) $conexion->query("SELECT COUNT(*) FROM ajustes_lote_silos WHERE idAjuste=$idMulti")->fetchColumn() === 2,
+        'Positivo multisilo crea un solo ajuste con dos detalles y monto correcto');
+    verificarAjuste(str_contains($modelo->obtenerHistorial(2)[0]['silo'], 'S-1: 5.000')
+        && str_contains($modelo->obtenerHistorial(2)[0]['silo'], 'S-2: 5.001'),
+        'Historial conserva cantidad y codigo de cada silo');
+    $mal = datosAjuste(2, 'negativo', '10.001');
+    $mal['asignacionesSilo'] = [['idSilo' => 1, 'cantidad' => '1'], ['idSilo' => 2, 'cantidad' => '9.001']];
+    rechazarAjuste(fn () => $modelo->registrar($mal, 1), 'Negativo valida saldo de cada silo aunque el total del lote alcance');
+    $mal['asignacionesSilo'] = [['idSilo' => 1, 'cantidad' => '1'], ['idSilo' => 2, 'cantidad' => '1']];
+    rechazarAjuste(fn () => $modelo->registrar($mal, 1), 'Distribucion incompleta no se registra');
+    $mal['asignacionesSilo'] = [['idSilo' => 1, 'cantidad' => '5'], ['idSilo' => 1, 'cantidad' => '5.001']];
+    rechazarAjuste(fn () => $modelo->registrar($mal, 1), 'No permite repetir un silo');
+    verificarAjuste((float) $stock(2)['cantidad_disponible'] === 62.001,
+        'Fallos multisilo revierten todo el movimiento');
+    $multi = datosAjuste(2, 'negativo', '10.001');
+    $multi['asignacionesSilo'] = [['idSilo' => 1, 'cantidad' => '5'], ['idSilo' => 2, 'cantidad' => '5.001']];
+    $idNegativo = $modelo->registrar($multi, 1);
+    verificarAjuste((float) $stock(2)['cantidad_disponible'] === 52.0
+        && (float) $conexion->query('SELECT cantidadOcupada FROM v_estado_silos WHERE idSilo=2')->fetchColumn() === 0.0,
+        'Negativo mayor al saldo de un silo se reparte entre varios y libera ocupacion');
+    $movimientosMulti = array_values(array_filter($reporte->obtenerMovimientosPorProducto(1),
+        static fn ($fila) => (int) $fila['idInventarioEntrante'] === 2 && $fila['tipo'] === 'ajuste'));
+    verificarAjuste(count($movimientosMulti) === 6
+        && abs(array_sum(array_map('floatval', array_column($movimientosMulti, 'entrada'))) - 16.002) < 0.00001
+        && abs(array_sum(array_map('floatval', array_column($movimientosMulti, 'salida'))) - 14.002) < 0.00001,
+        'Reportes no duplican movimientos por cada detalle de silo');
+    $conexion->exec('UPDATE silos SET capacidad=52 WHERE idSilo=1');
+    verificarAjuste(array_column($modelo->obtenerSilosParaAjuste(2, 'positivo'), 'idSilo') === [2],
+        'Positivo excluye silo lleno aunque sea del mismo producto');
+    $conexion->exec('UPDATE silos SET capacidad=80 WHERE idSilo=1');
+    rechazarAjuste(fn () => $silosModelo->eliminar(2), 'No elimina silo vacio con historial multisilo');
+    $conexion->exec('DELETE FROM ajustes_lote_silos WHERE idAjuste IN (SELECT idAjuste FROM ajustes_lote WHERE idSilo IS NOT NULL)');
+    $conexion->exec($silosMigration);
+    $conexion->exec($silosMigration);
+    verificarAjuste((int) $conexion->query('SELECT COUNT(*) FROM ajustes_lote a LEFT JOIN ajustes_lote_silos d ON d.idAjuste=a.idAjuste WHERE a.idSilo IS NOT NULL AND d.idAjuste IS NULL')->fetchColumn() === 0,
+        'Migracion conserva ajustes anteriores de un silo y no duplica detalles');
     $exitoso = true;
     echo "PASS: $pruebas verificaciones. Base aislada: $esquema\n";
 } finally {

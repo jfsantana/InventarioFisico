@@ -51,6 +51,9 @@ No ejecute una version antigua de la vista de disponibilidad despues de este scr
 Si la actualizacion SQL esta pendiente o la vista es antigua, el listado de ajustes
 muestra un aviso y no permite operar con saldos incompletos.
 No se necesita un procedimiento almacenado ni un estado nuevo de predespacho.
+Ejecute tambien [database/add_ajustes_lote_silos.sql](database/add_ajustes_lote_silos.sql)
+despues del script anterior. Agrega el detalle por silo y conserva los ajustes
+anteriores de un solo silo; puede repetirse sin duplicar esos detalles.
 
 En **Correcciones > Auditar y ajustar > Ajustes de lote por sistema** se puede buscar
 un producto/lote, ver la entrada original, ajustes acumulados, reservas y disponible,
@@ -69,10 +72,14 @@ acciones compactas con iconos para ajustar y consultar el historial.
   La ventana se puede cerrar con la X, Cancelar o un clic fuera de ella.
 - Los negativos no consumen reservas ni permiten superar el disponible. La
   validacion se realiza dentro de una transaccion con bloqueo del lote.
-- En Sector3 se selecciona el silo afectado. Su ocupacion se actualiza en la misma
+- En Sector3 se distribuye el monto entre uno o varios silos. Su ocupacion se actualiza en la misma
   transaccion, validando producto, capacidad y cantidad del lote en ese silo.
   El lote debe estar completamente distribuido antes de ajustarse. Para varios
-  silos, registre un ajuste por silo.
+  silos, use Agregar silo: la suma debe coincidir exactamente con el monto.
+  Las opciones aparecen despues de elegir el tipo: positivos muestran silos vacios
+  o del mismo producto con capacidad; negativos muestran solo saldo del lote elegido.
+  Las filas y Agregar silo se habilitan solo con tipo y monto validos. Cada cantidad
+  queda limitada por el saldo/capacidad del silo y el monto restante por distribuir.
 - El historial es de solo consulta. Un error se compensa con otro ajuste de signo
   contrario, indicando el numero del registro original en la observacion. Los lotes
   con ajustes no se pueden eliminar ni cambiar de producto, sector o cantidad original.

@@ -100,9 +100,10 @@ class Silo extends BaseModel
     {
         $statement = $this->db->prepare(
             'SELECT (SELECT COUNT(*) FROM silo_asignaciones WHERE idSilo = :idSilo)
-                  + (SELECT COUNT(*) FROM ajustes_lote WHERE idSilo = :idSiloAjuste)'
+                  + (SELECT COUNT(*) FROM ajustes_lote WHERE idSilo = :idSiloAjuste)
+                  + (SELECT COUNT(*) FROM ajustes_lote_silos WHERE idSilo = :idSiloDetalle)'
         );
-        $statement->execute(['idSilo' => $idSilo, 'idSiloAjuste' => $idSilo]);
+        $statement->execute(['idSilo' => $idSilo, 'idSiloAjuste' => $idSilo, 'idSiloDetalle' => $idSilo]);
         if ((int) $statement->fetchColumn() > 0) {
             throw new DomainException('El silo tiene historial de inventario. Desactívelo en lugar de eliminarlo.');
         }

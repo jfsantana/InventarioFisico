@@ -105,7 +105,7 @@ $urlPagina = static fn (int $pagina): string => APP_URL . '/ajuste?' . http_buil
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6 6l12 12M18 6L6 18"/></svg>
         </button>
     </header>
-    <form method="post" action="<?= APP_URL ?>/ajuste/guardar" class="entry-form" id="ajusteForm">
+    <form method="post" action="<?= APP_URL ?>/ajuste/guardar" class="entry-form" id="ajusteForm" data-silo-endpoint="<?= APP_URL ?>/ajuste/silosDisponibles">
         <?php if ($error && $formData) : ?><div class="message message--error" role="alert"><?= $escape($error) ?></div><?php endif; ?>
         <?= Auth::csrfField() ?>
         <input type="hidden" name="tokenRegistro" value="<?= $escape($tokenRegistro) ?>">
@@ -131,20 +131,19 @@ $urlPagina = static fn (int $pagina): string => APP_URL . '/ajuste?' . http_buil
         </div>
         <div class="form-field"><label for="ajusteLote">Lote / Producto</label><input id="ajusteLote" readonly></div>
         <p id="ajusteDisponible"></p>
-        <div class="ajuste-datos-row ajuste-cantidad-row">
-        <div class="form-field ajuste-monto-field"><label for="ajusteMonto">Monto</label><input type="number" inputmode="decimal" min="0.001" max="99999999999.999" step="0.001" name="monto" id="ajusteMonto" required value="<?= $escape($formData['monto'] ?? '') ?>"><small>Unidad del lote; hasta 3 decimales.</small></div>
-        <div class="form-field" id="ajusteSiloCampo" hidden>
-            <label for="ajusteSilo">Silo afectado (Sector3)</label>
-            <select id="ajusteSilo" name="idSilo">
-                <option value="">Seleccione un silo</option>
-                <?php foreach ($silos as $silo) : ?>
-                <option value="<?= (int) $silo['idSilo'] ?>" <?= (int) ($formData['idSilo'] ?? 0) === (int) $silo['idSilo'] ? 'selected' : '' ?>><?= $escape($silo['codigo'] . ' - ' . $silo['nombre']) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <small>Se valida la cantidad del lote en el silo, su capacidad y producto. Para afectar varios silos, registre un ajuste por silo.</small>
-        </div>
-        </div>
-        <div class="form-field"><label for="ajusteObservacion">Observacion</label><textarea id="ajusteObservacion" name="observacion" rows="3" maxlength="1000" required><?= $escape($formData['observacion'] ?? '') ?></textarea></div>
+        <div class="form-field ajuste-monto-field"><label for="ajusteMonto">Monto (obligatorio)</label><input type="number" inputmode="decimal" min="0.001" max="99999999999.999" step="0.001" name="monto" id="ajusteMonto" required value="<?= $escape($formData['monto'] ?? '') ?>"><small>Unidad del lote; hasta 3 decimales.</small></div>
+        <section class="entry-silo-allocation" id="ajusteSiloCampo" hidden>
+            <div class="entry-silo-heading">
+                <h3>Distribucion del ajuste en silos</h3>
+                <button class="button-link button-link--secondary" type="button" id="ajusteAgregarSilo" disabled>+ Agregar silo</button>
+            </div>
+            <p id="ajusteSiloAyuda"></p>
+            <div class="silo-assignment-rows" id="ajusteSiloFilas"></div>
+            <p id="ajusteSiloEstado" role="status" aria-live="polite"></p>
+            <p id="ajusteSiloError" class="message message--error" role="alert" hidden></p>
+        </section>
+        <script type="application/json" id="ajusteSilosIniciales"><?= json_encode($formData['asignacionesSilo'] ?? [], JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?></script>
+        <div class="form-field"><label for="ajusteObservacion">Observacion (obligatoria)</label><textarea id="ajusteObservacion" name="observacion" rows="3" maxlength="1000" required><?= $escape($formData['observacion'] ?? '') ?></textarea></div>
         <div class="form-actions">
             <button class="button-link button-link--submit" type="submit" id="ajusteGuardar">Guardar ajuste</button>
             <button class="button-link button-link--secondary" type="button" id="ajusteCancelar">Cancelar</button>

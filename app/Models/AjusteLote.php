@@ -4,6 +4,7 @@ class AjusteLote extends BaseModel
 {
     public function obtenerLotes(string $busqueda = ''): array
     {
+        $this->db->query('SELECT idAjuste, idSilo, monto FROM ajustes_lote_silos LIMIT 0');
         $sql = 'SELECT dl.idInventarioEntrante, dl.idProducto, dl.idPresentacion,
                        dl.NumLote, dl.`idUbicación`, dl.sector, dl.stock_total,
                        dl.ajuste_positivo, dl.ajuste_negativo,
@@ -28,13 +29,59 @@ class AjusteLote extends BaseModel
     public function obtenerHistorial(int $idEntrada): array
     {
         $statement = $this->db->prepare(
-            'SELECT a.*, s.codigo AS silo
+            'SELECT a.*, COALESCE(detalle.silos, s.codigo) AS silo
              FROM ajustes_lote a
              LEFT JOIN silos s ON s.idSilo = a.idSilo
+             LEFT JOIN (
+                 SELECT d.idAjuste,
+                        GROUP_CONCAT(CONCAT(s.codigo, ": ", d.monto) ORDER BY s.codigo SEPARATOR "; ") AS silos
+                 FROM ajustes_lote_silos d INNER JOIN silos s ON s.idSilo = d.idSilo
+                 GROUP BY d.idAjuste
+             ) detalle ON detalle.idAjuste = a.idAjuste
              WHERE a.idInventarioEntrante = :idEntrada
              ORDER BY a.fechaCreacion DESC, a.idAjuste DESC'
         );
         $statement->execute(['idEntrada' => $idEntrada]);
+        return $statement->fetchAll();
+    }
+
+    public function obtenerSilosParaAjuste(int $idEntrada, string $tipo): array
+    {
+        if (!in_array($tipo, ['positivo', 'negativo'], true)) {
+            throw new InvalidArgumentException('Seleccione el tipo de ajuste.');
+        }
+        $statement = $this->db->prepare(
+            'SELECT idProducto, sector FROM inventarioentrante WHERE idInventarioEntrante = :id'
+        );
+        $statement->execute(['id' => $idEntrada]);
+        $entrada = $statement->fetch();
+        if (!$entrada || str_replace(' ', '', strtolower((string) $entrada['sector'])) !== 'sector3') {
+            throw new DomainException('Seleccione un lote de Sector3.');
+        }
+        if ($tipo === 'positivo') {
+            $statement = $this->db->prepare(
+                'SELECT idSilo, codigo, nombre, capacidadDisponible AS cantidadDisponible
+                 FROM v_estado_silos
+                 WHERE activo = 1 AND capacidadDisponible > 0.0005
+                   AND productosActivos <= 1
+                   AND (cantidadOcupada <= 0.0005 OR idProductoActual = :producto)
+                 ORDER BY codigo'
+            );
+            $statement->execute(['producto' => $entrada['idProducto']]);
+        } else {
+            $statement = $this->db->prepare(
+                'SELECT s.idSilo, s.codigo, s.nombre,
+                        SUM(a.cantidadAsignada - COALESCE(x.cantidad, 0)) AS cantidadDisponible
+                 FROM silo_asignaciones a
+                 INNER JOIN silos s ON s.idSilo = a.idSilo
+                 LEFT JOIN (SELECT idAsignacion, SUM(cantidad) AS cantidad FROM silo_salidas GROUP BY idAsignacion) x
+                    ON x.idAsignacion = a.idAsignacion
+                 WHERE a.idInventarioEntrante = :entrada
+                 GROUP BY s.idSilo, s.codigo, s.nombre
+                 HAVING cantidadDisponible > 0.0005 ORDER BY s.codigo'
+            );
+            $statement->execute(['entrada' => $idEntrada]);
+        }
         return $statement->fetchAll();
     }
 
@@ -84,13 +131,15 @@ class AjusteLote extends BaseModel
                 throw new DomainException('El ajuste supera el disponible libre de reservas: ' . number_format((float) $stock['cantidad_disponible'], 3) . '.');
             }
             $idSilo = null;
+            $detalleSilos = [];
             if (str_replace(' ', '', strtolower((string) $entrada['sector'])) === 'sector3') {
-                $idSilo = filter_var($data['idSilo'] ?? null, FILTER_VALIDATE_INT);
-                if (!$idSilo || $idSilo < 1) {
-                    throw new DomainException('Seleccione el silo afectado por el ajuste de Sector3.');
+                $detalleSilos = $data['asignacionesSilo'] ?? [];
+                if (!$detalleSilos && !empty($data['idSilo'])) {
+                    $detalleSilos = [['idSilo' => $data['idSilo'], 'cantidad' => $monto]];
                 }
-                $this->ajustarSilo($idEntrada, (int) $entrada['idProducto'], $idSilo, $tipo, (float) $monto, $stock);
-            } elseif (!empty($data['idSilo'])) {
+                $detalleSilos = $this->ajustarSilos($idEntrada, (int) $entrada['idProducto'], $detalleSilos, $tipo, (float) $monto, $stock);
+                $idSilo = count($detalleSilos) === 1 ? $detalleSilos[0]['idSilo'] : null;
+            } elseif (!empty($data['idSilo']) || !empty($data['asignacionesSilo'])) {
                 throw new DomainException('Este lote no tiene control por silos.');
             }
             $statement = $this->db->prepare(
@@ -102,6 +151,10 @@ class AjusteLote extends BaseModel
                 'usuario' => $idUsuario, 'responsable' => $responsable, 'silo' => $idSilo, 'token' => $token,
             ]);
             $id = (int) $this->db->lastInsertId();
+            $detalle = $this->db->prepare('INSERT INTO ajustes_lote_silos (idAjuste, idSilo, monto) VALUES (:ajuste, :silo, :monto)');
+            foreach ($detalleSilos as $fila) {
+                $detalle->execute(['ajuste' => $id, 'silo' => $fila['idSilo'], 'monto' => $fila['cantidad']]);
+            }
             $this->db->commit();
             return $id;
         } catch (Throwable $exception) {
@@ -112,8 +165,21 @@ class AjusteLote extends BaseModel
         }
     }
 
-    private function ajustarSilo(int $idEntrada, int $idProducto, int $idSilo, string $tipo, float $monto, array $stock): void
+    private function ajustarSilos(int $idEntrada, int $idProducto, array $detalle, string $tipo, float $monto, array $stock): array
     {
+        $normalizadas = [];
+        foreach ($detalle as $fila) {
+            $id = filter_var($fila['idSilo'] ?? null, FILTER_VALIDATE_INT);
+            $cantidad = trim((string) ($fila['cantidad'] ?? ''));
+            if (!$id || $id < 1 || isset($normalizadas[$id])
+                || !preg_match('/^\d{1,11}(?:\.\d{1,3})?$/D', $cantidad) || (float) $cantidad <= 0) {
+                throw new DomainException('Seleccione silos sin repetir y cantidades positivas de hasta 3 decimales.');
+            }
+            $normalizadas[$id] = ['idSilo' => $id, 'cantidad' => $cantidad];
+        }
+        if (!$normalizadas || abs(array_sum(array_column($normalizadas, 'cantidad')) - $monto) > 0.0005) {
+            throw new DomainException('Las cantidades de los silos deben sumar exactamente el monto del ajuste.');
+        }
         $statement = $this->db->prepare(
             'SELECT a.idSilo, a.cantidadAsignada - COALESCE(x.cantidad, 0) AS cantidad
              FROM silo_asignaciones a
@@ -130,12 +196,14 @@ class AjusteLote extends BaseModel
         if (abs(array_sum($asignaciones) - $saldoFisico) > 0.0005) {
             throw new DomainException('Distribuya primero todo el saldo fisico del lote entre silos antes de ajustarlo.');
         }
-        $cantidadActual = $asignaciones[$idSilo] ?? 0;
-        if ($tipo === 'negativo' && $monto - $cantidadActual > 0.0005) {
-            throw new DomainException('El ajuste supera la cantidad de este lote en el silo seleccionado.');
+        foreach ($normalizadas as $idSilo => $fila) {
+            $cantidadActual = $asignaciones[$idSilo] ?? 0;
+            if ($tipo === 'negativo' && (float) $fila['cantidad'] - $cantidadActual > 0.0005) {
+                throw new DomainException('El ajuste supera la cantidad de este lote en uno de los silos seleccionados.');
+            }
+            $asignaciones[$idSilo] = $cantidadActual + ($tipo === 'positivo' ? 1 : -1) * (float) $fila['cantidad'];
         }
         $delta = $tipo === 'positivo' ? $monto : -$monto;
-        $asignaciones[$idSilo] = $cantidadActual + $delta;
         $distribucion = [];
         foreach ($asignaciones as $silo => $cantidad) {
             if ($cantidad > 0.0005) {
@@ -143,5 +211,6 @@ class AjusteLote extends BaseModel
             }
         }
         (new SiloStockService($this->db))->redistribuirSaldoEntrada($idEntrada, $idProducto, $saldoFisico + $delta, $distribucion);
+        return array_values($normalizadas);
     }
 }

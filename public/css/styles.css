@@ -1531,8 +1531,25 @@ h1 {
 }
 
 .ajuste-dialog .ajuste-monto-field {
-    width: 100%;
+    width: max(130px, 25%);
     max-width: 100%;
+}
+
+.ajuste-dialog .entry-silo-allocation {
+    margin: 0;
+    padding: 10px;
+}
+
+.ajuste-dialog .entry-silo-heading h3 {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.ajuste-dialog .entry-silo-heading .button-link {
+    margin: 0;
+    min-height: 30px;
+    padding: 4px 8px;
+    font-size: 0.75rem;
 }
 
 @media (max-width: 600px) {

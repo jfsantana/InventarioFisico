@@ -77,6 +77,16 @@ Columnas relevantes:
 Los ajustes se conservan; las compensaciones son nuevos registros de signo contrario.
 Para Sector3 se actualiza la distribución actual en silo_asignaciones en la misma transacción.
 
+TABLA: ajustes_lote_silos
+Script: [add_ajustes_lote_silos.sql](../database/add_ajustes_lote_silos.sql), despues del script de ajustes.
+Detalle de un unico movimiento repartido entre varios silos:
+  - idAjuste (bigint unsigned) [PK compuesta, FK RESTRICT a ajustes_lote]
+  - idSilo (int unsigned) [PK compuesta, FK RESTRICT a silos]
+  - monto (decimal(14,3), positivo)
+La suma del detalle coincide con el monto del ajuste. No se duplica el movimiento
+en los reportes. idSilo de la cabecera se conserva para los movimientos de un silo;
+en ajustes multisilo queda NULL. El script incorpora el historial anterior.
+
 VISTA: v_disponibilidad_lotes (actualizacion por ajustes)
 Mantiene stock_total como la entrada original y expone ajuste_positivo, ajuste_negativo,
 cantidad_saliente (salidas reales), cantidad_reservada y cantidad_disponible.
