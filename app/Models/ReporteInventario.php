@@ -74,7 +74,9 @@ class ReporteInventario extends BaseModel
                        u.nombre AS ubicacion,
                        dl.sector,
                        dl.stock_total,
-                       dl.stock_total - dl.cantidad_reservada - dl.cantidad_disponible AS cantidad_saliente,
+                       dl.ajuste_positivo,
+                       dl.ajuste_negativo,
+                       dl.cantidad_saliente,
                        dl.cantidad_reservada,
                        dl.cantidad_disponible + dl.cantidad_reservada AS saldo_fisico,
                        dl.cantidad_disponible
@@ -165,8 +167,17 @@ class ReporteInventario extends BaseModel
         $entradas = $this->obtenerEntradasPorProducto($idProducto);
         $predespachos = $this->obtenerPredespachosPorProducto($idProducto);
         $salidas = $this->obtenerSalidasPorProducto($idProducto);
+        $statement = $this->db->prepare(
+            'SELECT a.*, ie.NumLote, s.codigo AS silo
+             FROM ajustes_lote a
+             INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = a.idInventarioEntrante
+             LEFT JOIN silos s ON s.idSilo = a.idSilo
+             WHERE ie.idProducto = :producto
+             ORDER BY a.fechaCreacion, a.idAjuste'
+        );
+        $statement->execute(['producto' => $idProducto]);
 
-        return $this->construirMovimientosProducto($entradas, $predespachos, $salidas);
+        return $this->construirMovimientosProducto($entradas, $predespachos, $salidas, $statement->fetchAll());
     }
 
     public function obtenerEntradasPorProducto(int $idProducto): array
@@ -265,7 +276,7 @@ class ReporteInventario extends BaseModel
         return $movimientos;
     }
 
-    public function construirMovimientosProducto(array $entradas, array $predespachos, array $salidas): array
+    public function construirMovimientosProducto(array $entradas, array $predespachos, array $salidas, array $ajustes = []): array
     {
         $movimientos = [];
 
@@ -315,6 +326,7 @@ class ReporteInventario extends BaseModel
         unset($listaSalidas);
 
         foreach ($entradas as $entrada) {
+            $inicioLote = count($movimientos);
             $idInventarioEntrante = (int) ($entrada['idInventarioEntrante'] ?? 0);
             $numLote = (string) ($entrada['NumLote'] ?? '');
             $presentacion = trim((string) ($entrada['presentacion'] ?? ''));
@@ -399,6 +411,35 @@ class ReporteInventario extends BaseModel
                 ];
             }
 
+            foreach ($ajustes as $ajuste) {
+                if ((int) $ajuste['idInventarioEntrante'] !== $idInventarioEntrante) {
+                    continue;
+                }
+                $positivo = $ajuste['tipo'] === 'positivo';
+                $movimientos[] = [
+                    'idInventarioEntrante' => $idInventarioEntrante,
+                    'fecha' => $ajuste['fechaCreacion'],
+                    'codPredespacho' => '',
+                    'montoPredespacho' => '',
+                    'entrada' => $positivo ? (float) $ajuste['monto'] : '',
+                    'salida' => $positivo ? '' : (float) $ajuste['monto'],
+                    'saldo' => 0.0,
+                    'observaciones' => 'Ajuste de lote por sistema #' . $ajuste['idAjuste']
+                        . ' (' . $ajuste['tipo'] . ') | Lote ' . $numLote
+                        . (!empty($ajuste['silo']) ? ' | Silo ' . $ajuste['silo'] : '')
+                        . ' | Responsable: ' . $ajuste['responsable'] . ' | ' . $ajuste['observacion'],
+                    'tipo' => 'ajuste',
+                ];
+            }
+
+            $movimientosLote = array_splice($movimientos, $inicioLote);
+            $prioridad = ['entrada' => 0, 'predespacho' => 1, 'ajuste' => 2, 'salida' => 3];
+            usort($movimientosLote, static function (array $left, array $right) use ($prioridad): int {
+                $fecha = strtotime((string) $left['fecha']) <=> strtotime((string) $right['fecha']);
+                return $fecha !== 0 ? $fecha : $prioridad[$left['tipo']] <=> $prioridad[$right['tipo']];
+            });
+            array_push($movimientos, ...$movimientosLote);
+
             $movimientos[] = [
                 'idInventarioEntrante' => $idInventarioEntrante,
                 'fecha' => '',
@@ -446,11 +487,7 @@ class ReporteInventario extends BaseModel
 
         $saldo = 0.0;
         foreach ($movimientos as &$movimiento) {
-            if ($movimiento['tipo'] === 'entrada') {
-                $saldo += (float) $movimiento['entrada'];
-            } elseif ($movimiento['tipo'] === 'salida') {
-                $saldo -= (float) $movimiento['salida'];
-            }
+            $saldo += (float) ($movimiento['entrada'] ?: 0) - (float) ($movimiento['salida'] ?: 0);
 
             $movimiento['saldo'] = $saldo;
         }

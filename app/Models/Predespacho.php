@@ -494,6 +494,16 @@ class Predespacho extends BaseModel
             }
 
             $statement = $this->db->prepare(
+                'SELECT idInventarioEntrante FROM inventarioentrante
+                 WHERE idInventarioEntrante = :idInventarioEntrante FOR UPDATE'
+            );
+            $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
+            if (!$statement->fetch()) {
+                $this->db->rollBack();
+                return ['success' => false, 'mensaje' => 'El lote no existe.'];
+            }
+
+            $statement = $this->db->prepare(
                 'SELECT cantidad_disponible
                  FROM v_disponibilidad_lotes
                  WHERE idInventarioEntrante = :idInventarioEntrante

@@ -18,13 +18,11 @@ class SalidaInventario extends BaseModel
                     ie.NumLote,
                     ie.CantidadEntrante,
                     ie.fecha,
-                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS Disponible
+                    dl.cantidad_disponible AS Disponible
              FROM inventarioentrante ie
-             LEFT JOIN inventariosaliente ins
-                    ON ins.idInventarioEntrante = ie.idInventarioEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              WHERE ie.idProducto = :idProducto
-             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.CantidadEntrante, ie.fecha
-             HAVING Disponible > 0
+               AND dl.cantidad_disponible > 0
              ORDER BY ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
         $statement->execute(['idProducto' => $idProducto]);
@@ -40,13 +38,11 @@ class SalidaInventario extends BaseModel
             'SELECT ie.idInventarioEntrante,
                     ie.NumLote,
                     ie.CantidadEntrante,
-                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS Disponible
+                    dl.cantidad_disponible AS Disponible
              FROM inventarioentrante ie
-             LEFT JOIN inventariosaliente ins
-                    ON ins.idInventarioEntrante = ie.idInventarioEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              WHERE ie.idInventarioEntrante = :idInventarioEntrante
-               AND ie.idProducto = :idProducto
-             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.CantidadEntrante'
+               AND ie.idProducto = :idProducto'
         );
         $statement->execute([
             'idInventarioEntrante' => $idInventarioEntrante,
@@ -61,18 +57,42 @@ class SalidaInventario extends BaseModel
     public function registrarSalida(int $idInventarioEntrante, string $sector, string $ne, float $cantidadSaliente): bool
     {
         $this->asegurarTablaInventarioSaliente();
-
+        $this->db->beginTransaction();
+        try {
+        $statement = $this->db->prepare('SELECT sector FROM inventarioentrante WHERE idInventarioEntrante = :id FOR UPDATE');
+        $statement->execute(['id' => $idInventarioEntrante]);
+        $sectorActual = $statement->fetchColumn();
+        if ($sectorActual === false) {
+            throw new DomainException('El lote no existe.');
+        }
+        $statement = $this->db->prepare('SELECT cantidad_disponible FROM v_disponibilidad_lotes WHERE idInventarioEntrante = :id');
+        $statement->execute(['id' => $idInventarioEntrante]);
+        if (!is_finite($cantidadSaliente) || $cantidadSaliente <= 0
+            || $cantidadSaliente - (float) $statement->fetchColumn() > 0.0005) {
+            throw new DomainException('La salida supera el disponible libre de reservas, incluidos los ajustes.');
+        }
         $statement = $this->db->prepare(
             'INSERT INTO inventariosaliente (idInventarioEntrante, sector, NE, cantidadSaliente, fecha)
              VALUES (:idInventarioEntrante, :sector, :ne, :cantidadSaliente, NOW())'
         );
 
-        return $statement->execute([
+        $resultado = $statement->execute([
             'idInventarioEntrante' => $idInventarioEntrante,
-            'sector' => $sector,
+            'sector' => $sectorActual,
             'ne' => $ne,
             'cantidadSaliente' => $cantidadSaliente,
         ]);
+        if (str_replace(' ', '', strtolower((string) $sectorActual)) === 'sector3') {
+            (new SiloStockService($this->db))->descontarSalida($idInventarioEntrante, (int) $this->db->lastInsertId(), $cantidadSaliente);
+        }
+        $this->db->commit();
+        return $resultado;
+        } catch (Throwable $exception) {
+            if ($this->db->inTransaction()) {
+                $this->db->rollBack();
+            }
+            throw $exception;
+        }
     }
 
     public function obtenerSalidas(): array
@@ -94,16 +114,13 @@ class SalidaInventario extends BaseModel
                     p.idProducto,
                     p.nombre AS producto,
                     ie.CantidadEntrante,
-                    ie.CantidadEntrante - COALESCE(SUM(otras.cantidadSaliente), 0) AS disponibleSinEstaSalida
+                    dl.cantidad_disponible + dl.cantidad_reservada + ins.cantidadSaliente AS disponibleSinEstaSalida
              FROM inventariosaliente ins
              INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = ins.idInventarioEntrante
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
                       INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
                       INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
-             LEFT JOIN inventariosaliente otras
-                    ON otras.idInventarioEntrante = ins.idInventarioEntrante
-                   AND otras.idInventarioSaliente <> ins.idInventarioSaliente
-                      GROUP BY ins.idInventarioSaliente, ins.idInventarioEntrante, ins.sector, ins.NE, ins.cantidadSaliente, ins.fecha, ie.NumLote, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, p.idProducto, p.nombre, ie.CantidadEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              ORDER BY ins.fecha DESC, ins.idInventarioSaliente DESC'
         );
 
@@ -124,13 +141,12 @@ class SalidaInventario extends BaseModel
                       ie.`idUbicación` AS idUbicacion,
                       u.nombre AS ubicacion,
                     ie.CantidadEntrante,
-                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+                    dl.cantidad_disponible + dl.cantidad_reservada AS disponible
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
                   INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
                   INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
-             LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
-                  GROUP BY ie.idInventarioEntrante, ie.NumLote, p.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.CantidadEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              ORDER BY p.nombre ASC, ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
 
@@ -157,13 +173,13 @@ class SalidaInventario extends BaseModel
         $this->asegurarTablaInventarioSaliente();
 
         $statement = $this->db->prepare(
-            'SELECT ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+            'SELECT dl.cantidad_disponible + dl.cantidad_reservada + COALESCE(ins.cantidadSaliente, 0) AS disponible
              FROM inventarioentrante ie
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              LEFT JOIN inventariosaliente ins
                     ON ins.idInventarioEntrante = ie.idInventarioEntrante
-                   AND ins.idInventarioSaliente <> :idInventarioSaliente
-             WHERE ie.idInventarioEntrante = :idInventarioEntrante
-             GROUP BY ie.idInventarioEntrante, ie.CantidadEntrante'
+                   AND ins.idInventarioSaliente = :idInventarioSaliente
+             WHERE ie.idInventarioEntrante = :idInventarioEntrante'
         );
         $statement->execute([
             'idInventarioEntrante' => $idInventarioEntrante,
@@ -193,6 +209,14 @@ class SalidaInventario extends BaseModel
             $salidaActual = $statement->fetch();
             if (!$salidaActual) {
                 throw new InvalidArgumentException('La salida no existe.');
+            }
+            $statement = $this->db->prepare('SELECT idInventarioEntrante FROM inventarioentrante WHERE idInventarioEntrante = :id FOR UPDATE');
+            $statement->execute(['id' => $idInventarioEntrante]);
+            if (!$statement->fetch()) {
+                throw new DomainException('El lote destino no existe.');
+            }
+            if ($cantidadSaliente - $this->obtenerDisponibleParaCorreccion($idInventarioEntrante, $idInventarioSaliente) > 0.0005) {
+                throw new DomainException('La salida supera el saldo del lote, incluidos sus ajustes.');
             }
 
             $statement = $this->db->prepare('DELETE FROM silo_salidas WHERE idInventarioSaliente = :idInventarioSaliente');

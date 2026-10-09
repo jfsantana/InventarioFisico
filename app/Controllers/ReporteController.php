@@ -64,6 +64,12 @@ class ReporteController extends Controller
                         $movimientos,
                         static fn (array $movimiento): bool => (int) ($movimiento['idInventarioEntrante'] ?? 0) === (int) $idInventarioEntrante
                     ));
+                    $saldoLote = 0.0;
+                    foreach ($movimientos as &$movimiento) {
+                        $saldoLote += (float) ($movimiento['entrada'] ?: 0) - (float) ($movimiento['salida'] ?: 0);
+                        $movimiento['saldo'] = $saldoLote;
+                    }
+                    unset($movimiento);
                 }
 
                 $encabezado = [

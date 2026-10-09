@@ -98,8 +98,11 @@ class Silo extends BaseModel
 
     public function eliminar(int $idSilo): bool
     {
-        $statement = $this->db->prepare('SELECT COUNT(*) FROM silo_asignaciones WHERE idSilo = :idSilo');
-        $statement->execute(['idSilo' => $idSilo]);
+        $statement = $this->db->prepare(
+            'SELECT (SELECT COUNT(*) FROM silo_asignaciones WHERE idSilo = :idSilo)
+                  + (SELECT COUNT(*) FROM ajustes_lote WHERE idSilo = :idSiloAjuste)'
+        );
+        $statement->execute(['idSilo' => $idSilo, 'idSiloAjuste' => $idSilo]);
         if ((int) $statement->fetchColumn() > 0) {
             throw new DomainException('El silo tiene historial de inventario. Desactívelo en lugar de eliminarlo.');
         }
@@ -115,15 +118,12 @@ class Silo extends BaseModel
         $statement = $this->db->query(
             "SELECT ie.idInventarioEntrante, ie.idProducto, ie.NumLote, p.nombre AS producto,
                     ie.CantidadEntrante,
-                    ie.CantidadEntrante - COALESCE(sa.cantidadSaliente, 0) AS saldoFisico,
+                    dl.cantidad_disponible + dl.cantidad_reservada AS saldoFisico,
                     COALESCE(si.cantidadEnSilos, 0) AS cantidadEnSilos,
-                    ie.CantidadEntrante - COALESCE(sa.cantidadSaliente, 0) - COALESCE(si.cantidadEnSilos, 0) AS cantidadPendiente
+                    dl.cantidad_disponible + dl.cantidad_reservada - COALESCE(si.cantidadEnSilos, 0) AS cantidadPendiente
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
-             LEFT JOIN (
-                 SELECT idInventarioEntrante, SUM(cantidadSaliente) AS cantidadSaliente
-                 FROM inventariosaliente GROUP BY idInventarioEntrante
-             ) sa ON sa.idInventarioEntrante = ie.idInventarioEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              LEFT JOIN (
                  SELECT a.idInventarioEntrante,
                         SUM(a.cantidadAsignada - COALESCE(x.cantidadSaliente, 0)) AS cantidadEnSilos
@@ -146,12 +146,11 @@ class Silo extends BaseModel
         try {
             $statement = $this->db->prepare(
                 "SELECT ie.idProducto,
-                        ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS saldoFisico
+                        dl.cantidad_disponible + dl.cantidad_reservada AS saldoFisico
                  FROM inventarioentrante ie
-                 LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
+                 INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
                  WHERE ie.idInventarioEntrante = :idInventarioEntrante
                    AND REPLACE(LOWER(ie.sector), ' ', '') = 'sector3'
-                 GROUP BY ie.idInventarioEntrante, ie.idProducto, ie.CantidadEntrante
                  FOR UPDATE"
             );
             $statement->execute(['idInventarioEntrante' => $idEntrada]);

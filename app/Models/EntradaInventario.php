@@ -280,8 +280,11 @@ class EntradaInventario extends BaseModel
                     ie.fecha_factura,
                     ie.peso_romana,
                     ie.nro_factura,
-                    COALESCE(SUM(ins.cantidadSaliente), 0) AS salidaTotal,
-                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+                    dl.cantidad_saliente AS salidaTotal,
+                    dl.ajuste_positivo - dl.ajuste_negativo AS ajusteNeto,
+                    dl.ajuste_positivo + dl.ajuste_negativo AS totalAjustes,
+                    dl.cantidad_reservada AS reservado,
+                    dl.cantidad_disponible AS disponible
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
              INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
@@ -290,8 +293,7 @@ class EntradaInventario extends BaseModel
                          LEFT JOIN proveedores proveedor ON proveedor.CardCode = ie.CardCode
                          LEFT JOIN proveedores fabricante ON fabricante.CardCode = ie.FabricanteCode
                          LEFT JOIN paises pais ON pais.Code = ie.PaisCode
-             LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
-                             GROUP BY ie.idInventarioEntrante, ie.NumLote, ie.idProducto, p.nombre, ie.idPresentacion, pr.nombre, ie.`idUbicación`, u.nombre, ie.sector, ie.CantidadEntrante, ie.fecha, ie.idTipoCompra, tc.descripcion, ie.CardCode, proveedor.CardName, ie.FabricanteCode, fabricante.CardName, ie.PaisCode, pais.Name, ie.fecha_factura, ie.peso_romana, ie.nro_factura
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              ORDER BY ie.fecha DESC, ie.idInventarioEntrante DESC'
         );
 
@@ -326,6 +328,28 @@ class EntradaInventario extends BaseModel
         $actual = $statement->fetch();
         if (!$actual) {
             throw new InvalidArgumentException('La entrada no existe.');
+        }
+        $statement = $this->db->prepare('SELECT COUNT(*) FROM ajustes_lote WHERE idInventarioEntrante = :id');
+        $statement->execute(['id' => $idInventarioEntrante]);
+        if ((int) $statement->fetchColumn() > 0
+            && ((int) $actual['idProducto'] !== (int) $data['idProducto']
+                || (string) $actual['sector'] !== (string) $data['Sector']
+                || abs((float) $actual['CantidadEntrante'] - (float) $data['CantidadEntrante']) > 0.0005)) {
+            throw new DomainException('Este lote tiene ajustes. No puede cambiar su producto, sector ni cantidad original; registre un nuevo ajuste.');
+        }
+        $statement = $this->db->prepare(
+            'SELECT stock_total, cantidad_disponible, cantidad_reservada
+             FROM v_disponibilidad_lotes WHERE idInventarioEntrante = :id'
+        );
+        $statement->execute(['id' => $idInventarioEntrante]);
+        $stock = $statement->fetch();
+        if (!$stock) {
+            throw new DomainException('No se pudo consultar el saldo del lote.');
+        }
+        $nuevoSaldoFisico = (float) $data['CantidadEntrante'] - (float) $stock['stock_total']
+            + (float) $stock['cantidad_disponible'] + (float) $stock['cantidad_reservada'];
+        if ($nuevoSaldoFisico < -0.0005) {
+            throw new DomainException('La cantidad entrante no puede dejar un saldo fisico negativo, considerando salidas y ajustes.');
         }
 
         $eraSector3 = $this->esSector3((string) $actual['sector']);
@@ -377,12 +401,12 @@ class EntradaInventario extends BaseModel
 
         if ($seraSector3) {
             $statement = $this->db->prepare(
-                'SELECT COALESCE(SUM(cantidadSaliente), 0)
-                 FROM inventariosaliente
+                'SELECT cantidad_disponible + cantidad_reservada
+                 FROM v_disponibilidad_lotes
                  WHERE idInventarioEntrante = :idInventarioEntrante'
             );
             $statement->execute(['idInventarioEntrante' => $idInventarioEntrante]);
-            $saldoFisico = (float) $data['CantidadEntrante'] - (float) $statement->fetchColumn();
+            $saldoFisico = (float) $statement->fetchColumn();
             (new SiloStockService($this->db))->redistribuirSaldoEntrada(
                 $idInventarioEntrante,
                 (int) $data['idProducto'],

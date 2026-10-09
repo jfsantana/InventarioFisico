@@ -17,6 +17,7 @@ foreach ($resumenLotes as $loteResumen) {
     <p class="eyebrow">Inteligencia de inventario</p>
     <h1>Seguimiento ejecutivo</h1>
     <p class="intro">Vision gerencial por producto y lote: entradas, salidas, cobertura proyectada y lotes que requieren atencion.</p>
+    <p>Las entradas del periodo incluyen ajustes positivos y las salidas incluyen ajustes negativos, segun su fecha de creacion. El disponible descuenta tambien las reservas de predespacho.</p>
 
     <?php if (!empty($loadError)) : ?>
         <div class="message message--error" role="alert">

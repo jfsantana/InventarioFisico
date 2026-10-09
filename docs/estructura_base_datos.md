@@ -60,6 +60,30 @@ Se relaciona con:
   - inventarioentrante a través de idInventarioEntrante → idInventarioEntrante [muchos a 1]
   - tbl_cabecera_predespacho mediante NE → codigoInterno y el lote indicado por tbl_items_predespacho.idInventarioEntrante [relación lógica, muchos a 1]
 
+TABLA: ajustes_lote
+Propósito: Movimientos independientes de ajuste de lote por sistema, sin modificar la entrada original ni generar predespachos/salidas reales.
+Script: [add_ajustes_lote.sql](../database/add_ajustes_lote.sql).
+Columnas relevantes:
+  - idAjuste (bigint unsigned) [PK]
+  - idInventarioEntrante (int) [FK física, RESTRICT]
+  - tipo (enum positivo/negativo)
+  - monto (decimal(14,3), mayor que cero)
+  - observacion (varchar(1000), obligatoria)
+  - idUsuario (int) [FK física, RESTRICT]
+  - responsable (varchar(140), nombre del usuario al registrar)
+  - idSilo (int unsigned, nullable) [FK física, RESTRICT]
+  - fechaCreacion (datetime, actual al registrar)
+  - tokenRegistro (char(64), UNIQUE; evita duplicar el mismo envio)
+Los ajustes se conservan; las compensaciones son nuevos registros de signo contrario.
+Para Sector3 se actualiza la distribución actual en silo_asignaciones en la misma transacción.
+
+VISTA: v_disponibilidad_lotes (actualizacion por ajustes)
+Mantiene stock_total como la entrada original y expone ajuste_positivo, ajuste_negativo,
+cantidad_saliente (salidas reales), cantidad_reservada y cantidad_disponible.
+Disponible = entrada original + ajustes positivos - ajustes negativos - salidas reales - reservas.
+Saldo físico = disponible + reservas. Las reservas mantienen la regla de descontar solamente
+la cantidad pendiente de entrega de predespachos/items no cerrados.
+
 TABLA: silos
 Propósito: Catálogo administrativo de silos de Sector3 y su capacidad máxima en kilogramos.
 Columnas relevantes:

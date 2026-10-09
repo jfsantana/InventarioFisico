@@ -227,6 +227,8 @@ function initCorrectionPage(page) {
             setFormValue(editForm, 'idUbicacion', row.dataset.location);
             setFormValue(editForm, 'Sector', row.dataset.sector);
             setFormValue(editForm, 'CantidadEntrante', row.dataset.cantidad);
+            editForm.elements.CantidadEntrante.readOnly = Number(row.dataset.totalAjustes) > 0;
+            editForm.querySelector('[data-adjustment-lock-notice]').hidden = !(Number(row.dataset.totalAjustes) > 0);
             setFormValue(editForm, 'idTipoCompra', row.dataset.tipoCompraId);
             setFormValue(editForm, 'CardCode', row.dataset.cardCode);
             setFormValue(editForm, 'FabricanteCode', row.dataset.fabricanteCode);
@@ -255,6 +257,8 @@ function initCorrectionPage(page) {
             editForm.querySelector('[data-summary-salidas]').textContent = formatNumber(row.dataset.salidas);
             editForm.querySelector('[data-summary-salidas]').dataset.raw = row.dataset.salidas;
             editForm.querySelector('[data-summary-disponible]').textContent = formatNumber(row.dataset.disponible);
+            editForm.querySelector('[data-summary-disponible]').dataset.ajusteNeto = row.dataset.ajusteNeto || '0';
+            editForm.querySelector('[data-summary-disponible]').dataset.reservado = row.dataset.reservado || '0';
             loadEditSilos(row);
         } else {
             setFormValue(editForm, 'idInventarioSaliente', row.dataset.id);
@@ -325,7 +329,9 @@ function initCorrectionPage(page) {
         const quantity = Number(quantityField.value) || 0;
         if (pageType === 'entrada') {
             const exits = Number(editForm.querySelector('[data-summary-salidas]').dataset.raw) || 0;
-            availableField.textContent = formatNumber(quantity - exits);
+            const ajusteNeto = Number(availableField.dataset.ajusteNeto) || 0;
+            const reservado = Number(availableField.dataset.reservado) || 0;
+            availableField.textContent = formatNumber(quantity + ajusteNeto - exits - reservado);
             updateEditSiloTotals();
             return;
         }
@@ -361,7 +367,8 @@ function initCorrectionPage(page) {
     function editSiloBalance() {
         const quantity = Number(editForm.elements.CantidadEntrante?.value) || 0;
         const outputs = Number(editForm.querySelector('[data-summary-salidas]')?.dataset.raw) || 0;
-        return Math.max(0, quantity - outputs);
+        const ajusteNeto = Number(editForm.querySelector('[data-summary-disponible]')?.dataset.ajusteNeto) || 0;
+        return Math.max(0, quantity + ajusteNeto - outputs);
     }
 
     function isEditSiloDistributionValid() {

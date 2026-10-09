@@ -296,13 +296,6 @@ class EntradaController extends Controller
         }
 
         try {
-            $salidaTotal = $model->obtenerSalidaTotal($idInventarioEntrante);
-
-            if ((float) $formData['CantidadEntrante'] < $salidaTotal) {
-                $this->detalle('La cantidad entrante no puede ser menor que las salidas ya registradas: ' . number_format($salidaTotal, 2), 'error');
-                return;
-            }
-
             $model->actualizarEntrada($idInventarioEntrante, [
                 'NumLote' => $formData['NumLote'],
                 'idProducto' => (int) $formData['idProducto'],

@@ -117,6 +117,8 @@ $buildPageUrl = static function (int $paginaDestino) use ($idsProducto, $porPagi
                                 <th>Presentación</th>
                                 <th>Ubicación</th>
                                 <th>Entrada</th>
+                                <th>Ajustes +</th>
+                                <th>Ajustes -</th>
                                 <th>Salidas</th>
                                 <th>Reservado</th>
                                 <th>Saldo físico</th>
@@ -138,6 +140,8 @@ $buildPageUrl = static function (int $paginaDestino) use ($idsProducto, $porPagi
                                         <?php if (!empty($saldo['sector'])) : ?><small><?= htmlspecialchars($saldo['sector'], ENT_QUOTES, 'UTF-8') ?></small><?php endif; ?>
                                     </td>
                                     <td data-label="Entrada"><?= number_format((float) $saldo['stock_total'], 3) ?></td>
+                                    <td data-label="Ajustes +"><?= number_format((float) $saldo['ajuste_positivo'], 3) ?></td>
+                                    <td data-label="Ajustes -"><?= number_format((float) $saldo['ajuste_negativo'], 3) ?></td>
                                     <td data-label="Salidas"><?= number_format((float) $saldo['cantidad_saliente'], 3) ?></td>
                                     <td data-label="Reservado"><?= number_format((float) $saldo['cantidad_reservada'], 3) ?></td>
                                     <td data-label="Saldo físico"><strong><?= number_format((float) $saldo['saldo_fisico'], 3) ?></strong></td>

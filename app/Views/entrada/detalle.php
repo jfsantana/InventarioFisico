@@ -132,6 +132,9 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                             data-documento-seniat-id="<?= (int) ($documentosEntrada['documento_seniat']['idDocumento'] ?? 0) ?>"
                             data-documento-seniat-name="<?= $text($documentosEntrada['documento_seniat']['nombreOriginal'] ?? '') ?>"
                             data-salidas="<?= $text($entrada['salidaTotal']) ?>"
+                            data-ajuste-neto="<?= $text($entrada['ajusteNeto']) ?>"
+                            data-total-ajustes="<?= $text($entrada['totalAjustes']) ?>"
+                            data-reservado="<?= $text($entrada['reservado']) ?>"
                             data-disponible="<?= $text($entrada['disponible']) ?>"
                             data-silo-assignments="<?= $text(json_encode($asignacionesEntrada, JSON_UNESCAPED_UNICODE)) ?>"
                             data-search="<?= $text($entrada['producto'] . ' ' . $entrada['NumLote'] . ' ' . ($entrada['Sector'] ?? '') . ' ' . $entrada['ubicacion'] . ' ' . ($entrada['tipoCompra'] ?? '') . ' ' . ($entrada['proveedor'] ?? '') . ' ' . ($entrada['fabricante'] ?? '') . ' ' . ($entrada['pais'] ?? '') . ' ' . ($entrada['nro_factura'] ?? '')) ?>">
@@ -318,6 +321,7 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                 <div><dt>Salidas registradas</dt><dd data-summary-salidas>0.00</dd></div>
                 <div><dt>Disponible calculado</dt><dd data-summary-disponible>0.00</dd></div>
             </dl>
+            <p data-adjustment-lock-notice hidden>Este lote tiene ajustes registrados. Su cantidad original, producto y sector no se pueden cambiar. Use Ajustes de lote por sistema para modificar su inventario.</p>
             <footer class="modal-actions">
                 <button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button>
                 <button type="submit" class="button-link button-link--submit">Guardar corrección</button>

@@ -65,6 +65,14 @@ $authUser = Auth::user();
             <h2>Auditar y ajustar</h2>
             <div class="menu-section-grid">
                 <?php if ($canCorregirEntradas) : ?>
+                <a class="menu-card menu-card--correccion" href="<?= APP_URL ?>/ajuste">
+                    <span class="menu-card-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M4 6h16v12H4zM8 12h8M12 8v8" /></svg>
+                    </span>
+                    <span>Movimiento independiente</span>
+                    <strong>Ajustes de lote por sistema</strong>
+                    <i aria-hidden="true">→</i>
+                </a>
                 <a class="menu-card menu-card--correccion" href="<?= APP_URL ?>/entrada/detalle">
                     <span class="menu-card-icon" aria-hidden="true">
                         <svg viewBox="0 0 24 24"><path d="M4 20h4L18.5 9.5a2.8 2.8 0 0 0-4-4L4 16v4Z" /><path d="m13.5 6.5 4 4" /></svg>

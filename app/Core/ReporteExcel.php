@@ -1,6 +1,7 @@
 <?php
 
 use PhpOffice\PhpSpreadsheet\Cell\Coordinate;
+use PhpOffice\PhpSpreadsheet\Cell\DataType;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Fill;
@@ -28,7 +29,8 @@ class ReporteExcel
             ['Fecha', 'Código de Predespacho', 'Monto Predespacho', 'Entrada', 'Salida', 'Saldo', 'Observaciones'],
             $rows,
             'movimientos-por-lote-' . date('Ymd-His') . '.xlsx',
-            [3, 4, 5, 6]
+            [3, 4, 5, 6],
+            array_column($movimientos, 'tipo')
         );
     }
 
@@ -43,6 +45,8 @@ class ReporteExcel
             (string) ($saldo['ubicacion'] ?? ''),
             (string) ($saldo['sector'] ?? ''),
             (float) $saldo['stock_total'],
+            (float) $saldo['ajuste_positivo'],
+            (float) $saldo['ajuste_negativo'],
             (float) $saldo['cantidad_saliente'],
             (float) $saldo['cantidad_reservada'],
             (float) $saldo['saldo_fisico'],
@@ -52,10 +56,10 @@ class ReporteExcel
         $this->descargar(
             'Saldo de Productos por Lote',
             $metadata,
-            ['Código', 'Producto', 'Lote', 'Fecha entrada', 'Presentación', 'Ubicación', 'Sector', 'Entrada', 'Salidas', 'Reservado', 'Saldo físico', 'Disponible'],
+            ['Código', 'Producto', 'Lote', 'Fecha entrada', 'Presentación', 'Ubicación', 'Sector', 'Entrada original', 'Ajustes +', 'Ajustes -', 'Salidas', 'Reservado', 'Saldo físico', 'Disponible'],
             $rows,
             'saldo-productos-por-lote-' . date('Ymd-His') . '.xlsx',
-            [8, 9, 10, 11, 12]
+            [8, 9, 10, 11, 12, 13, 14]
         );
     }
 
@@ -65,7 +69,8 @@ class ReporteExcel
         array $headers,
         array $rows,
         string $filename,
-        array $numericColumns
+        array $numericColumns,
+        array $rowTypes = []
     ): void {
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
@@ -94,10 +99,21 @@ class ReporteExcel
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
         ]);
 
-        foreach ($rows as $row) {
+        $colors = ['entrada' => 'FFEDF8EF', 'predespacho' => 'FFFFF9E6', 'salida' => 'FFFFF0F0', 'saldo' => 'FFE8F3FF', 'ajuste' => 'FFF1E9FB'];
+        foreach ($rows as $indexRow => $row) {
             $rowNumber++;
             foreach ($row as $index => $value) {
-                $sheet->setCellValue(Coordinate::stringFromColumnIndex($index + 1) . $rowNumber, $value);
+                $cell = Coordinate::stringFromColumnIndex($index + 1) . $rowNumber;
+                if (is_string($value)) {
+                    $sheet->setCellValueExplicit($cell, $value, DataType::TYPE_STRING);
+                } else {
+                    $sheet->setCellValue($cell, $value);
+                }
+            }
+            $color = $colors[$rowTypes[$indexRow] ?? ''] ?? null;
+            if ($color !== null) {
+                $sheet->getStyle('A' . $rowNumber . ':' . $lastColumn . $rowNumber)->getFill()
+                    ->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($color);
             }
         }
 

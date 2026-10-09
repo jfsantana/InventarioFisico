@@ -51,7 +51,8 @@ $movimientosRender = $modoExport ? $movimientos : $movimientosPaginados;
 <section class="panel report-panel">
     <p class="eyebrow">Reporte</p>
     <h1>Movimientos por lote</h1>
-    <p class="intro">Seleccione un producto para ver todos sus movimientos cronológicos, incluyendo entradas, predespachos y salidas.</p>
+    <p class="intro">Seleccione un producto para ver sus movimientos en orden cronologico por lote, incluyendo entradas, predespachos, ajustes y salidas. El saldo refleja existencia fisica; los predespachos reservan disponibilidad sin descontar existencia fisica.</p>
+    <p class="report-adjustment-legend">Verde: entrada · Amarillo: predespacho · Rojo: salida · Lila: ajuste de lote por sistema · Azul: saldo.</p>
 
     <?php if (!empty($loadError)) : ?>
         <div class="message message--error" role="alert">
@@ -162,21 +163,23 @@ $movimientosRender = $modoExport ? $movimientos : $movimientosPaginados;
                         <?php foreach ($movimientosRender as $movimiento) : ?>
                             <?php
                             $tipoMovimiento = (string) ($movimiento['tipo'] ?? '');
-                            $rowClass = $tipoMovimiento === 'entrada'
+                            $rowClass = $tipoMovimiento === 'ajuste'
+                                ? 'report-row report-row--ajuste'
+                                : ($tipoMovimiento === 'entrada'
                                 ? 'report-row report-row--entrada'
                                 : ($tipoMovimiento === 'predespacho'
                                     ? 'report-row report-row--predespacho'
                                     : ($tipoMovimiento === 'saldo'
                                         ? 'report-row report-row--summary'
-                                        : 'report-row report-row--salida'));
+                                        : 'report-row report-row--salida')));
                             ?>
                             <tr class="<?= htmlspecialchars($rowClass, ENT_QUOTES, 'UTF-8') ?>">
                                 <td><?= $tipoMovimiento === 'saldo' ? '' : htmlspecialchars(date('d/m/Y', strtotime($movimiento['fecha'])), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($movimiento['codPredespacho'] ?? '', ENT_QUOTES, 'UTF-8') ?></td>
-                                <td><?= $movimiento['montoPredespacho'] !== '' ? htmlspecialchars(number_format((float) $movimiento['montoPredespacho'], 2), ENT_QUOTES, 'UTF-8') : '' ?></td>
-                                <td><?= $movimiento['entrada'] !== '' ? htmlspecialchars(number_format((float) $movimiento['entrada'], 2), ENT_QUOTES, 'UTF-8') : '' ?></td>
-                                <td><?= $movimiento['salida'] !== '' ? htmlspecialchars(number_format((float) $movimiento['salida'], 2), ENT_QUOTES, 'UTF-8') : '' ?></td>
-                                <td><?= htmlspecialchars(number_format((float) $movimiento['saldo'], 2), ENT_QUOTES, 'UTF-8') ?></td>
+                                <td><?= $movimiento['montoPredespacho'] !== '' ? htmlspecialchars(number_format((float) $movimiento['montoPredespacho'], 3), ENT_QUOTES, 'UTF-8') : '' ?></td>
+                                <td><?= $movimiento['entrada'] !== '' ? htmlspecialchars(number_format((float) $movimiento['entrada'], 3), ENT_QUOTES, 'UTF-8') : '' ?></td>
+                                <td><?= $movimiento['salida'] !== '' ? htmlspecialchars(number_format((float) $movimiento['salida'], 3), ENT_QUOTES, 'UTF-8') : '' ?></td>
+                                <td><?= htmlspecialchars(number_format((float) $movimiento['saldo'], 3), ENT_QUOTES, 'UTF-8') ?></td>
                                 <td><?= htmlspecialchars($movimiento['observaciones'], ENT_QUOTES, 'UTF-8') ?></td>
                             </tr>
                         <?php endforeach; ?>

@@ -13,6 +13,7 @@ class AnaliticaInventario extends BaseModel
     {
         $entradaProductFilter = $idProducto ? ' AND ie.idProducto = :idProductoEntrada' : '';
         $salidaProductFilter = $idProducto ? ' AND ie.idProducto = :idProductoSalida' : '';
+        $ajusteProductFilter = $idProducto ? ' AND ie.idProducto = :idProductoAjuste' : '';
         $sql = "SELECT ie.idInventarioEntrante,
                    p.nombre AS producto,
                        ie.NumLote,
@@ -37,6 +38,19 @@ class AnaliticaInventario extends BaseModel
                 INNER JOIN Producto p ON p.idProducto = ie.idProducto
                 WHERE DATE(ins.fecha) BETWEEN :desdeSalida AND :hastaSalida
                 {$salidaProductFilter}
+                UNION ALL
+                SELECT ie.idInventarioEntrante,
+                       p.nombre AS producto,
+                       ie.NumLote,
+                       DATE(a.fechaCreacion) AS fecha,
+                       CASE WHEN a.tipo = 'positivo' THEN a.monto ELSE 0 END AS entrada,
+                       CASE WHEN a.tipo = 'negativo' THEN a.monto ELSE 0 END AS salida,
+                       CONCAT('Ajuste de lote por sistema #', a.idAjuste, ' (', a.tipo, ') | ', a.responsable, ' | ', a.observacion) AS concepto
+                FROM ajustes_lote a
+                INNER JOIN inventarioentrante ie ON ie.idInventarioEntrante = a.idInventarioEntrante
+                INNER JOIN Producto p ON p.idProducto = ie.idProducto
+                WHERE DATE(a.fechaCreacion) BETWEEN :desdeAjuste AND :hastaAjuste
+                {$ajusteProductFilter}
                 ORDER BY fecha ASC, concepto ASC";
 
         $statement = $this->db->prepare($sql);
@@ -45,11 +59,14 @@ class AnaliticaInventario extends BaseModel
             'hastaEntrada' => $hasta,
             'desdeSalida' => $desde,
             'hastaSalida' => $hasta,
+            'desdeAjuste' => $desde,
+            'hastaAjuste' => $hasta,
         ];
 
         if ($idProducto) {
             $params['idProductoEntrada'] = $idProducto;
             $params['idProductoSalida'] = $idProducto;
+            $params['idProductoAjuste'] = $idProducto;
         }
 
         $statement->execute($params);
@@ -69,15 +86,16 @@ class AnaliticaInventario extends BaseModel
                     u.nombre AS ubicacion,
                     ie.fecha AS fechaEntrada,
                     ie.CantidadEntrante,
-                    COALESCE(SUM(ins.cantidadSaliente), 0) AS salidaTotal,
-                    ie.CantidadEntrante - COALESCE(SUM(ins.cantidadSaliente), 0) AS disponible
+                    dl.cantidad_saliente + dl.ajuste_negativo AS salidaTotal,
+                    dl.ajuste_positivo,
+                    dl.ajuste_negativo,
+                    dl.cantidad_disponible AS disponible
              FROM inventarioentrante ie
              INNER JOIN Producto p ON p.idProducto = ie.idProducto
              INNER JOIN presentacion pr ON pr.idPresentacion = ie.idPresentacion
              INNER JOIN ubicacion u ON u.idUbicacion = ie.`idUbicación`
-             LEFT JOIN inventariosaliente ins ON ins.idInventarioEntrante = ie.idInventarioEntrante
+             INNER JOIN v_disponibilidad_lotes dl ON dl.idInventarioEntrante = ie.idInventarioEntrante
              {$productFilter}
-               GROUP BY ie.idInventarioEntrante, ie.idProducto, p.nombre, ie.NumLote, pr.nombre, u.nombre, ie.fecha, ie.CantidadEntrante
                ORDER BY p.nombre ASC, ie.NumLote ASC, disponible ASC"
         );
 

@@ -38,6 +38,59 @@ CREATE DATABASE inventariofisico CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_c
 
 O importa el archivo [database/schema.sql](database/schema.sql) desde phpMyAdmin o MySQL.
 
+## Ajustes de lote por sistema
+
+Para actualizar una instalacion existente, haga una copia de seguridad y ejecute
+[database/add_ajustes_lote.sql](database/add_ajustes_lote.sql) en la base de inventario,
+despues de [database/add_control_silos.sql](database/add_control_silos.sql). Las tablas
+de usuarios deben existir. El script usa los tipos del esquema activo:
+`inventarioentrante.idInventarioEntrante` y `usuarios.id_usuario` son `INT` con signo.
+Convierte `usuarios` de MyISAM a InnoDB para proteger la relacion con el responsable,
+sin cambiar sus registros.
+No ejecute una version antigua de la vista de disponibilidad despues de este script.
+Si la actualizacion SQL esta pendiente o la vista es antigua, el listado de ajustes
+muestra un aviso y no permite operar con saldos incompletos.
+No se necesita un procedimiento almacenado ni un estado nuevo de predespacho.
+
+En **Correcciones > Auditar y ajustar > Ajustes de lote por sistema** se puede buscar
+un producto/lote, ver la entrada original, ajustes acumulados, reservas y disponible,
+y abrir **Ajustar**. Usa los permisos existentes de `corregir_entradas`: ver para
+consultar y editar para registrar.
+El listado muestra 10 lotes por pagina, conserva la busqueda al navegar y usa
+acciones compactas con iconos para ajustar y consultar el historial.
+
+- El positivo suma y el negativo resta definitivamente, sin modificar la entrada
+  original ni crear una salida de mercancia o predespacho.
+- Monto positivo con hasta tres decimales, observacion obligatoria, fecha/hora actual
+  del servidor y responsable obtenido del usuario autenticado.
+  El formulario exige elegir Positivo o Negativo mediante radios sin seleccion
+  inicial; muestra fecha y responsable en campos de solo lectura.
+  La fecha se muestra como dia/mes/ano, sin cambiar la fecha/hora guardada.
+  La ventana se puede cerrar con la X, Cancelar o un clic fuera de ella.
+- Los negativos no consumen reservas ni permiten superar el disponible. La
+  validacion se realiza dentro de una transaccion con bloqueo del lote.
+- En Sector3 se selecciona el silo afectado. Su ocupacion se actualiza en la misma
+  transaccion, validando producto, capacidad y cantidad del lote en ese silo.
+  El lote debe estar completamente distribuido antes de ajustarse. Para varios
+  silos, registre un ajuste por silo.
+- El historial es de solo consulta. Un error se compensa con otro ajuste de signo
+  contrario, indicando el numero del registro original en la observacion. Los lotes
+  con ajustes no se pueden eliminar ni cambiar de producto, sector o cantidad original.
+- Movimientos por lote incorpora filas lila pastel en orden cronologico dentro de
+  cada lote: positivos en Entrada, negativos en Salida, sin duplicar movimientos.
+  El saldo de movimientos conserva su significado de saldo fisico; los predespachos
+  solo reservan disponibilidad. PDF/impresion y Excel incluyen los ajustes y colores.
+- Saldo de productos conserva Entrada original y Salidas reales, muestra Ajustes +
+  y Ajustes -, y calcula saldo fisico y disponible incluyendo los ajustes.
+- Inteligencia incorpora los ajustes en las entradas/salidas del periodo por fecha
+  de creacion y usa el disponible libre de reservas.
+
+Prueba de regresion: `php tests/ajustes-lote-regression.php`. Crea una base MySQL
+aislada con nombre aleatorio, aplica el script y elimina esa base al terminar;
+no modifica los datos de inventario. Requiere permisos para crear bases de prueba.
+Para comprobar tambien los archivos Excel necesita las extensiones PHP `zip`,
+`mbstring` y `pdo_mysql`, y las dependencias de Composer instaladas.
+
 ## Ejecutar
 
 Para comprobar el cliente del PDF y consultar el seguimiento por web, ver
