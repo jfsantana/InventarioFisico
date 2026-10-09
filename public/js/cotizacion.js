@@ -249,7 +249,7 @@ document.addEventListener('DOMContentLoaded', () => {
         document.body.classList.remove('modal-is-open');
     }
 
-    async function downloadPdf(url, filename) {
+    async function deliverPdf(url, filename) {
         const response = await fetch(url, { credentials: 'same-origin', cache: 'no-store' });
         if (response.headers.get('X-Cotizacion-Log') === 'error') {
             warnLog();
@@ -259,14 +259,37 @@ document.addEventListener('DOMContentLoaded', () => {
             throw new Error('La cotización se guardó, pero el servidor no pudo generar el PDF.');
         }
 
-        const blobUrl = URL.createObjectURL(await response.blob());
+        const pdfBlob = await response.blob();
+        const pdfFilename = filename || 'cotizacion.pdf';
+        const pdfFile = new File([pdfBlob], pdfFilename, { type: 'application/pdf' });
+        const shareData = { files: [pdfFile] };
+
+        if (
+            typeof navigator.share === 'function'
+            && typeof navigator.canShare === 'function'
+            && navigator.canShare(shareData)
+        ) {
+            try {
+                // Compartir solo el archivo evita que el navegador agregue la URL de la aplicación.
+                await navigator.share(shareData);
+                return 'shared';
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    return 'cancelled';
+                }
+                throw error;
+            }
+        }
+
+        const blobUrl = URL.createObjectURL(pdfBlob);
         const link = document.createElement('a');
         link.href = blobUrl;
-        link.download = filename || 'cotizacion.pdf';
+        link.download = pdfFilename;
         document.body.appendChild(link);
         link.click();
         link.remove();
         setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+        return 'downloaded';
     }
 
     function selectedClientNeedsEmail() {
@@ -539,13 +562,19 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await sendJson(page.dataset.saveEndpoint, payload);
             showMessage(pageMessage, `${data.mensaje} Número: ${data.idCotizacion}.`, data.correoEnviado === false ? 'error' : 'success');
             if (data.pdfUrl) {
-                generationProgressText.textContent = 'Generando y descargando el PDF...';
+                generationProgressText.textContent = 'Preparando el PDF...';
                 try {
-                    await downloadPdf(data.pdfUrl, data.pdfFilename);
-                    await logStep('pdf.descarga_completada');
+                    const deliveryResult = await deliverPdf(data.pdfUrl, data.pdfFilename);
+                    if (deliveryResult === 'shared') {
+                        await logStep('pdf.compartido');
+                    } else if (deliveryResult === 'cancelled') {
+                        await logStep('pdf.compartir_cancelado');
+                    } else {
+                        await logStep('pdf.descarga_completada');
+                    }
                 } catch (error) {
                     await logStep('pdf.descarga_error');
-                    showMessage(pageMessage, error.message, 'error');
+                    showMessage(pageMessage, `La cotización se guardó, pero no se pudo entregar el PDF: ${error.message}`, 'error');
                 }
             }
             form.reset();

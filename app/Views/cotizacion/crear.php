@@ -23,7 +23,7 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
     <header class="cotizacion-heading">
         <div>
             <p class="eyebrow">Junta Directiva</p>
-            <h1>Nueva cotización</h1>
+            <h1>Nueva cotización.</h1>
         </div>
         <div class="cotizacion-heading-actions">
             <a class="button-link button-link--secondary" href="<?= APP_URL ?>/cotizacion">Ver cotizaciones</a>
@@ -239,8 +239,8 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
         <div class="cotizacion-generation-options">
             <button type="button" data-generation-mode="pdf">
                 <span class="cotizacion-generation-icon" aria-hidden="true">&#8681;</span>
-                <strong>Generar y descargar PDF</strong>
-                <small>Genera la cotización y descarga el archivo en este dispositivo.</small>
+                <strong>Generar PDF</strong>
+                <small>En el celular permite compartir solo el archivo; en otros equipos lo descarga.</small>
             </button>
             <button type="button" data-generation-mode="email">
                 <span class="cotizacion-generation-icon" aria-hidden="true">&#9993;</span>
@@ -249,8 +249,8 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
             </button>
             <button type="button" data-generation-mode="pdf_email">
                 <span class="cotizacion-generation-icon" aria-hidden="true">&#8681;&nbsp;&#9993;</span>
-                <strong>Descargar PDF y enviar por email</strong>
-                <small>Descarga el archivo y también envía la cotización por correo.</small>
+                <strong>Generar PDF y enviar por email</strong>
+                <small>Permite compartir o descargar el archivo y también lo envía por correo.</small>
             </button>
         </div>
 
