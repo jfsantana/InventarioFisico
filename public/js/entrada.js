@@ -28,6 +28,11 @@ if (entradaForm) {
     const providerForm = providerModal?.querySelector('[data-provider-quick-form]');
     const providerMessage = providerModal?.querySelector('[data-provider-quick-message]');
     const providerTitle = providerModal?.querySelector('[data-provider-quick-title]');
+    const presentationModal = document.querySelector('[data-presentation-quick-modal]');
+    const presentationForm = presentationModal?.querySelector('[data-presentation-quick-form]');
+    const presentationMessage = presentationModal?.querySelector('[data-presentation-quick-message]');
+    const presentationOpenButton = entradaForm.querySelector('[data-open-presentation-quick]');
+    let presentationSaving = false;
     const siloSection = entradaForm.querySelector('[data-silo-allocation]');
     const siloRows = entradaForm.querySelector('[data-silo-rows]');
     const initialSiloAssignments = JSON.parse(entradaForm.querySelector('[data-initial-silo-assignments]')?.textContent || '[]');
@@ -425,7 +430,82 @@ if (entradaForm) {
         }
     });
 
+    function closePresentationModal() {
+        if (!presentationModal || presentationSaving) return;
+        presentationModal.classList.remove('is-open');
+        presentationModal.hidden = true;
+        document.body.classList.remove('modal-is-open');
+        presentationOpenButton.focus();
+    }
+
+    presentationOpenButton?.addEventListener('click', () => {
+        presentationForm.reset();
+        presentationMessage.hidden = true;
+        presentationMessage.textContent = '';
+        presentationModal.hidden = false;
+        presentationModal.classList.add('is-open');
+        document.body.classList.add('modal-is-open');
+        presentationForm.elements.nombre.focus();
+    });
+
+    presentationModal?.querySelectorAll('[data-presentation-quick-close]').forEach((button) => {
+        button.addEventListener('click', closePresentationModal);
+    });
+    presentationModal?.addEventListener('click', (event) => {
+        if (event.target === presentationModal) closePresentationModal();
+    });
+    presentationForm?.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        if (presentationSaving) return;
+        presentationMessage.hidden = true;
+        presentationForm.elements.nombre.value = presentationForm.elements.nombre.value.trim();
+        if (!presentationForm.reportValidity()) return;
+
+        const buttons = presentationModal.querySelectorAll('button');
+        presentationSaving = true;
+        buttons.forEach((button) => { button.disabled = true; });
+        try {
+            const response = await fetch(entradaForm.dataset.presentationEndpoint, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-Token': entradaForm.dataset.csrfToken,
+                },
+                body: JSON.stringify({ nombre: presentationForm.elements.nombre.value }),
+            });
+            const data = await response.json().catch(() => {
+                throw new Error('Respuesta invalida del servidor.');
+            });
+            if (!response.ok || !data.success) {
+                throw new Error(data.error || 'No se pudo crear la presentacion.');
+            }
+            if (!Number.isInteger(data.presentacion?.idPresentacion) || data.presentacion.idPresentacion <= 0
+                || typeof data.presentacion.nombre !== 'string' || !data.presentacion.nombre.trim()) {
+                throw new Error('Respuesta invalida del servidor.');
+            }
+
+            const select = entradaForm.elements.idPresentacion;
+            const value = String(data.presentacion.idPresentacion);
+            if (!Array.from(select.options).some((option) => option.value === value)) {
+                select.add(new Option(data.presentacion.nombre, value));
+            }
+            select.value = value;
+            select.dispatchEvent(new Event('change', { bubbles: true }));
+            presentationSaving = false;
+            closePresentationModal();
+        } catch (error) {
+            presentationMessage.textContent = error.message;
+            presentationMessage.hidden = false;
+        } finally {
+            presentationSaving = false;
+            buttons.forEach((button) => { button.disabled = false; });
+        }
+    });
+
     document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape' && presentationModal?.classList.contains('is-open')) {
+            closePresentationModal();
+        }
         if (event.key === 'Escape' && providerModal?.classList.contains('is-open')) {
             closeProviderModal();
         }

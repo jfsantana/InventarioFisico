@@ -65,7 +65,7 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </aside>
     <?php endif; ?>
 
-    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form data-provider-endpoint="<?= APP_URL ?>/entrada/crearProveedor" data-silo-endpoint="<?= APP_URL ?>/entrada/silosDisponibles" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
+    <form class="entry-form entry-form--two-columns" method="post" action="<?= APP_URL ?>/entrada/guardar" enctype="multipart/form-data" data-entrada-form data-provider-endpoint="<?= APP_URL ?>/entrada/crearProveedor" data-presentation-endpoint="<?= APP_URL ?>/entrada/crearPresentacion" data-silo-endpoint="<?= APP_URL ?>/entrada/silosDisponibles" data-csrf-token="<?= htmlspecialchars(Auth::csrfToken(), ENT_QUOTES, 'UTF-8') ?>">
         <?= Auth::csrfField() ?>
         <fieldset class="entry-form-fieldset" <?= $canCreateEntry ? '' : 'disabled' ?>>
         <div class="form-field">
@@ -162,7 +162,12 @@ $isEntradaCompleta = !empty($formData['idProducto'])
         </div>
 
         <div class="form-field">
-            <label for="idPresentacion">7. Presentacion (Efecto reporteria)</label>
+            <div class="form-field-heading">
+                <label for="idPresentacion">7. Presentacion (Efecto reporteria)</label>
+                <?php if ($canCreateEntry) : ?>
+                    <button class="field-add-button" type="button" data-open-presentation-quick aria-label="Crear presentacion" title="Crear presentacion">+</button>
+                <?php endif; ?>
+            </div>
             <select id="idPresentacion" name="idPresentacion" required>
                 <option value="">Seleccione una presentacion</option>
                 <?php foreach ($presentaciones as $presentacion) : ?>
@@ -293,6 +298,25 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 </section>
 
 <?php if ($canCreateEntry) : ?>
+<div class="correction-modal provider-quick-modal" data-presentation-quick-modal hidden role="dialog" aria-modal="true" aria-labelledby="presentation-quick-title">
+    <form class="correction-modal-card provider-quick-card" data-presentation-quick-form novalidate>
+        <header>
+            <div>
+                <h2 id="presentation-quick-title">Nueva presentacion</h2>
+                <p>La nueva presentacion quedara seleccionada en la entrada.</p>
+            </div>
+            <button type="button" class="modal-close" data-presentation-quick-close aria-label="Cerrar modal">&times;</button>
+        </header>
+        <div class="provider-quick-grid">
+            <label class="provider-quick-wide">Nombre<input name="nombre" type="text" maxlength="50" required autocomplete="off"></label>
+        </div>
+        <div class="message message--error" data-presentation-quick-message role="alert" hidden></div>
+        <footer class="modal-actions">
+            <button type="button" class="button-link button-link--secondary" data-presentation-quick-close>Cancelar</button>
+            <button type="submit" class="button-link button-link--submit">Crear presentacion</button>
+        </footer>
+    </form>
+</div>
 <div class="correction-modal provider-quick-modal" data-provider-quick-modal hidden role="dialog" aria-modal="true" aria-labelledby="provider-quick-title">
     <form class="correction-modal-card provider-quick-card" data-provider-quick-form novalidate>
         <header>

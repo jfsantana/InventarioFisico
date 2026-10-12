@@ -100,6 +100,19 @@ Para comprobar tambien los archivos Excel necesita las extensiones PHP `zip`,
 
 ## Ejecutar
 
+En el formulario principal de entrada, el boton **+** de **7. Presentacion**
+permite crear una presentacion sin perder los datos ni los archivos cargados.
+El nombre es obligatorio, admite hasta 50 caracteres y la opcion creada queda
+seleccionada automaticamente. Los duplicados se rechazan usando la colacion de
+`presentacion.nombre` (sin distinguir mayusculas ni acentos con la colacion
+`utf8mb4_0900_ai_ci`) e ignorando espacios al inicio y al final.
+Requiere permiso de edicion de entrada y el privilegio MySQL `LOCK TABLES` para
+comprobar e insertar sin carreras concurrentes en la tabla MyISAM existente.
+No cambia la estructura ni elimina presentaciones existentes.
+Prueba de regresion: `php tests/entrada-presentacion-regression.php`. Comprueba
+limites, duplicados y altas concurrentes en una base MyISAM aislada, que elimina
+al terminar; requiere `pdo_mysql`, `mbstring` y permisos para crear bases de prueba.
+
 Para comprobar el cliente del PDF y consultar el seguimiento por web, ver
 [Diagnostico de cotizaciones](docs/cotizaciones-diagnostico.md).
 

@@ -132,6 +132,57 @@ class EntradaController extends Controller
         }
     }
 
+    public function crearPresentacion(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Metodo HTTP no permitido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        if (!Auth::check()) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Debe iniciar sesion.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        if (!Auth::can('entrada', 'editar')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'No tiene permiso para crear presentaciones.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $payload = json_decode((string) file_get_contents('php://input'), true, 512, JSON_THROW_ON_ERROR);
+        } catch (JsonException $exception) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'El cuerpo JSON no es valido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+        $csrfToken = is_array($payload) ? ($payload['csrf_token'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '')) : '';
+        if (!is_string($csrfToken) || !hash_equals(Auth::csrfToken(), $csrfToken)) {
+            http_response_code(419);
+            echo json_encode(['success' => false, 'error' => 'Token CSRF invalido.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        try {
+            $presentacion = $this->model('EntradaInventario')->crearPresentacion(is_array($payload) ? $payload : []);
+        } catch (InvalidArgumentException | DomainException $exception) {
+            http_response_code($exception instanceof DomainException ? 409 : 422);
+            echo json_encode(['success' => false, 'error' => $exception->getMessage()], JSON_UNESCAPED_UNICODE);
+            return;
+        } catch (PDOException $exception) {
+            error_log('Error al crear presentacion: ' . $exception->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'No se pudo crear la presentacion. Revise el log del servidor.'], JSON_UNESCAPED_UNICODE);
+            return;
+        }
+
+        http_response_code(201);
+        echo json_encode(['success' => true, 'presentacion' => $presentacion], JSON_UNESCAPED_UNICODE);
+    }
+
     public function crearProveedor(): void
     {
         header('Content-Type: application/json; charset=utf-8');

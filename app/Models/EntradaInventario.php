@@ -16,6 +16,35 @@ class EntradaInventario extends BaseModel
         return $statement->fetchAll();
     }
 
+    public function crearPresentacion(array $data): array
+    {
+        $nombre = $data['nombre'] ?? null;
+        if (!is_string($nombre) || !mb_check_encoding($nombre, 'UTF-8')) {
+            throw new InvalidArgumentException('El nombre de la presentacion no es valido.');
+        }
+        $nombre = trim($nombre);
+        if ($nombre === '' || mb_strlen($nombre, 'UTF-8') > 50) {
+            throw new InvalidArgumentException('El nombre es obligatorio y no puede superar 50 caracteres.');
+        }
+
+        // MyISAM no admite bloqueos transaccionales; serializar la comprobacion y el alta.
+        $this->db->exec('LOCK TABLES presentacion WRITE');
+        try {
+            $statement = $this->db->prepare('SELECT idPresentacion FROM presentacion WHERE TRIM(nombre) = :nombre LIMIT 1');
+            $statement->execute(['nombre' => $nombre]);
+            if ($statement->fetchColumn() !== false) {
+                throw new DomainException('Ya existe una presentacion con ese nombre. Seleccionela en la lista.');
+            }
+
+            $statement = $this->db->prepare('INSERT INTO presentacion (nombre) VALUES (:nombre)');
+            $statement->execute(['nombre' => $nombre]);
+
+            return ['idPresentacion' => (int) $this->db->lastInsertId(), 'nombre' => $nombre];
+        } finally {
+            $this->db->exec('UNLOCK TABLES');
+        }
+    }
+
     public function obtenerUbicaciones(): array
     {
         $statement = $this->db->query('SELECT idUbicacion, nombre FROM ubicacion ORDER BY nombre ASC');
