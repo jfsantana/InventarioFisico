@@ -5,6 +5,31 @@ $silos = $silos ?? [];
 $entradasPendientes = $entradasPendientes ?? [];
 $filters = $filters ?? [];
 $messageType = $messageType ?? 'success';
+$ordenVisualSilos = [
+    '013', '010', '007', '004', '001',
+    '014', '011', '008', '005', '002',
+    '015', '012', '009', '006', '003',
+];
+$posicionesVisualesSilos = [];
+foreach ($ordenVisualSilos as $indice => $codigo) {
+    $posicionesVisualesSilos[$codigo] = [
+        'fila' => intdiv($indice, 5) + 1,
+        'columna' => ($indice % 5) + 1,
+    ];
+}
+$silosVisuales = $silos;
+usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisualesSilos): int {
+    $posicionA = $posicionesVisualesSilos[trim((string) ($a['codigo'] ?? ''))] ?? null;
+    $posicionB = $posicionesVisualesSilos[trim((string) ($b['codigo'] ?? ''))] ?? null;
+
+    if ($posicionA === null || $posicionB === null) {
+        return $posicionA === null
+            ? ($posicionB === null ? strcmp((string) ($a['codigo'] ?? ''), (string) ($b['codigo'] ?? '')) : 1)
+            : -1;
+    }
+
+    return [$posicionA['fila'], $posicionA['columna']] <=> [$posicionB['fila'], $posicionB['columna']];
+});
 ?>
 
 <section class="panel report-panel admin-page silo-admin-page" data-silo-admin data-availability-endpoint="<?= APP_URL ?>/admin/silosDisponibles">
@@ -43,8 +68,9 @@ $messageType = $messageType ?? 'success';
         <?php if (!$silos) : ?>
             <div class="message">Registre un silo para visualizar su nivel.</div>
         <?php else : ?>
-            <div class="silo-visual-grid">
-                <?php foreach ($silos as $silo) : ?>
+            <div class="silo-visual-grid-wrap">
+                <div class="silo-visual-grid">
+                <?php foreach ($silosVisuales as $silo) : ?>
                     <?php
                     $capacidad = (float) $silo['capacidad'];
                     $ocupado = (float) $silo['cantidadOcupada'];
@@ -53,8 +79,12 @@ $messageType = $messageType ?? 'success';
                     $nivelClase = $porcentaje < 20
                         ? 'is-critical'
                         : ($porcentaje <= 60 ? 'is-warning' : 'is-available');
+                    $posicionVisual = $posicionesVisualesSilos[trim((string) $silo['codigo'])] ?? null;
+                    $estiloPosicion = $posicionVisual
+                        ? 'grid-row:' . $posicionVisual['fila'] . ';grid-column:' . $posicionVisual['columna'] . ';'
+                        : '';
                     ?>
-                    <article class="silo-visual-card <?= (int) $silo['activo'] === 1 ? '' : 'is-inactive' ?>">
+                    <article class="silo-visual-card <?= (int) $silo['activo'] === 1 ? '' : 'is-inactive' ?>"<?= $estiloPosicion !== '' ? ' style="' . $estiloPosicion . '"' : '' ?>>
                         <div class="silo-visual-code">
                             <span><?= $text($silo['nombre']) ?></span>
                             <strong><?= $text($silo['codigo']) ?></strong>
@@ -79,6 +109,7 @@ $messageType = $messageType ?? 'success';
                         </dl>
                     </article>
                 <?php endforeach; ?>
+                </div>
             </div>
         <?php endif; ?>
     </section>

@@ -1885,10 +1885,16 @@ h1 {
     background: #b43a32;
 }
 
+.silo-visual-grid-wrap {
+    overflow-x: auto;
+    padding-bottom: 6px;
+}
+
 .silo-visual-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+    grid-template-columns: repeat(5, minmax(170px, 1fr));
     gap: 16px;
+    min-width: 914px;
 }
 
 .silo-visual-card {
@@ -2124,8 +2130,8 @@ h1 {
     }
 
     .silo-visual-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
         gap: 10px;
+        min-width: 890px;
     }
 
     .silo-visual-card {
