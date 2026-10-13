@@ -36,10 +36,10 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
     <div class="admin-heading">
         <div>
             <p class="eyebrow">Administración y seguridad</p>
-            <h1>Control de silos</h1>
-            <p class="intro">Capacidad y ocupación física de los silos utilizados por productos de Sector3.</p>
+            <h1>Control de tanques</h1>
+            <p class="intro">Capacidad y ocupación física de los tanques utilizados por productos de Sector3.</p>
         </div>
-        <button class="button-link button-link--submit" type="button" data-open-silo-modal>+ Nuevo silo</button>
+        <button class="button-link button-link--submit" type="button" data-open-silo-modal>+ Nuevo tanque</button>
     </div>
 
     <?php if (!empty($message)) : ?>
@@ -66,7 +66,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
         </div>
 
         <?php if (!$silos) : ?>
-            <div class="message">Registre un silo para visualizar su nivel.</div>
+            <div class="message">Registre un tanque para visualizar su nivel.</div>
         <?php else : ?>
             <div class="silo-visual-grid-wrap">
                 <div class="silo-visual-grid">
@@ -89,7 +89,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
                             <span><?= $text($silo['nombre']) ?></span>
                             <strong><?= $text($silo['codigo']) ?></strong>
                         </div>
-                        <div class="silo-vessel <?= $nivelClase ?>" role="img" aria-label="Silo <?= $text($silo['codigo']) ?> al <?= number_format($porcentaje, 1) ?> por ciento, <?= number_format($ocupado, 3) ?> kilogramos ocupados">
+                        <div class="silo-vessel <?= $nivelClase ?>" role="img" aria-label="Tanque <?= $text($silo['codigo']) ?> al <?= number_format($porcentaje, 1) ?> por ciento, <?= number_format($ocupado, 3) ?> kilogramos ocupados">
                             <div class="silo-vessel-cap"></div>
                             <div class="silo-vessel-body">
                                 <div class="silo-vessel-fill" style="height: <?= number_format($porcentaje, 2, '.', '') ?>%"></div>
@@ -101,7 +101,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
                         </div>
                         <div class="silo-visual-product">
                             <span>Producto almacenado</span>
-                            <strong><?= $text($silo['productoActual'] ?: 'Silo vacío') ?></strong>
+                            <strong><?= $text($silo['productoActual'] ?: 'Tanque vacío') ?></strong>
                         </div>
                         <dl class="silo-visual-values">
                             <div><dt>Disponible</dt><dd><?= number_format($disponible, 3) ?> kg</dd></div>
@@ -119,7 +119,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
             <thead><tr><th>Código</th><th>Nombre</th><th>Producto actual</th><th>Capacidad</th><th>Ocupado</th><th>Disponible</th><th>Estado</th><th>Acciones</th></tr></thead>
             <tbody>
                 <?php if (!$silos) : ?>
-                    <tr><td colspan="8">No hay silos registrados.</td></tr>
+                    <tr><td colspan="8">No hay tanques registrados.</td></tr>
                 <?php else : ?>
                     <?php foreach ($silos as $silo) : ?>
                         <?php $porcentaje = (float) $silo['capacidad'] > 0 ? min(100, ((float) $silo['cantidadOcupada'] / (float) $silo['capacidad']) * 100) : 0; ?>
@@ -171,12 +171,12 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
 <div class="correction-modal" data-silo-modal hidden role="dialog" aria-modal="true" aria-labelledby="silo-modal-title">
     <form class="correction-modal-card admin-modal-card" method="post" action="<?= APP_URL ?>/admin/guardarSilo" data-silo-form>
         <?= Auth::csrfField() ?><input type="hidden" name="idSilo">
-        <header><div><h2 id="silo-modal-title" data-silo-modal-title>Nuevo silo</h2><p>Capacidad expresada en kilogramos.</p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button></header>
+        <header><div><h2 id="silo-modal-title" data-silo-modal-title>Nuevo tanque</h2><p>Capacidad expresada en kilogramos.</p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button></header>
         <div class="correction-modal-grid">
             <label>Código<input name="codigo" type="text" maxlength="30" pattern="[A-Za-z0-9_-]+" required></label>
             <label>Nombre<input name="nombre" type="text" maxlength="100" required></label>
             <label>Capacidad (kg)<input name="capacidad" type="number" min="0.001" step="0.001" required></label>
-            <label class="admin-check"><input name="activo" type="checkbox" value="1" checked> Silo activo</label>
+            <label class="admin-check"><input name="activo" type="checkbox" value="1" checked> Tanque activo</label>
         </div>
         <footer class="modal-actions"><button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button><button type="submit" class="button-link button-link--submit">Guardar</button></footer>
     </form>
@@ -188,7 +188,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
         <header><div><h2 id="assignment-modal-title">Distribuir entrada</h2><p data-assignment-subtitle></p></div><button type="button" class="modal-close" data-modal-close aria-label="Cerrar">×</button></header>
         <div class="silo-assignment-summary"><span>Cantidad por distribuir</span><strong data-assignment-required>0.000 kg</strong></div>
         <div class="silo-assignment-rows" data-assignment-rows></div>
-        <button type="button" class="button-link button-link--secondary" data-add-assignment>+ Agregar silo</button>
+        <button type="button" class="button-link button-link--secondary" data-add-assignment>+ Agregar tanque</button>
         <div class="message" data-assignment-message role="status"></div>
         <footer class="modal-actions"><button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button><button type="submit" class="button-link button-link--submit">Guardar distribución</button></footer>
     </form>
@@ -197,7 +197,7 @@ usort($silosVisuales, static function (array $a, array $b) use ($posicionesVisua
 <div class="correction-modal correction-modal--confirm" data-silo-delete-modal hidden role="dialog" aria-modal="true" aria-labelledby="silo-delete-title">
     <form class="correction-modal-card correction-confirm-card" method="post" action="<?= APP_URL ?>/admin/eliminarSilo">
         <?= Auth::csrfField() ?><input type="hidden" name="idSilo">
-        <div class="warning-icon" aria-hidden="true">!</div><h2 id="silo-delete-title">¿Eliminar silo?</h2><p data-delete-silo-message></p>
+        <div class="warning-icon" aria-hidden="true">!</div><h2 id="silo-delete-title">¿Eliminar tanque?</h2><p data-delete-silo-message></p>
         <footer class="modal-actions"><button type="button" class="button-link button-link--secondary" data-modal-close>Cancelar</button><button type="submit" class="button-link button-link--danger">Sí, eliminar</button></footer>
     </form>
 </div>

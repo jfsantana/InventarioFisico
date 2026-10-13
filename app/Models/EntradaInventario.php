@@ -384,11 +384,11 @@ class EntradaInventario extends BaseModel
         $eraSector3 = $this->esSector3((string) $actual['sector']);
         $seraSector3 = $this->esSector3((string) $data['Sector']);
         if (!$eraSector3 && $seraSector3) {
-            throw new DomainException('No puede mover una entrada existente a Sector3 sin distribuirla entre silos. Registre una nueva entrada o use el módulo de silos.');
+            throw new DomainException('No puede mover una entrada existente a Sector3 sin distribuirla entre tanques. Registre una nueva entrada o use el módulo de tanques.');
         }
         if ((int) $actual['tieneAsignaciones'] === 1
             && (!$seraSector3 || (int) $actual['idProducto'] !== (int) $data['idProducto'])) {
-            throw new DomainException('Una entrada distribuida en silos no permite cambiar el producto ni salir de Sector3.');
+            throw new DomainException('Una entrada distribuida en tanques no permite cambiar el producto ni salir de Sector3.');
         }
 
         $statement = $this->db->prepare(

@@ -221,10 +221,10 @@ $isEntradaCompleta = !empty($formData['idProducto'])
 
         <section class="entry-silo-allocation" data-silo-allocation hidden>
             <div class="entry-silo-heading">
-                <div><span>Distribución obligatoria</span><h2>Asignación a silos de Sector3</h2></div>
-                <button class="button-link button-link--secondary" type="button" data-add-silo>+ Agregar silo</button>
+                <div><span>Distribución obligatoria</span><h2>Asignación a tanques de Sector3</h2></div>
+                <button class="button-link button-link--secondary" type="button" data-add-silo>+ Agregar tanque</button>
             </div>
-            <p>Distribuya toda la cantidad entrante. Solo aparecen silos vacíos o que contienen el mismo producto.</p>
+            <p>Distribuya toda la cantidad entrante. Solo aparecen tanques vacíos o que contienen el mismo producto.</p>
             <div class="silo-assignment-rows" data-silo-rows></div>
             <div class="silo-entry-totals">
                 <span>Entrada: <strong data-silo-required>0.000 kg</strong></span>

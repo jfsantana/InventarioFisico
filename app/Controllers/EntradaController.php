@@ -413,7 +413,7 @@ class EntradaController extends Controller
         header('Content-Type: application/json; charset=utf-8');
         if (!Auth::check() || !Auth::can('entrada', 'editar')) {
             http_response_code(403);
-            echo json_encode(['error' => 'No tiene permiso para consultar silos.'], JSON_UNESCAPED_UNICODE);
+            echo json_encode(['error' => 'No tiene permiso para consultar tanques.'], JSON_UNESCAPED_UNICODE);
             return;
         }
 

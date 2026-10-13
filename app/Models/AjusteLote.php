@@ -140,7 +140,7 @@ class AjusteLote extends BaseModel
                 $detalleSilos = $this->ajustarSilos($idEntrada, (int) $entrada['idProducto'], $detalleSilos, $tipo, (float) $monto, $stock);
                 $idSilo = count($detalleSilos) === 1 ? $detalleSilos[0]['idSilo'] : null;
             } elseif (!empty($data['idSilo']) || !empty($data['asignacionesSilo'])) {
-                throw new DomainException('Este lote no tiene control por silos.');
+                throw new DomainException('Este lote no tiene control por tanques.');
             }
             $statement = $this->db->prepare(
                 'INSERT INTO ajustes_lote (idInventarioEntrante, tipo, monto, observacion, idUsuario, responsable, idSilo, tokenRegistro)
@@ -173,12 +173,12 @@ class AjusteLote extends BaseModel
             $cantidad = trim((string) ($fila['cantidad'] ?? ''));
             if (!$id || $id < 1 || isset($normalizadas[$id])
                 || !preg_match('/^\d{1,11}(?:\.\d{1,3})?$/D', $cantidad) || (float) $cantidad <= 0) {
-                throw new DomainException('Seleccione silos sin repetir y cantidades positivas de hasta 3 decimales.');
+                throw new DomainException('Seleccione tanques sin repetir y cantidades positivas de hasta 3 decimales.');
             }
             $normalizadas[$id] = ['idSilo' => $id, 'cantidad' => $cantidad];
         }
         if (!$normalizadas || abs(array_sum(array_column($normalizadas, 'cantidad')) - $monto) > 0.0005) {
-            throw new DomainException('Las cantidades de los silos deben sumar exactamente el monto del ajuste.');
+            throw new DomainException('Las cantidades de los tanques deben sumar exactamente el monto del ajuste.');
         }
         $statement = $this->db->prepare(
             'SELECT a.idSilo, a.cantidadAsignada - COALESCE(x.cantidad, 0) AS cantidad
@@ -194,12 +194,12 @@ class AjusteLote extends BaseModel
         }
         $saldoFisico = (float) $stock['cantidad_disponible'] + (float) $stock['cantidad_reservada'];
         if (abs(array_sum($asignaciones) - $saldoFisico) > 0.0005) {
-            throw new DomainException('Distribuya primero todo el saldo fisico del lote entre silos antes de ajustarlo.');
+            throw new DomainException('Distribuya primero todo el saldo fisico del lote entre tanques antes de ajustarlo.');
         }
         foreach ($normalizadas as $idSilo => $fila) {
             $cantidadActual = $asignaciones[$idSilo] ?? 0;
             if ($tipo === 'negativo' && (float) $fila['cantidad'] - $cantidadActual > 0.0005) {
-                throw new DomainException('El ajuste supera la cantidad de este lote en uno de los silos seleccionados.');
+                throw new DomainException('El ajuste supera la cantidad de este lote en uno de los tanques seleccionados.');
             }
             $asignaciones[$idSilo] = $cantidadActual + ($tipo === 'positivo' ? 1 : -1) * (float) $fila['cantidad'];
         }

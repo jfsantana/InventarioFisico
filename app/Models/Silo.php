@@ -80,7 +80,7 @@ class Silo extends BaseModel
         $statement->execute(['idSilo' => $idSilo]);
         $ocupada = $statement->fetchColumn();
         if ($ocupada === false) {
-            throw new InvalidArgumentException('El silo no existe.');
+            throw new InvalidArgumentException('El tanque no existe.');
         }
         if ((float) $data['capacidad'] + 0.0005 < (float) $ocupada) {
             throw new DomainException('La capacidad no puede ser menor que la cantidad ocupada (' . number_format((float) $ocupada, 3) . ' kg).');
@@ -105,7 +105,7 @@ class Silo extends BaseModel
         );
         $statement->execute(['idSilo' => $idSilo, 'idSiloAjuste' => $idSilo, 'idSiloDetalle' => $idSilo]);
         if ((int) $statement->fetchColumn() > 0) {
-            throw new DomainException('El silo tiene historial de inventario. Desactívelo en lugar de eliminarlo.');
+            throw new DomainException('El tanque tiene historial de inventario. Desactívelo en lugar de eliminarlo.');
         }
 
         $statement = $this->db->prepare('DELETE FROM silos WHERE idSilo = :idSilo');

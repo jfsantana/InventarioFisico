@@ -77,7 +77,7 @@ $urlPagina = static fn (int $pagina): string => APP_URL . '/ajuste?' . http_buil
     <p>Los registros son de solo consulta. Para revertir un ajuste, registre uno de signo contrario e indique el numero del ajuste en la observacion.</p>
     <div class="report-table-wrap">
         <table class="report-table">
-            <thead><tr><th>Registro</th><th>Fecha de creacion</th><th>Estado</th><th>Monto</th><th>Silo</th><th>Observacion</th><th>Responsable</th></tr></thead>
+            <thead><tr><th>Registro</th><th>Fecha de creacion</th><th>Estado</th><th>Monto</th><th>Tanque</th><th>Observacion</th><th>Responsable</th></tr></thead>
             <tbody>
                 <?php foreach ($historial as $ajuste) : ?>
                 <tr class="report-row report-row--ajuste">
@@ -134,8 +134,8 @@ $urlPagina = static fn (int $pagina): string => APP_URL . '/ajuste?' . http_buil
         <div class="form-field ajuste-monto-field"><label for="ajusteMonto">Monto (obligatorio)</label><input type="number" inputmode="decimal" min="0.001" max="99999999999.999" step="0.001" name="monto" id="ajusteMonto" required value="<?= $escape($formData['monto'] ?? '') ?>"><small>Unidad del lote; hasta 3 decimales.</small></div>
         <section class="entry-silo-allocation" id="ajusteSiloCampo" hidden>
             <div class="entry-silo-heading">
-                <h3>Distribucion del ajuste en silos</h3>
-                <button class="button-link button-link--secondary" type="button" id="ajusteAgregarSilo" disabled>+ Agregar silo</button>
+                <h3>Distribucion del ajuste en tanques</h3>
+                <button class="button-link button-link--secondary" type="button" id="ajusteAgregarSilo" disabled>+ Agregar tanque</button>
             </div>
             <p id="ajusteSiloAyuda"></p>
             <div class="silo-assignment-rows" id="ajusteSiloFilas"></div>

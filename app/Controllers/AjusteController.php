@@ -101,7 +101,7 @@ class AjusteController extends Controller
         header('Content-Type: application/json; charset=utf-8');
         if (!Auth::check() || !Auth::can('corregir_entradas', 'editar')) {
             http_response_code(403);
-            echo json_encode(['error' => 'No tiene permiso para consultar silos.']);
+            echo json_encode(['error' => 'No tiene permiso para consultar tanques.']);
             return;
         }
         try {
@@ -116,7 +116,7 @@ class AjusteController extends Controller
         } catch (PDOException $exception) {
             error_log('Error al consultar silos para ajuste: ' . $exception->getMessage());
             http_response_code(500);
-            echo json_encode(['error' => 'No se pudieron consultar los silos. Verifique la actualizacion SQL.']);
+            echo json_encode(['error' => 'No se pudieron consultar los tanques. Verifique la actualizacion SQL.']);
         }
     }
 }

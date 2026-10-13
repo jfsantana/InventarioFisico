@@ -11,7 +11,7 @@ class SiloStockService
         $normalizadas = $this->normalizarAsignaciones($asignaciones);
         $total = array_sum(array_column($normalizadas, 'cantidad'));
         if ($normalizadas === [] || abs($total - $cantidadEsperada) > 0.0005) {
-            throw new DomainException('La distribución entre silos debe sumar exactamente ' . number_format($cantidadEsperada, 3) . ' kg.');
+            throw new DomainException('La distribución entre tanques debe sumar exactamente ' . number_format($cantidadEsperada, 3) . ' kg.');
         }
 
         $bloquear = $this->db->prepare(
@@ -34,19 +34,19 @@ class SiloStockService
         foreach ($normalizadas as $asignacion) {
             $bloquear->execute(['idSilo' => $asignacion['idSilo']]);
             if (!$bloquear->fetch()) {
-                throw new DomainException('Uno de los silos seleccionados no existe.');
+                throw new DomainException('Uno de los tanques seleccionados no existe.');
             }
             $consulta->execute(['idSilo' => $asignacion['idSilo']]);
             $silo = $consulta->fetch();
             if (!$silo || (int) $silo['activo'] !== 1) {
-                throw new DomainException('Uno de los silos seleccionados no está disponible.');
+                throw new DomainException('Uno de los tanques seleccionados no está disponible.');
             }
             if ((int) $silo['productosActivos'] > 1
                 || ((float) $silo['cantidadOcupada'] > 0.0005 && (int) $silo['idProductoActual'] !== $idProducto)) {
-                throw new DomainException('El silo ' . $silo['codigo'] . ' contiene otro producto.');
+                throw new DomainException('El tanque ' . $silo['codigo'] . ' contiene otro producto.');
             }
             if ($asignacion['cantidad'] - (float) $silo['capacidadDisponible'] > 0.0005) {
-                throw new DomainException('La cantidad supera el espacio disponible del silo ' . $silo['codigo'] . '.');
+                throw new DomainException('La cantidad supera el espacio disponible del tanque ' . $silo['codigo'] . '.');
             }
 
             $insert->execute([
@@ -87,7 +87,7 @@ class SiloStockService
 
         $disponible = array_sum(array_map(static fn (array $fila): float => (float) $fila['disponible'], $asignaciones));
         if ($cantidad - $disponible > 0.0005) {
-            throw new DomainException('La cantidad supera el inventario disponible en los silos de este lote.');
+            throw new DomainException('La cantidad supera el inventario disponible en los tanques de este lote.');
         }
 
         $insert = $this->db->prepare(
@@ -116,7 +116,7 @@ class SiloStockService
         $normalizadas = $saldoFisico > 0.0005 ? $this->normalizarAsignaciones($asignaciones) : [];
         $total = array_sum(array_column($normalizadas, 'cantidad'));
         if (abs($total - $saldoFisico) > 0.0005) {
-            throw new DomainException('La distribución entre silos debe sumar exactamente el saldo físico: ' . number_format($saldoFisico, 3) . ' kg.');
+            throw new DomainException('La distribución entre tanques debe sumar exactamente el saldo físico: ' . number_format($saldoFisico, 3) . ' kg.');
         }
 
         $statement = $this->db->prepare(
@@ -159,7 +159,7 @@ class SiloStockService
             $bloquearSilo->execute(['idSilo' => $idSilo]);
             $silo = $bloquearSilo->fetch();
             if (!$silo) {
-                throw new DomainException('Uno de los silos seleccionados no existe.');
+                throw new DomainException('Uno de los tanques seleccionados no existe.');
             }
 
             $cantidadDeseada = (float) ($deseadas[$idSilo] ?? 0);
@@ -167,7 +167,7 @@ class SiloStockService
                 continue;
             }
             if ((int) $silo['activo'] !== 1) {
-                throw new DomainException('El silo ' . $silo['codigo'] . ' está inactivo.');
+                throw new DomainException('El tanque ' . $silo['codigo'] . ' está inactivo.');
             }
 
             $estadoExterno->execute([
@@ -177,10 +177,10 @@ class SiloStockService
             $externo = $estadoExterno->fetch();
             if ((int) $externo['productos'] > 1
                 || ((float) $externo['ocupado'] > 0.0005 && (int) $externo['idProducto'] !== $idProducto)) {
-                throw new DomainException('El silo ' . $silo['codigo'] . ' contiene otro producto.');
+                throw new DomainException('El tanque ' . $silo['codigo'] . ' contiene otro producto.');
             }
             if ($cantidadDeseada + (float) $externo['ocupado'] - (float) $silo['capacidad'] > 0.0005) {
-                throw new DomainException('La cantidad supera el espacio disponible del silo ' . $silo['codigo'] . '.');
+                throw new DomainException('La cantidad supera el espacio disponible del tanque ' . $silo['codigo'] . '.');
             }
         }
 
@@ -223,7 +223,7 @@ class SiloStockService
             $idSilo = filter_var($asignacion['idSilo'] ?? null, FILTER_VALIDATE_INT);
             $cantidad = str_replace(',', '.', trim((string) ($asignacion['cantidad'] ?? '')));
             if (!$idSilo || !preg_match('/^\d+(?:\.\d{1,3})?$/', $cantidad) || (float) $cantidad <= 0) {
-                throw new InvalidArgumentException('Seleccione silos y cantidades válidas, con máximo 3 decimales.');
+                throw new InvalidArgumentException('Seleccione tanques y cantidades válidas, con máximo 3 decimales.');
             }
             $agrupadas[(int) $idSilo] = ($agrupadas[(int) $idSilo] ?? 0) + (float) $cantidad;
         }

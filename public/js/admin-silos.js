@@ -22,7 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function siloOptions() {
-        return '<option value="">Seleccione un silo</option>' + availableSilos.map((silo) =>
+        return '<option value="">Seleccione un tanque</option>' + availableSilos.map((silo) =>
             `<option value="${silo.idSilo}" data-available="${silo.capacidadDisponible}">${silo.codigo} - ${silo.nombre} (${Number(silo.capacidadDisponible).toFixed(3)} kg disponibles)</option>`
         ).join('');
     }
@@ -30,7 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function addAssignmentRow() {
         const row = document.createElement('div');
         row.className = 'silo-assignment-row';
-        row.innerHTML = `<select name="idSilo[]" required>${siloOptions()}</select><input name="cantidadSilo[]" type="number" min="0.001" step="0.001" placeholder="Cantidad kg" required><button type="button" title="Quitar" aria-label="Quitar silo">&times;</button>`;
+        row.innerHTML = `<select name="idSilo[]" required>${siloOptions()}</select><input name="cantidadSilo[]" type="number" min="0.001" step="0.001" placeholder="Cantidad kg" required><button type="button" title="Quitar" aria-label="Quitar tanque">&times;</button>`;
         row.querySelector('button').addEventListener('click', () => { row.remove(); updateAssignmentOptions(); updateAssignmentTotal(); });
         row.querySelectorAll('select,input').forEach((field) => field.addEventListener('input', () => {
             updateAssignmentOptions();
@@ -72,7 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         siloForm.reset();
         siloForm.elements.idSilo.value = '';
         siloForm.elements.activo.checked = true;
-        siloModal.querySelector('[data-silo-modal-title]').textContent = 'Nuevo silo';
+        siloModal.querySelector('[data-silo-modal-title]').textContent = 'Nuevo tanque';
         openModal(siloModal);
     });
 
@@ -85,7 +85,7 @@ document.addEventListener('DOMContentLoaded', () => {
             siloForm.elements.nombre.value = row.dataset.nombre;
             siloForm.elements.capacidad.value = row.dataset.capacidad;
             siloForm.elements.activo.checked = row.dataset.activo === '1';
-            siloModal.querySelector('[data-silo-modal-title]').textContent = `Editar silo ${row.dataset.codigo}`;
+            siloModal.querySelector('[data-silo-modal-title]').textContent = `Editar tanque ${row.dataset.codigo}`;
             openModal(siloModal);
         }
 

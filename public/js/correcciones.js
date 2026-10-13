@@ -418,7 +418,7 @@ function initCorrectionPage(page) {
         const select = document.createElement('select');
         select.name = 'idSilo[]';
         select.required = true;
-        select.appendChild(new Option('Seleccione un silo', ''));
+        select.appendChild(new Option('Seleccione un tanque', ''));
         editAvailableSilos.forEach((silo) => {
             const option = new Option(`${silo.codigo} - ${silo.nombre} (${Number(silo.capacidadDisponible).toFixed(3)} kg disponibles)`, silo.idSilo);
             option.dataset.available = silo.capacidadDisponible;
@@ -438,8 +438,8 @@ function initCorrectionPage(page) {
 
         const remove = document.createElement('button');
         remove.type = 'button';
-        remove.title = 'Quitar silo';
-        remove.setAttribute('aria-label', 'Quitar silo');
+        remove.title = 'Quitar tanque';
+        remove.setAttribute('aria-label', 'Quitar tanque');
         remove.innerHTML = '&times;';
         remove.addEventListener('click', () => {
             row.remove();
@@ -478,7 +478,7 @@ function initCorrectionPage(page) {
             });
             const response = await fetch(`${siloEndpoint}?${query}`);
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los silos.');
+            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los tanques.');
             editAvailableSilos = data;
             assignments.filter((item) => Number(item.cantidadDisponible) > 0.0005).forEach(addEditSiloRow);
             if (editSiloBalance() > 0.0005 && !editSiloRows.children.length) addEditSiloRow();

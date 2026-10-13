@@ -397,7 +397,7 @@ class AdminController extends Controller
         $model = $this->model('Silo');
 
         $this->view('admin/silos', [
-            'title' => 'Control de silos',
+            'title' => 'Control de tanques',
             'silos' => $model->listar($_GET),
             'entradasPendientes' => $model->entradasPendientes(),
             'filters' => $_GET,
@@ -433,7 +433,7 @@ class AdminController extends Controller
             $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
         }
 
-        $this->redirect('/admin/silos?msg=Silo guardado correctamente.');
+        $this->redirect('/admin/silos?msg=Tanque guardado correctamente.');
     }
 
     public function eliminarSilo(): void
@@ -444,7 +444,7 @@ class AdminController extends Controller
 
         try {
             if (!$idSilo || !$this->model('Silo')->eliminar($idSilo)) {
-                throw new InvalidArgumentException('El silo no existe.');
+                throw new InvalidArgumentException('El tanque no existe.');
             }
             Auth::log(
                 (int) ($_SESSION['id_usuario'] ?? 0),
@@ -452,13 +452,13 @@ class AdminController extends Controller
                 'administracion',
                 'eliminar_silo',
                 'exitoso',
-                'Silo #' . $idSilo
+                'Tanque #' . $idSilo
             );
         } catch (Throwable $exception) {
             $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
         }
 
-        $this->redirect('/admin/silos?msg=Silo eliminado correctamente.');
+        $this->redirect('/admin/silos?msg=Tanque eliminado correctamente.');
     }
 
     public function asignarEntradaSilos(): void
@@ -484,7 +484,7 @@ class AdminController extends Controller
             $this->redirect('/admin/silos?tipo=error&msg=' . urlencode($exception->getMessage()));
         }
 
-        $this->redirect('/admin/silos?msg=Entrada distribuida correctamente entre los silos.');
+        $this->redirect('/admin/silos?msg=Entrada distribuida correctamente entre los tanques.');
     }
 
     public function silosDisponibles(): void

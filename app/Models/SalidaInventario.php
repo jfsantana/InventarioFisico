@@ -278,10 +278,10 @@ class SalidaInventario extends BaseModel
             foreach ($statement->fetchAll() as $movimiento) {
                 if ($movimiento['idProductoActual'] !== null
                     && (int) $movimiento['idProductoActual'] !== (int) $movimiento['idProducto']) {
-                    throw new DomainException('No se puede eliminar la salida porque el silo ' . $movimiento['codigo'] . ' ya contiene otro producto.');
+                    throw new DomainException('No se puede eliminar la salida porque el tanque ' . $movimiento['codigo'] . ' ya contiene otro producto.');
                 }
                 if ((float) $movimiento['cantidad'] - (float) $movimiento['capacidadDisponible'] > 0.0005) {
-                    throw new DomainException('No se puede eliminar la salida porque el silo ' . $movimiento['codigo'] . ' no tiene capacidad para devolver la cantidad.');
+                    throw new DomainException('No se puede eliminar la salida porque el tanque ' . $movimiento['codigo'] . ' no tiene capacidad para devolver la cantidad.');
                 }
             }
 

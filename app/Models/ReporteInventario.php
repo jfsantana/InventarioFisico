@@ -426,7 +426,7 @@ class ReporteInventario extends BaseModel
                     'saldo' => 0.0,
                     'observaciones' => 'Ajuste de lote por sistema #' . $ajuste['idAjuste']
                         . ' (' . $ajuste['tipo'] . ') | Lote ' . $numLote
-                        . (!empty($ajuste['silo']) ? ' | Silo ' . $ajuste['silo'] : '')
+                        . (!empty($ajuste['silo']) ? ' | Tanque ' . $ajuste['silo'] : '')
                         . ' | Responsable: ' . $ajuste['responsable'] . ' | ' . $ajuste['observacion'],
                     'tipo' => 'ajuste',
                 ];

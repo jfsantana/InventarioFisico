@@ -131,7 +131,7 @@ if (entradaForm) {
         const select = document.createElement('select');
         select.name = 'idSilo[]';
         select.required = true;
-        select.appendChild(new Option('Seleccione un silo', ''));
+        select.appendChild(new Option('Seleccione un tanque', ''));
         availableSilos.forEach((silo) => {
             const option = new Option(`${silo.codigo} - ${silo.nombre} (${Number(silo.capacidadDisponible).toFixed(3)} kg disponibles)`, silo.idSilo);
             option.dataset.available = silo.capacidadDisponible;
@@ -151,8 +151,8 @@ if (entradaForm) {
 
         const remove = document.createElement('button');
         remove.type = 'button';
-        remove.title = 'Quitar silo';
-        remove.setAttribute('aria-label', 'Quitar silo');
+        remove.title = 'Quitar tanque';
+        remove.setAttribute('aria-label', 'Quitar tanque');
         remove.innerHTML = '&times;';
         remove.addEventListener('click', () => {
             row.remove();
@@ -191,7 +191,7 @@ if (entradaForm) {
         try {
             const response = await fetch(`${entradaForm.dataset.siloEndpoint}?idProducto=${encodeURIComponent(productId)}`);
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los silos.');
+            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los tanques.');
             availableSilos = data;
             if (resetRows) siloRows.replaceChildren();
             if (!initialSilosRestored && initialSiloAssignments.length) {
@@ -288,7 +288,7 @@ if (entradaForm) {
             const item = document.createElement('li');
             const button = document.createElement('button');
             button.type = 'button';
-            button.textContent = 'Distribución en silos';
+            button.textContent = 'Distribución en tanques';
             button.addEventListener('click', () => siloSection.scrollIntoView({ behavior: 'smooth', block: 'center' }));
             item.appendChild(button);
             list.appendChild(item);

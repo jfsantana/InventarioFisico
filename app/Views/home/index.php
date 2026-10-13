@@ -173,7 +173,7 @@ $authUser = Auth::user();
                         <svg viewBox="0 0 24 24"><path d="M6 5c0-2 12-2 12 0v14c0 2-12 2-12 0Z" /><path d="M6 5c0 2 12 2 12 0M6 12c0 2 12 2 12 0" /></svg>
                     </span>
                     <span>Almacenamiento Sector3</span>
-                    <strong>Control de silos</strong>
+                    <strong>Control de tanques</strong>
                     <i aria-hidden="true">→</i>
                 </a>
             </div>

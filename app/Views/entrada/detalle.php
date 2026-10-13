@@ -281,10 +281,10 @@ $canResendEmail = Auth::can('corregir_entradas', 'editar');
                 </label>
                 <section class="entry-silo-allocation correction-field--full" data-edit-silo-allocation hidden>
                     <div class="entry-silo-heading">
-                        <div><span>Saldo físico actual</span><h3>Distribución en silos</h3></div>
-                        <button class="button-link button-link--secondary" type="button" data-add-edit-silo>+ Agregar silo</button>
+                        <div><span>Saldo físico actual</span><h3>Distribución en tanques</h3></div>
+                        <button class="button-link button-link--secondary" type="button" data-add-edit-silo>+ Agregar tanque</button>
                     </div>
-                    <p>Puede cambiar las cantidades y mover el saldo restante a otros silos. Las salidas ya realizadas conservan su historial.</p>
+                    <p>Puede cambiar las cantidades y mover el saldo restante a otros tanques. Las salidas ya realizadas conservan su historial.</p>
                     <div class="silo-edit-history" data-edit-silo-history hidden></div>
                     <div class="silo-assignment-rows" data-edit-silo-rows></div>
                     <div class="silo-entry-totals">

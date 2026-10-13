@@ -148,7 +148,7 @@ foreach ($predespachos as $predespacho) {
                                 <th>Producto</th>
                                 <th>Lote</th>
                                 <th>Sector</th>
-                                <th>Silos</th>
+                                <th>Tanques</th>
                                 <th title="Presentación">Present</th>
                                 <th>Unidad</th>
                                 <th>Inicial</th>

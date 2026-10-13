@@ -42,7 +42,7 @@ document.addEventListener('DOMContentLoaded', () => {
             select.disabled = !habilitado;
             quantity.disabled = !habilitado;
             row.querySelector('button').disabled = !habilitado;
-            select.setCustomValidity(select.value && ids.filter(id => id === select.value).length > 1 ? 'No repita un silo.' : '');
+            select.setCustomValidity(select.value && ids.filter(id => id === select.value).length > 1 ? 'No repita un tanque.' : '');
             Array.from(select.options).forEach(option => {
                 option.disabled = option.value !== '' && option.value !== select.value && ids.includes(option.value);
             });
@@ -54,14 +54,14 @@ document.addEventListener('DOMContentLoaded', () => {
             || !silos.some(silo => !ids.includes(String(silo.idSilo)));
         document.getElementById('ajusteSiloEstado').textContent =
             !tipoSeleccionado() || !montoValido() ? 'Seleccione el estado e indique un monto valido para distribuir.'
-                : loading ? 'Consultando silos disponibles...'
+                : loading ? 'Consultando tanques disponibles...'
                 : `Distribuido: ${(total / 1000).toFixed(3)} / ${(Number(monto.value) || 0).toFixed(3)}. `
                 + (Math.abs(pendiente) < 0.0005 && total > 0 && filasValidas ? 'Distribucion completa.'
-                    : Math.abs(pendiente) < 0.0005 && !filasValidas ? 'Complete el silo y la cantidad de cada fila.'
+                    : Math.abs(pendiente) < 0.0005 && !filasValidas ? 'Complete el tanque y la cantidad de cada fila.'
                         : `${pendiente >= 0 ? 'Faltan' : 'Exceden'} ${Math.abs(pendiente).toFixed(3)}.`);
         monto.setCustomValidity(sector3 && tipoSeleccionado()
             && (!montoValido() || loading || !siloError.hidden || !rows.length || !filasValidas || Math.abs(pendiente) > 0.0005)
-            ? 'Distribuya exactamente el monto entre los silos disponibles.' : '');
+            ? 'Distribuya exactamente el monto entre los tanques disponibles.' : '');
     };
     const agregarFila = (values = {}) => {
         if (siloRows.children.length >= silos.length) return;
@@ -70,8 +70,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const select = document.createElement('select');
         select.name = 'idSilo[]';
         select.required = true;
-        select.setAttribute('aria-label', 'Silo del ajuste');
-        select.append(new Option('Seleccione un silo', ''));
+        select.setAttribute('aria-label', 'Tanque del ajuste');
+        select.append(new Option('Seleccione un tanque', ''));
         silos.forEach(silo => select.append(new Option(
             `${silo.codigo} - ${silo.nombre} (${Number(silo.cantidadDisponible).toFixed(3)} disponibles)`, silo.idSilo
         )));
@@ -79,11 +79,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const quantity = document.createElement('input');
         Object.assign(quantity, { name: 'cantidadSilo[]', type: 'number', min: '0.001', step: '0.001',
             inputMode: 'decimal', required: true, value: values.cantidad || '', placeholder: 'Cantidad' });
-        quantity.setAttribute('aria-label', 'Cantidad del silo');
+        quantity.setAttribute('aria-label', 'Cantidad del tanque');
         const remove = document.createElement('button');
         remove.type = 'button';
         remove.textContent = '×';
-        remove.setAttribute('aria-label', 'Quitar silo');
+        remove.setAttribute('aria-label', 'Quitar tanque');
         remove.addEventListener('click', () => { row.remove(); actualizarDistribucion(); });
         row.append(select, quantity, remove);
         siloRows.append(row);
@@ -104,8 +104,8 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         document.getElementById('ajusteSiloAyuda').textContent = tipo === 'positivo'
-            ? 'Solo silos vacios o con el mismo producto y espacio libre.'
-            : 'Solo silos con saldo de este lote. Puede distribuir la disminucion entre varios.';
+            ? 'Solo tanques vacios o con el mismo producto y espacio libre.'
+            : 'Solo tanques con saldo de este lote. Puede distribuir la disminucion entre varios.';
         loading = true;
         addSilo.disabled = true;
         actualizarDistribucion();
@@ -113,11 +113,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const params = new URLSearchParams({ idInventarioEntrante: entrada.value, tipo });
             const response = await fetch(`${form.dataset.siloEndpoint}?${params}`);
             const data = await response.json();
-            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los silos.');
-            if (!Array.isArray(data)) throw new Error('Respuesta de silos no valida.');
+            if (!response.ok) throw new Error(data.error || 'No se pudieron consultar los tanques.');
+            if (!Array.isArray(data)) throw new Error('Respuesta de tanques no valida.');
             if (version !== requestVersion) return;
             silos = data;
-            if (!silos.length) throw new Error('No hay silos disponibles para este ajuste.');
+            if (!silos.length) throw new Error('No hay tanques disponibles para este ajuste.');
             loading = false;
             if (assignments.length) assignments.forEach(agregarFila);
             else agregarFila();
