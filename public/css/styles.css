@@ -6309,9 +6309,18 @@ body:has(.auth-topbar) {
 
 .cotizacion-fields {
     display: grid;
-    grid-template-columns: 170px 110px 170px minmax(280px, 340px);
+    grid-template-columns: 170px 110px 170px minmax(280px, 340px) auto;
     gap: 16px;
     align-items: end;
+}
+
+.cotizacion-tax-toggle {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 40px;
+    white-space: nowrap;
+    cursor: pointer;
 }
 
 .cotizacion-field--client {

@@ -94,8 +94,8 @@ class CotizacionNotificador
         $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
         $numeroCotizacion = $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
         $subtotal = (float) $cotizacion['subtotal'];
-        $iva = round($subtotal * 0.16, 2);
-        $total = round($subtotal + $iva, 2);
+        $total = round((float) ($cotizacion['total'] ?? $subtotal * 1.16), 2);
+        $iva = round($total - $subtotal, 2);
         $filas = '';
 
         foreach ($cotizacion['detalles'] as $detalle) {
@@ -137,7 +137,7 @@ class CotizacionNotificador
             . '<div style="display:inline-block;padding-bottom:3px;border-bottom:2px solid #801d35;color:#801d35;font-size:11px;font-weight:bold">CONDICIONES DE PAGO</div><div style="margin-top:6px;font-size:12px;font-weight:bold">' . $this->escapar(mb_strtoupper((string) ($cotizacion['condicionPago'] ?? ''), 'UTF-8')) . '</div>'
             . '<div style="margin-top:24px;display:inline-block;padding-bottom:3px;border-bottom:2px solid #801d35;color:#801d35;font-size:11px;font-weight:bold">NOTA</div><div style="margin-top:6px;font-size:12px;font-weight:bold">' . ($observacion !== '' ? nl2br($this->escapar(mb_strtoupper($observacion, 'UTF-8'))) : 'SIN OBSERVACIONES') . '</div>'
             . '</td><td style="width:42%;vertical-align:bottom"><table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="font-size:12px"><tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">SUBTOTAL</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($subtotal) . '</td></tr>'
-            . '<tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">IVA 16%</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($iva) . '</td></tr>'
+            . ($iva > 0 ? '<tr><td style="padding:5px 0;border-bottom:1px solid #d5d5d5">IVA 16%</td><td style="padding:5px 0;border-bottom:1px solid #d5d5d5;text-align:right;font-weight:bold">' . $this->numero($iva) . '</td></tr>' : '')
             . '<tr><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;font-size:14px;font-weight:bold">TOTAL</td><td style="padding:9px 0 5px;border-top:2px solid #801d35;color:#801d35;text-align:right;font-size:14px;font-weight:bold">' . $this->numero($total) . '</td></tr></table></td></tr></table></td></tr>'
             . '<tr><td style="padding-bottom:18px">' . CotizacionFirma::crearHtml($imagenesFirma ?? CotizacionFirma::imagenesPdf(), true) . '</td></tr>'
             . '<tr><td><div style="height:3px;background:#801d35"></div><div style="margin-top:7px;color:#777;font-size:10px;text-align:center">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div></td></tr>'
@@ -148,7 +148,7 @@ class CotizacionNotificador
     {
         $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
         $subtotal = (float) $cotizacion['subtotal'];
-        $iva = round($subtotal * 0.16, 2);
+        $iva = round((float) ($cotizacion['total'] ?? $subtotal * 1.16) - $subtotal, 2);
         $lineas = [
             ($esReenvio ? 'REENVIO - ' : '') . 'Cotizacion N° ' . $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT),
             'Cliente: ' . ($cotizacion['nombreCliente'] ?? ''),
@@ -163,7 +163,9 @@ class CotizacionNotificador
 
         $lineas[] = '';
         $lineas[] = 'Subtotal: ' . $this->numero($subtotal);
-        $lineas[] = 'IVA 16%: ' . $this->numero($iva);
+        if ($iva > 0) {
+            $lineas[] = 'IVA 16%: ' . $this->numero($iva);
+        }
         $lineas[] = 'Total: ' . $this->numero($cotizacion['total']);
         $lineas[] = 'Condicion de pago: ' . ($cotizacion['condicionPago'] ?? '');
 

@@ -471,7 +471,8 @@ class CotizacionController extends Controller
             ];
         }
 
-        $iva = round($subtotal * 0.16, 2);
+        $incluirIva = !isset($cabecera['incluirIva']) || filter_var($cabecera['incluirIva'], FILTER_VALIDATE_BOOLEAN);
+        $iva = $incluirIva ? round($subtotal * 0.16, 2) : 0.0;
         $total = round($subtotal + $iva, 2);
         $totalesEsperados = ['subtotal' => $subtotal, 'total' => $total];
 

@@ -45,8 +45,8 @@ class CotizacionPdf
         $fechaCreacion = new DateTimeImmutable((string) ($cotizacion['fechaCreacion'] ?? $cotizacion['fechaEmision']));
         $numeroCotizacion = $fechaCreacion->format('Ymd') . '-' . str_pad((string) $cotizacion['idCotizacion'], 6, '0', STR_PAD_LEFT);
         $subtotal = (float) $cotizacion['subtotal'];
-        $iva = round($subtotal * 0.16, 2);
-        $total = round($subtotal + $iva, 2);
+        $total = round((float) ($cotizacion['total'] ?? $subtotal * 1.16), 2);
+        $iva = round($total - $subtotal, 2);
         $logo = $this->logoDataUri();
         $filas = '';
 
@@ -98,7 +98,7 @@ class CotizacionPdf
             . '<div class="conditions-title">CONDICIONES DE PAGO</div><div class="conditions-value">' . $this->escapar(mb_strtoupper((string) $cotizacion['condicionPago'], 'UTF-8')) . '</div>'
             . '<div class="note"><div class="conditions-title">NOTA</div><div class="conditions-value">' . ($observacion !== '' ? nl2br($this->escapar(mb_strtoupper($observacion, 'UTF-8'))) : 'SIN OBSERVACIONES') . '</div></div>'
             . '</td><td class="summary"><table class="summary-table"><tr><td>SUBTOTAL</td><td>' . $this->numero($subtotal) . '</td></tr>'
-            . '<tr><td>IVA 16%</td><td>' . $this->numero($iva) . '</td></tr><tr class="grand-total"><td>TOTAL</td><td>' . $this->numero($total) . '</td></tr></table></td></tr></table></div></div>'
+            . ($iva > 0 ? '<tr><td>IVA 16%</td><td>' . $this->numero($iva) . '</td></tr>' : '') . '<tr class="grand-total"><td>TOTAL</td><td>' . $this->numero($total) . '</td></tr></table></td></tr></table></div></div>'
             . CotizacionFirma::crearHtml(CotizacionFirma::imagenesPdf())
             . '<div class="footer-line"></div><div class="footer-text">ADYAR INDUSTRIES C.A. · RIF J-29967374-9</div>'
             . '</body></html>';

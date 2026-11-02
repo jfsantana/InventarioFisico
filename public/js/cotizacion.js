@@ -16,6 +16,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const quotationSubtotal = page.querySelector('[data-quotation-subtotal]');
     const quotationTax = page.querySelector('[data-quotation-tax]');
     const grandTotal = page.querySelector('[data-grand-total]');
+    const taxToggle = page.querySelector('[data-tax-toggle]');
+    const taxRow = page.querySelector('[data-tax-row]');
     const pageMessage = page.querySelector('[data-cotizacion-message]');
     const saveButton = page.querySelector('[data-save-quotation]');
     const clientModal = document.querySelector('[data-client-modal]');
@@ -118,7 +120,9 @@ document.addEventListener('DOMContentLoaded', () => {
             (sum, detalle) => Math.round((sum + detalle.subtotal + Number.EPSILON) * 100) / 100,
             0
         );
-        const tax = Math.round((subtotal * 0.16 + Number.EPSILON) * 100) / 100;
+        const includeTax = taxToggle.checked;
+        const tax = includeTax ? Math.round((subtotal * 0.16 + Number.EPSILON) * 100) / 100 : 0;
+        taxRow.hidden = !includeTax;
         const total = Math.round((subtotal + tax + Number.EPSILON) * 100) / 100;
 
         quotationSubtotal.dataset.value = String(subtotal);
@@ -127,6 +131,8 @@ document.addEventListener('DOMContentLoaded', () => {
         grandTotal.dataset.value = String(total);
         grandTotal.textContent = formatAmount(total);
     }
+
+    taxToggle.addEventListener('change', calculateTotals);
 
     function optionText(select) {
         return select.options[select.selectedIndex]?.textContent.trim() || '';
@@ -546,6 +552,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 diasVigencia: Number(form.elements.diasVigencia.value),
                 condicionPago: form.elements.condicionPago.value,
                 observacion: form.elements.observacion.value.trim(),
+                incluirIva: taxToggle.checked,
                 subtotal,
                 total,
             },

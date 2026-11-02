@@ -88,6 +88,11 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
                         <?php endforeach; ?>
                     </select>
                 </label>
+
+                <label class="cotizacion-tax-toggle">
+                    <input type="checkbox" data-tax-toggle checked>
+                    Calcular IVA 16%
+                </label>
             </section>
 
             <section class="cotizacion-products" aria-labelledby="cotizacion-products-title">
@@ -107,7 +112,7 @@ $clienteSeleccionado = (string) ($clienteSeleccionado ?? '');
                 <div class="cotizacion-total-bar">
                     <dl>
                         <div><dt>Subtotal</dt><dd data-quotation-subtotal>0,00</dd></div>
-                        <div><dt>IVA 16%</dt><dd data-quotation-tax>0,00</dd></div>
+                        <div data-tax-row><dt>IVA 16%</dt><dd data-quotation-tax>0,00</dd></div>
                         <div><dt>Total</dt><dd data-grand-total>0,00</dd></div>
                     </dl>
                 </div>
