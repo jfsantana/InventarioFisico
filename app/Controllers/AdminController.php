@@ -575,4 +575,162 @@ class AdminController extends Controller
     {
         return strlen($password) > 5;
     }
+
+    public function actualizacionInventario(): void
+    {
+        $this->requiereAdmin();
+
+        $staging = $_SESSION['reinicio_inventario_staging'] ?? null;
+        $backupsDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'backups';
+        $backupsRecientes = [];
+
+        if (is_dir($backupsDir)) {
+            $archivos = glob($backupsDir . DIRECTORY_SEPARATOR . '*.sql');
+            if (is_array($archivos)) {
+                usort($archivos, static fn($a, $b) => filemtime($b) <=> filemtime($a));
+                foreach (array_slice($archivos, 0, 5) as $archivo) {
+                    $backupsRecientes[] = [
+                        'nombre' => basename($archivo),
+                        'tamano' => number_format(filesize($archivo) / 1024, 2) . ' KB',
+                        'fecha' => date('d/m/Y H:i:s', filemtime($archivo)),
+                    ];
+                }
+            }
+        }
+
+        $this->view('admin/actualizacion-inventario', [
+            'title' => 'Actualización de Inventario',
+            'staging' => $staging,
+            'backupsRecientes' => $backupsRecientes,
+            'message' => $_GET['msg'] ?? null,
+            'messageType' => ($_GET['tipo'] ?? '') === 'error' ? 'error' : 'success',
+        ]);
+    }
+
+    public function procesarExcelInventario(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/actualizacionInventario');
+        }
+
+        $archivo = $_FILES['archivo_excel'] ?? null;
+        if (!$archivo || empty($archivo['tmp_name']) || $archivo['error'] !== UPLOAD_ERR_OK) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=Debe seleccionar un archivo Excel válido (.xlsx o .xls).');
+        }
+
+        $extension = strtolower(pathinfo((string) ($archivo['name'] ?? ''), PATHINFO_EXTENSION));
+        if (!in_array($extension, ['xlsx', 'xls'], true)) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=El archivo debe tener extensión .xlsx o .xls.');
+        }
+
+        try {
+            $service = new ReinicioInventarioService();
+            $idUsuario = (int) ($_SESSION['id_usuario'] ?? 0);
+            $username = (string) ($_SESSION['username'] ?? 'admin');
+
+            $resultado = $service->procesarExcel($archivo['tmp_name'], $idUsuario, $username);
+
+            // Generar también respaldo de seguridad preventivo al subir el Excel
+            $backupInfo = $service->generarBackup('backup_preventivo_lectura');
+            $resultado['backup_preventivo'] = $backupInfo;
+
+            $_SESSION['reinicio_inventario_staging'] = $resultado;
+
+            if (!$resultado['exito']) {
+                $totalErrores = count($resultado['resumen']['errores']);
+                $this->redirect('/admin/actualizacionInventario?tipo=error&msg=' . urlencode("Se detectaron {$totalErrores} errores en el Excel que deben corregirse antes de continuar."));
+            }
+
+            $totalValidos = $resultado['resumen']['total_registros_validos'];
+            $this->redirect('/admin/actualizacionInventario?tipo=success&msg=' . urlencode("Archivo Excel leído y validado con éxito ({$totalValidos} registros válidos listos para cargar). Revise el resumen a continuación."));
+        } catch (Throwable $e) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=' . urlencode('Error al procesar el archivo Excel: ' . $e->getMessage()));
+        }
+    }
+
+    public function cancelarReinicioInventario(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+
+        unset($_SESSION['reinicio_inventario_staging']);
+        $this->redirect('/admin/actualizacionInventario?msg=' . urlencode('Operación cancelada. Se descartaron los datos temporales del archivo subido.'));
+    }
+
+    public function descargarBackup(): void
+    {
+        $this->requiereAdmin();
+        $archivo = basename((string) ($_GET['archivo'] ?? ''));
+        if ($archivo === '' || !str_ends_with($archivo, '.sql')) {
+            http_response_code(400);
+            echo 'Archivo inválido.';
+            exit;
+        }
+
+        $ruta = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'backups' . DIRECTORY_SEPARATOR . $archivo;
+        if (!file_exists($ruta)) {
+            http_response_code(404);
+            echo 'Archivo no encontrado.';
+            exit;
+        }
+
+        header('Content-Type: application/sql');
+        header('Content-Disposition: attachment; filename="' . $archivo . '"');
+        header('Content-Length: ' . filesize($ruta));
+        readfile($ruta);
+        exit;
+    }
+
+    public function ejecutarReinicioInventario(): void
+    {
+        $this->requiereAdmin();
+        $this->validarCsrf();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            $this->redirect('/admin/actualizacionInventario');
+        }
+
+        $staging = $_SESSION['reinicio_inventario_staging'] ?? null;
+        if (!$staging || empty($staging['registros'])) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=No hay datos de inventario en espera de confirmación. Suba el Excel primero.');
+        }
+
+        if (!$staging['exito']) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=No se puede ejecutar el reinicio porque el archivo presenta errores pendientes de corrección.');
+        }
+
+        // Validación de frase de seguridad
+        $confirmacion = trim((string) ($_POST['confirmacion_texto'] ?? ''));
+        if (strtoupper($confirmacion) !== 'CONFIRMAR VACIADO') {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=Debe escribir exactamente "CONFIRMAR VACIADO" para autorizar la operación.');
+        }
+
+        // Validación de contraseña del administrador actual
+        $password = (string) ($_POST['admin_password'] ?? '');
+        $idUsuario = (int) ($_SESSION['id_usuario'] ?? 0);
+        $username = (string) ($_SESSION['username'] ?? 'admin');
+
+        $db = (new Database())->getConnection();
+        $stmt = $db->prepare('SELECT password_hash FROM usuarios WHERE id_usuario = :id LIMIT 1');
+        $stmt->execute(['id' => $idUsuario]);
+        $hash = $stmt->fetchColumn();
+
+        if (!$hash || !password_verify($password, $hash)) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=Contraseña de administrador incorrecta. Operación no autorizada.');
+        }
+
+        try {
+            $service = new ReinicioInventarioService($db);
+            $resultado = $service->ejecutarVaciadoYCarga($staging, $idUsuario, $username);
+
+            unset($_SESSION['reinicio_inventario_staging']);
+
+            $this->redirect('/admin/actualizacionInventario?tipo=success&msg=' . urlencode($resultado['mensaje']));
+        } catch (Throwable $e) {
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=' . urlencode('Fallo crítico al ejecutar el reinicio de inventario: ' . $e->getMessage()));
+        }
+    }
 }

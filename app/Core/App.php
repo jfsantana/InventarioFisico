@@ -15,6 +15,7 @@ class App
         'predespachos' => ['PredespachoController', 'index'],
         'predespacho-detalle' => ['PredespachoController', 'detalle'],
         'predespacho-salida' => ['PredespachoController', 'salida'],
+        'actualizacion-inventario' => ['AdminController', 'actualizacionInventario'],
     ];
 
     public function __construct()
