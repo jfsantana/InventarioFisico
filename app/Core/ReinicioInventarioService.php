@@ -391,10 +391,10 @@ class ReinicioInventarioService
             // 2. Crear maestros faltantes: Productos
             $nuevosProductos = $staging['resumen']['nuevos_productos'] ?? [];
             if (!empty($nuevosProductos)) {
-                $stmtProd = $this->db->prepare('INSERT INTO producto (codigoInterno, nombre) VALUES (:codigo, :nombre)');
+                $stmtProd = $this->db->prepare('INSERT INTO Producto (codigoInterno, nombre) VALUES (:codigo, :nombre)');
                 foreach ($nuevosProductos as $prod) {
                     // Verificar si ya existe por si acaso
-                    $chk = $this->db->prepare('SELECT idProducto FROM producto WHERE TRIM(codigoInterno) = :codigo LIMIT 1');
+                    $chk = $this->db->prepare('SELECT idProducto FROM Producto WHERE TRIM(codigoInterno) = :codigo LIMIT 1');
                     $chk->execute(['codigo' => $prod['codigoInterno']]);
                     if ($chk->fetchColumn() === false) {
                         $stmtProd->execute([
@@ -680,7 +680,7 @@ class ReinicioInventarioService
 
     private function obtenerMapaProductos(): array
     {
-        $stmt = $this->db->query('SELECT idProducto, codigoInterno, nombre FROM producto');
+        $stmt = $this->db->query('SELECT idProducto, codigoInterno, nombre FROM Producto');
         $mapa = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $mapa[trim($row['codigoInterno'])] = $row;

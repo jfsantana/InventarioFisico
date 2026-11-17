@@ -94,12 +94,12 @@ $resumen = $staging['resumen'] ?? [];
                         <tbody>
                             <tr>
                                 <td><strong>Número de artículo</strong></td>
-                                <td><code>producto.codigoInterno</code></td>
-                                <td>Código del producto. Si no existe, se creará automáticamente en la tabla producto.</td>
+                                <td><code>Producto.codigoInterno</code></td>
+                                <td>Código del producto. Si no existe, se creará automáticamente en la tabla Producto.</td>
                             </tr>
                             <tr>
                                 <td><strong>Descripción del artículo</strong></td>
-                                <td><code>producto.nombre</code></td>
+                                <td><code>Producto.nombre</code></td>
                                 <td>Nombre comercial del producto para la creación si no existe.</td>
                             </tr>
                             <tr>
