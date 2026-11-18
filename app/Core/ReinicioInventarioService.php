@@ -5,6 +5,8 @@ use PhpOffice\PhpSpreadsheet\Spreadsheet;
 
 class ReinicioInventarioService
 {
+    public const VERSION_VALIDACION_CANTIDAD = 1;
+
     private PDO $db;
 
     public function __construct(?PDO $db = null)
@@ -205,14 +207,16 @@ class ReinicioInventarioService
             $lote = trim((string) ($fila[$mapaColumnas['lote']] ?? ''));
             $almacenRaw = trim((string) ($fila[$mapaColumnas['almacen']] ?? ''));
             $nombreAlmacen = trim((string) ($fila[$mapaColumnas['nombre_almacen']] ?? ''));
-            $cantidadRaw = trim((string) ($fila[$mapaColumnas['cantidad']] ?? ''));
+            $cantidadRaw = $mapaColumnas['cantidad'] === null
+                ? null
+                : $hoja->getCell($mapaColumnas['cantidad'] . $numFila)->getCalculatedValue();
             $zonaRaw = trim((string) ($fila[$mapaColumnas['zona']] ?? ''));
             $presentacionRaw = trim((string) ($fila[$mapaColumnas['presentacion']] ?? ''));
             $pesoRaw = trim((string) ($fila[$mapaColumnas['peso']] ?? ''));
             $tanqueRaw = trim((string) ($fila[$mapaColumnas['tanque']] ?? ''));
 
             // Si toda la fila está vacía, saltar
-            if ($numArticulo === '' && $descArticulo === '' && $lote === '' && $cantidadRaw === '') {
+            if ($numArticulo === '' && $descArticulo === '' && $lote === '' && trim((string) $cantidadRaw) === '') {
                 continue;
             }
 
@@ -226,17 +230,9 @@ class ReinicioInventarioService
                 continue;
             }
 
-            // Normalizar cantidad
-            $cantidadNormalizada = str_replace(['.', ','], ['.', '.'], $cantidadRaw);
-            // Si tiene más de un punto, corregir formato miles
-            if (substr_count($cantidadNormalizada, '.') > 1) {
-                $partes = explode('.', $cantidadNormalizada);
-                $decimal = array_pop($partes);
-                $cantidadNormalizada = implode('', $partes) . '.' . $decimal;
-            }
-            $cantidad = (float) $cantidadNormalizada;
-            if ($cantidad <= 0.0001) {
-                $errores[] = "Fila #{$numFila} (Artículo {$numArticulo}, Lote {$lote}): La cantidad debe ser mayor a cero ({$cantidadRaw}).";
+            $cantidad = $this->normalizarCantidad($cantidadRaw);
+            if ($cantidad === null) {
+                $errores[] = "Fila #{$numFila} (Artículo {$numArticulo}, Lote {$lote}): Cantidad inválida '{$cantidadRaw}'. Use un número positivo con hasta 3 decimales; para texto use formato venezolano, por ejemplo 30.069,50.";
                 continue;
             }
 
@@ -352,9 +348,30 @@ class ReinicioInventarioService
 
         return [
             'exito' => empty($errores),
+            'version_validacion_cantidad' => self::VERSION_VALIDACION_CANTIDAD,
             'resumen' => $resumen,
             'registros' => $registrosValidos,
         ];
+    }
+
+    private function normalizarCantidad(mixed $valor): ?float
+    {
+        if (is_int($valor) || is_float($valor)) {
+            $cantidad = (float) $valor;
+            if (!is_finite($cantidad) || abs($cantidad - round($cantidad, 3)) > 0.0000001) {
+                return null;
+            }
+        } elseif (is_string($valor)) {
+            $valor = trim($valor);
+            if (!preg_match('/^(?:[0-9]+|[0-9]{1,3}(?:\.[0-9]{3})+)(?:,[0-9]{1,3})?$/D', $valor)) {
+                return null;
+            }
+            $cantidad = (float) str_replace(',', '.', str_replace('.', '', $valor));
+        } else {
+            return null;
+        }
+
+        return $cantidad > 0 && $cantidad < 100000000000 ? $cantidad : null;
     }
 
     /**
@@ -362,6 +379,9 @@ class ReinicioInventarioService
      */
     public function ejecutarVaciadoYCarga(array $staging, int $idUsuario, string $username): array
     {
+        if (($staging['version_validacion_cantidad'] ?? null) !== self::VERSION_VALIDACION_CANTIDAD) {
+            throw new DomainException('El archivo fue validado con una versión anterior. Vuelva a subir el Excel.');
+        }
         $registros = $staging['registros'] ?? [];
         if (empty($registros)) {
             throw new DomainException('No hay registros validados en memoria para cargar.');

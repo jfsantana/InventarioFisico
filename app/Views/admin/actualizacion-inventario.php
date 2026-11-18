@@ -115,7 +115,7 @@ $resumen = $staging['resumen'] ?? [];
                             <tr>
                                 <td><strong>Cantidad</strong></td>
                                 <td><code>CantidadEntrante</code> / <code>peso_romana</code></td>
-                                <td>Valor numérico mayor a cero (kg o unidades de entrada).</td>
+                                <td>Número positivo con hasta 3 decimales. Si es texto, use formato venezolano: 30.069,50.</td>
                             </tr>
                             <tr>
                                 <td><strong>ZONA</strong></td>
@@ -161,7 +161,7 @@ $resumen = $staging['resumen'] ?? [];
                     <span class="metric-label">Registros de Entrada Válidos</span>
                 </div>
                 <div class="metric-card">
-                    <span class="metric-val"><?= number_format($resumen['total_kilos'] ?? 0, 3) ?> kg</span>
+                    <span class="metric-val"><?= number_format($resumen['total_kilos'] ?? 0, 3, ',', '.') ?> kg</span>
                     <span class="metric-label">Total Kilos / Cantidad</span>
                 </div>
                 <div class="metric-card">
@@ -233,7 +233,7 @@ $resumen = $staging['resumen'] ?? [];
                             <?php foreach ($resumen['por_tanque'] as $siloCod => $kilos) : ?>
                                 <div class="silo-badge">
                                     <strong>Tanque <?= $text($siloCod) ?></strong>
-                                    <span><?= number_format($kilos, 3) ?> kg</span>
+                                    <span><?= number_format($kilos, 3, ',', '.') ?> kg</span>
                                 </div>
                             <?php endforeach; ?>
                         </div>

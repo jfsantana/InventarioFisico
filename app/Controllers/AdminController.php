@@ -581,6 +581,10 @@ class AdminController extends Controller
         $this->requiereAdmin();
 
         $staging = $_SESSION['reinicio_inventario_staging'] ?? null;
+        if (is_array($staging) && ($staging['version_validacion_cantidad'] ?? null) !== ReinicioInventarioService::VERSION_VALIDACION_CANTIDAD) {
+            unset($_SESSION['reinicio_inventario_staging']);
+            $this->redirect('/admin/actualizacionInventario?tipo=error&msg=' . urlencode('La validación de cantidades cambió. Vuelva a subir el Excel antes de continuar.'));
+        }
         $backupsDir = dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'storage' . DIRECTORY_SEPARATOR . 'backups';
         $backupsRecientes = [];
 
